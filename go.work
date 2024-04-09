@@ -4,4 +4,6 @@ use (
   .
   ./procs/app
   ./procs/auth
+  ../../../pkg/i9Packages/i9auth
+  ../../../pkg/i9Packages/i9helpers
 )

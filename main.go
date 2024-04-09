@@ -1,17 +1,38 @@
 package main
 
 import (
+	"i9Packages/i9helpers"
+	"i9rfs/procs/appprocs"
+	"i9rfs/procs/authprocs"
 	"log"
-	"os"
-	"os/exec"
+	"net"
+	"net/http"
+	"net/rpc"
 )
 
 func main() {
-	cmd := exec.Command("mkdir", "-p", "i9FSHome/i9")
-	// cmd.Dir = "i9FSHome"
-	cmd.Stdout = os.Stdout
-
-	if err := cmd.Run(); err != nil {
-		log.Fatal(err.Error())
+	if err := i9helpers.LoadEnv(".env"); err != nil {
+		log.Fatal(err)
 	}
+
+	if err := i9helpers.InitDBPool(); err != nil {
+		log.Fatal(err)
+	}
+
+	authSignup := new(authprocs.AuthSignup)
+	auth := new(authprocs.Auth)
+	rfs := new(appprocs.RFS)
+
+	rpc.Register(auth)
+	rpc.Register(authSignup)
+	rpc.Register(rfs)
+
+	rpc.HandleHTTP()
+
+	listn, err := net.Listen("tcp", ":8000")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	go http.Serve(listn, nil)
 }
