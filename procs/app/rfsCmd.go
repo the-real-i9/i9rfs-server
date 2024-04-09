@@ -6,12 +6,12 @@ import (
 )
 
 type FSCmdArgs struct {
-	WorkPath string
-	CmdArgs  []string
+	WorkPath    string
+	CmdLineArgs []string
 }
 
 func (rfs *RFS) CreateDirectory(args *FSCmdArgs, reply *string) error {
-	cmd := exec.Command("mkdir", args.CmdArgs...)
+	cmd := exec.Command("mkdir", args.CmdLineArgs...)
 	cmd.Dir = fmt.Sprintf("i9FSHome%s", args.WorkPath)
 
 	err := cmd.Run()
