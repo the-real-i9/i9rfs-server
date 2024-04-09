@@ -1,17 +1,18 @@
 package appprocs
 
-type FSUpDownArgs struct {
+func (rfs RFS) UploadFile(args struct {
 	WorkPath string
 	Data     []byte
 	Filename string
-}
-
-func (rfs *RFS) UploadFile(args *FSUpDownArgs, reply *string) error {
+}, reply *string) error {
 
 	return nil
 }
 
-func (rfs *RFS) DownloadFile(args *FSUpDownArgs, reply *[]byte) error {
+func (rfs RFS) DownloadFile(args struct {
+	WorkPath string
+	Filename string
+}, reply *[]byte) error {
 
 	return nil
 }
