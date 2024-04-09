@@ -1,7 +1,6 @@
 package appprocs
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -26,7 +25,8 @@ func (rfs RFS) PathExists(args struct {
 }, reply *string) error {
 	_, err := os.ReadDir(fsHome + args.WorkPath + args.Path)
 	if err != nil {
-		return fmt.Errorf("%s: no such file or directory", args.Path)
+		*reply = "no"
+		return nil
 	}
 
 	*reply = "yes"
