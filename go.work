@@ -6,4 +6,6 @@ use (
   ./procs/auth
   ../../../pkg/i9Packages/i9auth
   ../../../pkg/i9Packages/i9helpers
+  ../../../pkg/i9Packages/i9services
+  ../../../pkg/i9Packages/i9types
 )

@@ -1,5 +1,10 @@
 package authprocs
 
+import (
+	"encoding/json"
+	"i9Packages/i9auth"
+)
+
 type Auth struct{}
 
 func (au Auth) Login(args struct {
@@ -7,10 +12,31 @@ func (au Auth) Login(args struct {
 	Password        string
 }, reply *string) error {
 
+	userData, jwtToken, err := i9auth.Login(args.EmailOrUsername, args.Password, "")
+	if err != nil {
+		return err
+	}
+
+	respData, _ := json.Marshal(map[string]any{
+		"msg":        "You're logged in!",
+		"user":       userData,
+		"auth_token": jwtToken,
+	})
+
+	*reply = string(respData)
+
 	return nil
 }
 
-func (au Auth) GetUser(token string, reply *string) error {
+func (au Auth) GetSessionUser(token string, reply *string) error {
+	userData, err := i9auth.GetSessionUser(token)
+	if err != nil {
+		return err
+	}
+
+	respData, _ := json.Marshal(userData)
+
+	*reply = string(respData)
 
 	return nil
 }
