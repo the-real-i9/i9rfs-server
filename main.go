@@ -1,17 +1,20 @@
 package main
 
 import (
-	"i9Packages/i9helpers"
-	"i9rfs/procs/appprocs"
-	"i9rfs/procs/authprocs"
-	"log"
-	"net"
-	"net/http"
-	"net/rpc"
+	"fmt"
+	"os"
 )
 
+/* "i9Packages/i9helpers"
+"i9rfs/procs/appprocs"
+"i9rfs/procs/authprocs"
+"log"
+"net"
+"net/http"
+"net/rpc" */
+
 func main() {
-	if err := i9helpers.LoadEnv(".env"); err != nil {
+	/* if err := i9helpers.LoadEnv(".env"); err != nil {
 		log.Fatal(err)
 	}
 
@@ -34,5 +37,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	go http.Serve(listn, nil)
+	go http.Serve(listn, nil) */
+
+	fmt.Println(os.UserHomeDir())
 }

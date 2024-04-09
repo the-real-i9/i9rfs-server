@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"i9Packages/i9auth"
+	"os"
 	"os/exec"
 )
 
@@ -45,7 +46,13 @@ func (aus AuthSignup) RegisterUser(args struct {
 		return err
 	}
 
-	go exec.Command("mkdir", "-p", fmt.Sprintf("i9FSHome/%s", userData["username"])).Run()
+	fsHome := "i9FSHome"
+
+	if hdir, err := os.UserHomeDir(); err == nil {
+		fsHome = hdir + "/i9FSHome"
+	}
+
+	go exec.Command("mkdir", "-p", fmt.Sprintf("%s/%s", fsHome, userData["username"])).Run()
 
 	respData, _ := json.Marshal(map[string]any{
 		"msg":        "Signup Success!",
