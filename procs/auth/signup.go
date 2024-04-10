@@ -3,7 +3,8 @@ package authprocs
 import (
 	"encoding/json"
 	"fmt"
-	"i9Packages/i9auth"
+	"i9pkgs/i9auth"
+
 	"os"
 	"os/exec"
 )

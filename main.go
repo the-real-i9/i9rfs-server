@@ -1,7 +1,7 @@
 package main
 
 import (
-	"i9Packages/i9helpers"
+	"i9pkgs/i9helpers"
 	appprocs "i9rfs/server/procs/app"
 	authprocs "i9rfs/server/procs/auth"
 	"log"

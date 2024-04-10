@@ -2,7 +2,7 @@ package authprocs
 
 import (
 	"encoding/json"
-	"i9Packages/i9auth"
+	"i9pkgs/i9auth"
 )
 
 type Auth struct{}
