@@ -1,3 +1,3 @@
-module Go-Server-Apps/i9RemoteFileSystem
+module i9rfs/server
 
 go 1.22.0

@@ -2,8 +2,6 @@ go 1.22.0
 
 use (
   .
-  ./procs/app
-  ./procs/auth
   ../../../pkg/i9Packages/i9auth
   ../../../pkg/i9Packages/i9helpers
   ../../../pkg/i9Packages/i9services
