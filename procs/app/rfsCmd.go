@@ -6,14 +6,6 @@ import (
 	"strings"
 )
 
-var fsHome = "i9FSHome"
-
-func init() {
-	if hdir, err := os.UserHomeDir(); err == nil {
-		fsHome = hdir + "/i9FSHome"
-	}
-}
-
 type FSCmdArgs struct {
 	WorkPath    string
 	CmdLineArgs []string
