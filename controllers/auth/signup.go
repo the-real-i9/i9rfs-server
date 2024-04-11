@@ -37,9 +37,9 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 			email := body.Data.(string)
 
 			var w_err error
-			signupSessionJwt, err := i9auth.RequestNewAccount(email)
-			if err != nil {
-				w_err = wsjson.Write(r.Context(), connStream, err.Error())
+			signupSessionJwt, app_err := i9auth.RequestNewAccount(email)
+			if app_err != nil {
+				w_err = wsjson.Write(r.Context(), connStream, app_err.Error())
 			} else {
 				w_err = wsjson.Write(r.Context(), connStream, signupSessionJwt)
 			}
@@ -54,9 +54,9 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 			code := body.Data.(int)
 
 			var w_err error
-			msg, err := i9auth.VerifyEmail(token, code)
-			if err != nil {
-				w_err = wsjson.Write(r.Context(), connStream, err.Error())
+			msg, app_err := i9auth.VerifyEmail(token, code)
+			if app_err != nil {
+				w_err = wsjson.Write(r.Context(), connStream, app_err.Error())
 			} else {
 				w_err = wsjson.Write(r.Context(), connStream, msg)
 			}
@@ -71,9 +71,9 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 			userInfo := body.Data.(map[string]any)
 
 			var w_err error
-			userData, jwtToken, err := i9auth.RegisterUser(token, userInfo, "")
-			if err != nil {
-				w_err = wsjson.Write(r.Context(), connStream, err.Error())
+			userData, jwtToken, app_err := i9auth.RegisterUser(token, userInfo, "")
+			if app_err != nil {
+				w_err = wsjson.Write(r.Context(), connStream, app_err.Error())
 			} else {
 
 				go createUserAccountDirectory(userData["username"].(string))
@@ -98,7 +98,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 func createUserAccountDirectory(userAcc string) {
 	fsHome := "i9FSHome"
 
-	if hdir, err := os.UserHomeDir(); err == nil {
+	if hdir, app_err := os.UserHomeDir(); app_err == nil {
 		fsHome = hdir + "/i9FSHome"
 	}
 
