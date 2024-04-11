@@ -1,10 +1,23 @@
-package appprocs
+package appcontrollers
 
 import (
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
 )
+
+var fsHome = "i9FSHome"
+
+func init() {
+	if hdir, err := os.UserHomeDir(); err == nil {
+		fsHome = hdir + "/i9FSHome"
+	}
+}
+
+func RFSCmd(w http.ResponseWriter, r *http.Request) {
+
+}
 
 type FSCmdArgs struct {
 	WorkPath    string

@@ -1,4 +1,4 @@
-package appprocs
+package appcontrollers
 
 import "os"
 
