@@ -1,150 +1,65 @@
 package appcontrollers
 
 import (
+	"fmt"
+	"i9rfs/server/services/rfscmdservice"
+	"log"
 	"net/http"
-	"os"
-	"os/exec"
-	"strings"
+
+	"nhooyr.io/websocket"
+	"nhooyr.io/websocket/wsjson"
 )
 
-var fsHome = "i9FSHome"
-
-func init() {
-	if hdir, err := os.UserHomeDir(); err == nil {
-		fsHome = hdir + "/i9FSHome"
-	}
-}
-
 func RFSCmd(w http.ResponseWriter, r *http.Request) {
-
-}
-
-type FSCmdArgs struct {
-	WorkPath    string
-	CmdLineArgs []string
-}
-
-func (rfs RFS) PathExists(args struct {
-	WorkPath string
-	Path     string
-}, reply *string) error {
-	_, err := os.ReadDir(fsHome + args.WorkPath + args.Path)
+	connStream, err := websocket.Accept(w, r, wsOpts)
 	if err != nil {
-		*reply = "no"
-		return nil
+		return
 	}
 
-	*reply = "yes"
+	defer connStream.CloseNow()
 
-	return nil
-}
-
-func (rfs RFS) CreateFile(args FSCmdArgs, reply *string) error {
-	cmd := exec.Command("touch", args.CmdLineArgs...)
-	cmd.Dir = fsHome + args.WorkPath
-
-	err := cmd.Run()
-	if err != nil {
-		return err
+	var body struct {
+		WorkPath string
+		Command  string
+		CmdArgs  []string
 	}
 
-	*reply = ""
-	return nil
-}
+	for {
+		r_err := wsjson.Read(r.Context(), connStream, &body)
+		if r_err != nil {
+			log.Println(r_err)
+			return
+		}
 
-func (rfs RFS) CreateDirectory(args FSCmdArgs, reply *string) error {
-	cmd := exec.Command("mkdir", args.CmdLineArgs...)
-	cmd.Dir = fsHome + args.WorkPath
+		var (
+			resp    any
+			app_err error
+		)
 
-	err := cmd.Run()
-	if err != nil {
-		return err
+		switch body.Command {
+		case "cd":
+			resp, app_err = rfscmdservice.PathExists(body.WorkPath)
+		case "ls", "cat", "touch", "mkdir", "cp", "mv", "rm", "rmdir":
+			resp, app_err = rfscmdservice.FileMgmtCommand(body.WorkPath, body.Command, body.CmdArgs)
+		case "upload", "up":
+			resp, app_err = rfscmdservice.UploadFile(body.WorkPath, body.CmdArgs)
+		case "download", "down":
+			resp, app_err = rfscmdservice.DownloadFile(body.WorkPath, body.CmdArgs)
+		default:
+			resp, app_err = fmt.Sprintf("Command '%s' not found", body.Command), nil
+		}
+
+		var w_err error
+
+		if app_err != nil {
+			w_err = wsjson.Write(r.Context(), connStream, app_err.Error())
+		} else {
+			w_err = wsjson.Write(r.Context(), connStream, resp)
+		}
+
+		if w_err != nil {
+			log.Println(w_err)
+			return
+		}
 	}
-
-	*reply = ""
-	return nil
-}
-
-func (rfs RFS) RemoveDirectory(args FSCmdArgs, reply *string) error {
-	cmd := exec.Command("rmdir", args.CmdLineArgs...)
-	cmd.Dir = fsHome + args.WorkPath
-
-	err := cmd.Run()
-	if err != nil {
-		return err
-	}
-
-	*reply = ""
-	return nil
-}
-
-func (rfs RFS) Remove(args FSCmdArgs, reply *string) error {
-	cmd := exec.Command("rm", args.CmdLineArgs...)
-	cmd.Dir = fsHome + args.WorkPath
-
-	err := cmd.Run()
-	if err != nil {
-		return err
-	}
-
-	*reply = ""
-	return nil
-}
-
-func (rfs RFS) Copy(args FSCmdArgs, reply *string) error {
-	cmd := exec.Command("cp", args.CmdLineArgs...)
-	cmd.Dir = fsHome + args.WorkPath
-
-	err := cmd.Run()
-	if err != nil {
-		return err
-	}
-
-	*reply = ""
-	return nil
-}
-
-func (rfs RFS) MoveRename(args FSCmdArgs, reply *string) error {
-	cmd := exec.Command("mv", args.CmdLineArgs...)
-	cmd.Dir = fsHome + args.WorkPath
-
-	err := cmd.Run()
-	if err != nil {
-		return err
-	}
-
-	*reply = ""
-	return nil
-}
-
-func (rfs RFS) PrintContent(args FSCmdArgs, reply *string) error {
-	strb := &strings.Builder{}
-
-	cmd := exec.Command("cat", args.CmdLineArgs...)
-	cmd.Dir = fsHome + args.WorkPath
-	cmd.Stdout = strb
-
-	err := cmd.Run()
-	if err != nil {
-		return err
-	}
-
-	*reply = strb.String()
-	return nil
-}
-
-func (rfs RFS) ListDirectoryContents(args FSCmdArgs, reply *string) error {
-	strb := &strings.Builder{}
-
-	cmd := exec.Command("ls", args.CmdLineArgs...)
-	cmd.Dir = fsHome + args.WorkPath
-	cmd.Stdout = strb
-
-	err := cmd.Run()
-	if err != nil {
-		return err
-	}
-
-	*reply = strb.String()
-	return nil
 }
