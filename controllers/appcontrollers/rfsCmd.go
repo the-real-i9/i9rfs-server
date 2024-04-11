@@ -46,7 +46,7 @@ func RFSCmd(w http.ResponseWriter, r *http.Request) {
 		case "download", "down":
 			resp, app_err = rfscmdservice.DownloadFile(body.WorkPath, body.CmdArgs)
 		default:
-			resp, app_err = fmt.Sprintf("Command '%s' not found", body.Command), nil
+			resp, app_err = "", fmt.Errorf("Command '%s' not found", body.Command)
 		}
 
 		var w_err error
