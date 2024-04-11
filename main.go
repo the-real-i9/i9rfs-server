@@ -2,12 +2,10 @@ package main
 
 import (
 	"i9pkgs/i9helpers"
-	appprocs "i9rfs/server/procs/app"
-	authprocs "i9rfs/server/procs/auth"
+	approutes "i9rfs/server/routes/app"
+	authroutes "i9rfs/server/routes/auth"
 	"log"
-	"net"
 	"net/http"
-	"net/rpc"
 )
 
 func main() {
@@ -19,20 +17,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	authSignup := new(authprocs.AuthSignup)
-	auth := new(authprocs.Auth)
-	rfs := new(appprocs.RFS)
+	authroutes.Init()
+	approutes.Init()
 
-	rpc.Register(auth)
-	rpc.Register(authSignup)
-	rpc.Register(rfs)
-
-	rpc.HandleHTTP()
-
-	listn, err := net.Listen("tcp", ":8000")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	go http.Serve(listn, nil)
+	go http.ListenAndServe(":8000", nil)
 }
