@@ -2,8 +2,9 @@ package main
 
 import (
 	"i9pkgs/i9helpers"
-	approutes "i9rfs/server/routes/app"
-	authroutes "i9rfs/server/routes/auth"
+	"i9rfs/server/routes/approutes"
+	"i9rfs/server/routes/authroutes"
+
 	"log"
 	"net/http"
 )

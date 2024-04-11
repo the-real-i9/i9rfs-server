@@ -1,7 +1,7 @@
 package authroutes
 
 import (
-	authcontrollers "i9rfs/server/controllers/auth"
+	"i9rfs/server/controllers/authcontrollers"
 	"net/http"
 )
 

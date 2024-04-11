@@ -12,8 +12,7 @@ import (
 )
 
 func Signup(w http.ResponseWriter, r *http.Request) {
-	opts := &websocket.AcceptOptions{OriginPatterns: []string{"localhost"}}
-	connStream, err := websocket.Accept(w, r, opts)
+	connStream, err := websocket.Accept(w, r, wsOpts)
 	if err != nil {
 		return
 	}
@@ -37,6 +36,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 			email := body.Data.(string)
 
 			var w_err error
+
 			signupSessionJwt, app_err := i9auth.RequestNewAccount(email)
 			if app_err != nil {
 				w_err = wsjson.Write(r.Context(), connStream, app_err.Error())
@@ -54,6 +54,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 			code := body.Data.(int)
 
 			var w_err error
+
 			msg, app_err := i9auth.VerifyEmail(token, code)
 			if app_err != nil {
 				w_err = wsjson.Write(r.Context(), connStream, app_err.Error())
@@ -71,6 +72,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 			userInfo := body.Data.(map[string]any)
 
 			var w_err error
+
 			userData, jwtToken, app_err := i9auth.RegisterUser(token, userInfo, "")
 			if app_err != nil {
 				w_err = wsjson.Write(r.Context(), connStream, app_err.Error())

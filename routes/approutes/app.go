@@ -1,7 +1,7 @@
 package approutes
 
 import (
-	appcontrollers "i9rfs/server/controllers/app"
+	"i9rfs/server/controllers/appcontrollers"
 	"net/http"
 )
 

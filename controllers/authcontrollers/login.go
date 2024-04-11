@@ -10,8 +10,7 @@ import (
 )
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	opts := &websocket.AcceptOptions{OriginPatterns: []string{"localhost"}}
-	connStream, err := websocket.Accept(w, r, opts)
+	connStream, err := websocket.Accept(w, r, wsOpts)
 	if err != nil {
 		return
 	}
@@ -31,6 +30,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var w_err error
+
 		userData, jwtToken, app_err := i9auth.Login(body.EmailOrUsername, body.Password, "")
 		if app_err != nil {
 			w_err = wsjson.Write(r.Context(), connStream, app_err.Error())
