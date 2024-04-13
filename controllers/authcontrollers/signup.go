@@ -50,8 +50,10 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 			}
 
 		case "second", "two":
-			token := r.Header.Get("Authorization")
-			code := body.Data.(int)
+			recvData := body.Data.(map[string]any)
+
+			token := recvData["signup_session_jwt"].(string)
+			code := recvData["code"].(int)
 
 			var w_err error
 
@@ -68,8 +70,10 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 			}
 
 		case "third", "three":
-			token := r.Header.Get("Authorization")
-			userInfo := body.Data.(map[string]any)
+			recvData := body.Data.(map[string]any)
+
+			token := recvData["signup_session_jwt"].(string)
+			userInfo := recvData["user_info"].(map[string]any)
 
 			var w_err error
 
