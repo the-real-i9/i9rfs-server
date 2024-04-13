@@ -100,7 +100,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 func createUserAccountDirectory(userAcc string) {
 	fsHome := "i9FSHome"
 
-	if hdir, app_err := os.UserHomeDir(); app_err == nil {
+	if hdir, app_err := os.UserCacheDir(); app_err == nil {
 		fsHome = hdir + "/i9FSHome"
 	}
 

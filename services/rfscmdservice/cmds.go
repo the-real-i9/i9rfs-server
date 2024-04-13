@@ -9,7 +9,7 @@ import (
 var fsHome = "i9FSHome"
 
 func init() {
-	if hdir, err := os.UserHomeDir(); err == nil {
+	if hdir, err := os.UserCacheDir(); err == nil {
 		fsHome = hdir + "/i9FSHome"
 	}
 }
