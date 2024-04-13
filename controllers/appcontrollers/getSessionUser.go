@@ -22,10 +22,10 @@ func GetSessionUser(w http.ResponseWriter, r *http.Request) {
 	var w_err error
 
 	userData, app_err := i9auth.GetSessionUser(token)
-	if err != nil {
-		w_err = wsjson.Write(r.Context(), connStream, app_err.Error())
+	if app_err != nil {
+		w_err = wsjson.Write(r.Context(), connStream, map[string]any{"status": "f", "error": app_err.Error()})
 	} else {
-		w_err = wsjson.Write(r.Context(), connStream, userData)
+		w_err = wsjson.Write(r.Context(), connStream, map[string]any{"status": "s", "body": userData})
 	}
 
 	if w_err != nil {
