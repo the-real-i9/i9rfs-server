@@ -2,6 +2,7 @@ package authcontrollers
 
 import (
 	"i9pkgs/i9auth"
+	"i9pkgs/i9helpers"
 	"log"
 	"net/http"
 	"os"
@@ -50,14 +51,17 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 			}
 
 		case "second", "two":
-			recvData := body.Data.(map[string]any)
 
-			token := recvData["signup_session_jwt"].(string)
-			code := recvData["code"].(int)
+			var recvData struct {
+				Token string `json:"signup_session_jwt"`
+				Code  int    `json:"code"`
+			}
+
+			i9helpers.ParseTo(body.Data, &recvData)
 
 			var w_err error
 
-			msg, app_err := i9auth.VerifyEmail(token, code)
+			msg, app_err := i9auth.VerifyEmail(recvData.Token, recvData.Code)
 			if app_err != nil {
 				w_err = wsjson.Write(r.Context(), connStream, map[string]any{"status": "f", "error": app_err.Error()})
 			} else {
@@ -70,14 +74,17 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 			}
 
 		case "third", "three":
-			recvData := body.Data.(map[string]any)
 
-			token := recvData["signup_session_jwt"].(string)
-			userInfo := recvData["user_info"].(map[string]any)
+			var recvData struct {
+				Token    string         `json:"signup_session_jwt"`
+				UserInfo map[string]any `json:"user_info"`
+			}
+
+			i9helpers.ParseTo(body.Data, &recvData)
 
 			var w_err error
 
-			userData, jwtToken, app_err := i9auth.RegisterUser(token, userInfo, "")
+			userData, jwtToken, app_err := i9auth.RegisterUser(recvData.Token, recvData.UserInfo, "")
 			if app_err != nil {
 				w_err = wsjson.Write(r.Context(), connStream, map[string]any{"status": "f", "error": app_err.Error()})
 			} else {

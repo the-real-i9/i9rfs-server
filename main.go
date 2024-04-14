@@ -21,5 +21,5 @@ func main() {
 	authroutes.Init()
 	approutes.Init()
 
-	go http.ListenAndServe(":8000", nil)
+	http.ListenAndServe(":8000", nil)
 }
