@@ -37,7 +37,7 @@ func RFSCmd(w http.ResponseWriter, r *http.Request) {
 		)
 
 		switch body.Command {
-		case "cd":
+		case "pex":
 			resp, app_err = rfscmdservice.PathExists(body.WorkPath)
 		case "ls", "cat", "touch", "mkdir", "cp", "mv", "rm", "rmdir":
 			resp, app_err = rfscmdservice.FileMgmtCommand(body.WorkPath, body.Command, body.CmdArgs)
