@@ -46,15 +46,15 @@ func RFSCmd(w http.ResponseWriter, r *http.Request) {
 		case "download", "down":
 			resp, app_err = rfscmdservice.DownloadFile(body.WorkPath, body.CmdArgs)
 		default:
-			resp, app_err = "", fmt.Errorf("Command '%s' not found", body.Command)
+			resp, app_err = "", fmt.Errorf("command '%s' not found", body.Command)
 		}
 
 		var w_err error
 
 		if app_err != nil {
-			w_err = wsjson.Write(r.Context(), connStream, app_err.Error())
+			w_err = wsjson.Write(r.Context(), connStream, map[string]any{"status": "f", "error": app_err.Error()})
 		} else {
-			w_err = wsjson.Write(r.Context(), connStream, resp)
+			w_err = wsjson.Write(r.Context(), connStream, map[string]any{"status": "s", "body": resp})
 		}
 
 		if w_err != nil {
