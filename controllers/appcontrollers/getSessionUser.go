@@ -1,7 +1,6 @@
 package appcontrollers
 
 import (
-	"context"
 	"i9pkgs/i9auth"
 	"log"
 	"net/http"
@@ -24,9 +23,9 @@ func GetSessionUser(w http.ResponseWriter, r *http.Request) {
 
 	userData, app_err := i9auth.GetSessionUser(token)
 	if app_err != nil {
-		w_err = wsjson.Write(context.Background(), connStream, map[string]any{"status": "f", "error": app_err.Error()})
+		w_err = wsjson.Write(r.Context(), connStream, map[string]any{"status": "f", "error": app_err.Error()})
 	} else {
-		w_err = wsjson.Write(context.Background(), connStream, map[string]any{"status": "s", "body": userData})
+		w_err = wsjson.Write(r.Context(), connStream, map[string]any{"status": "s", "body": userData})
 	}
 
 	if w_err != nil {

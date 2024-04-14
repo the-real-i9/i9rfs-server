@@ -1,7 +1,6 @@
 package authcontrollers
 
 import (
-	"context"
 	"i9pkgs/i9auth"
 	"log"
 	"net/http"
@@ -24,7 +23,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for {
-		r_err := wsjson.Read(context.Background(), connStream, &body)
+		r_err := wsjson.Read(r.Context(), connStream, &body)
 		if r_err != nil {
 			log.Println(r_err)
 			return
@@ -34,7 +33,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 		userData, jwtToken, app_err := i9auth.Login(body.EmailOrUsername, body.Password, "")
 		if app_err != nil {
-			w_err = wsjson.Write(context.Background(), connStream, map[string]any{"status": "f", "error": app_err.Error()})
+			w_err = wsjson.Write(r.Context(), connStream, map[string]any{"status": "f", "error": app_err.Error()})
 		} else {
 
 			respData := map[string]any{
@@ -43,7 +42,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 				"auth_jwt": jwtToken,
 			}
 
-			w_err = wsjson.Write(context.Background(), connStream, map[string]any{"status": "s", "body": respData})
+			w_err = wsjson.Write(r.Context(), connStream, map[string]any{"status": "s", "body": respData})
 		}
 
 		if w_err != nil {
