@@ -1,6 +1,7 @@
 package appcontrollers
 
 import (
+	"context"
 	"fmt"
 	"i9rfs/server/services/rfscmdservice"
 	"log"
@@ -25,7 +26,7 @@ func RFSCmd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for {
-		r_err := wsjson.Read(r.Context(), connStream, &body)
+		r_err := wsjson.Read(context.Background(), connStream, &body)
 		if r_err != nil {
 			log.Println(r_err)
 			return
@@ -52,9 +53,9 @@ func RFSCmd(w http.ResponseWriter, r *http.Request) {
 		var w_err error
 
 		if app_err != nil {
-			w_err = wsjson.Write(r.Context(), connStream, map[string]any{"status": "f", "error": app_err.Error()})
+			w_err = wsjson.Write(context.Background(), connStream, map[string]any{"status": "f", "error": app_err.Error()})
 		} else {
-			w_err = wsjson.Write(r.Context(), connStream, map[string]any{"status": "s", "body": resp})
+			w_err = wsjson.Write(context.Background(), connStream, map[string]any{"status": "s", "body": resp})
 		}
 
 		if w_err != nil {
