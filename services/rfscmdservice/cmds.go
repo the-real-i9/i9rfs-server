@@ -47,7 +47,7 @@ func UploadFile(workPath string, cmdArgs []string) (string, error) {
 		return "", err
 	}
 
-	return "Operation Successful\n", nil
+	return "Operation Successful", nil
 }
 
 func DownloadFile(workPath string, cmdArgs []string) ([]byte, error) {
