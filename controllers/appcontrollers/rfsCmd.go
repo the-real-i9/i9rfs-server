@@ -28,7 +28,8 @@ func RFSCmd(w http.ResponseWriter, r *http.Request) {
 	for {
 		r_err := wsjson.Read(r.Context(), connStream, &body)
 		if r_err != nil {
-			if ce := r_err.(*websocket.CloseError); errors.As(r_err, ce) {
+			if errors.As(r_err, &websocket.CloseError{}) {
+				ce := r_err.(*websocket.CloseError)
 				log.Print(ce.Error())
 				return
 			}
