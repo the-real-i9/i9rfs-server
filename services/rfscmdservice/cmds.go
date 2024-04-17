@@ -27,7 +27,7 @@ func PathExists(workPath string) (bool, error) {
 func FileMgmtCommand(workPath string, command string, cmdArgs []string) (string, error) {
 	strb := &strings.Builder{}
 
-	cmd := exec.Command(command)
+	cmd := exec.Command(command, cmdArgs...)
 	cmd.Dir = fsHome + workPath
 	cmd.Stdout = strb
 
