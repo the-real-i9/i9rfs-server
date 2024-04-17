@@ -45,14 +45,12 @@ func RFSCmd(w http.ResponseWriter, r *http.Request) {
 		switch body.Command {
 		case "pex":
 			resp, app_err = rfscmdservice.PathExists(body.WorkPath)
-		case "ls", "cat", "touch", "mkdir", "cp", "mv", "rm", "rmdir":
-			resp, app_err = rfscmdservice.FileMgmtCommand(body.WorkPath, body.Command, body.CmdArgs)
 		case "upload", "up":
 			resp, app_err = rfscmdservice.UploadFile(body.WorkPath, body.CmdArgs)
 		case "download", "down":
 			resp, app_err = rfscmdservice.DownloadFile(body.WorkPath, body.CmdArgs)
 		default:
-			resp, app_err = "", fmt.Errorf("command '%s' not found", body.Command)
+			resp, app_err = rfscmdservice.BashCommand(body.WorkPath, body.Command, body.CmdArgs)
 		}
 
 		var w_err error

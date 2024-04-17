@@ -25,7 +25,7 @@ func PathExists(workPath string) (bool, error) {
 	return true, nil
 }
 
-func FileMgmtCommand(workPath string, command string, cmdArgs []string) (string, error) {
+func BashCommand(workPath string, command string, cmdArgs []string) (string, error) {
 	res := &strings.Builder{}
 	errRes := &strings.Builder{}
 
