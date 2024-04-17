@@ -28,9 +28,9 @@ func RFSCmd(w http.ResponseWriter, r *http.Request) {
 	for {
 		r_err := wsjson.Read(r.Context(), connStream, &body)
 		if r_err != nil {
-			if errors.As(r_err, &websocket.CloseError{}) {
-				ce := r_err.(*websocket.CloseError)
-				log.Print(ce.Error())
+			var ce websocket.CloseError
+			if errors.As(r_err, &ce) {
+				fmt.Printf("(websocket closed): %d (%s): reason: %s\n", ce.Code, ce.Code.String(), ce.Reason)
 				return
 			}
 			log.Println(r_err)
