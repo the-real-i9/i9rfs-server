@@ -40,14 +40,14 @@ func FileMgmtCommand(workPath string, command string, cmdArgs []string) (string,
 }
 
 func UploadFile(workPath string, cmdArgs []string) (string, error) {
-	data := []byte(cmdArgs[0])
+	fileData := []byte(cmdArgs[0])
 	filename := cmdArgs[1]
 
-	if err := os.WriteFile(fsHome+workPath+"/"+filename, data, 0644); err != nil {
+	if err := os.WriteFile(fsHome+workPath+"/"+filename, fileData, 0644); err != nil {
 		return "", err
 	}
 
-	return "Operation Successful", nil
+	return "Operation Successful\n", nil
 }
 
 func DownloadFile(workPath string, cmdArgs []string) ([]byte, error) {
