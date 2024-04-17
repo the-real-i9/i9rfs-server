@@ -1,6 +1,7 @@
 package rfscmdservice
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -25,18 +26,20 @@ func PathExists(workPath string) (bool, error) {
 }
 
 func FileMgmtCommand(workPath string, command string, cmdArgs []string) (string, error) {
-	strb := &strings.Builder{}
+	res := &strings.Builder{}
+	errRes := &strings.Builder{}
 
 	cmd := exec.Command(command, cmdArgs...)
 	cmd.Dir = fsHome + workPath
-	cmd.Stdout = strb
+	cmd.Stdout = res
+	cmd.Stderr = errRes
 
 	err := cmd.Run()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%s", errRes.String())
 	}
 
-	return strb.String(), nil
+	return res.String(), nil
 }
 
 func UploadFile(workPath string, cmdArgs []string) (string, error) {
