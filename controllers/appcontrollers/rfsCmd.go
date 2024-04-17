@@ -1,6 +1,7 @@
 package appcontrollers
 
 import (
+	"errors"
 	"fmt"
 	"i9rfs/server/services/rfscmdservice"
 	"log"
@@ -27,6 +28,10 @@ func RFSCmd(w http.ResponseWriter, r *http.Request) {
 	for {
 		r_err := wsjson.Read(r.Context(), connStream, &body)
 		if r_err != nil {
+			if ce := r_err.(*websocket.CloseError); errors.As(r_err, ce) {
+				log.Print(ce.Error())
+				return
+			}
 			log.Println(r_err)
 			return
 		}
