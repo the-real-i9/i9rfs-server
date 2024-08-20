@@ -7,8 +7,8 @@ type SignupSessionData struct {
 }
 
 type ClientUser struct {
-	Id       int
-	Username string
+	Id       int    `json:"id"`
+	Username string `json:"username"`
 }
 
 type WSResp struct {

@@ -12,9 +12,9 @@ type User struct {
 	Username string `json:"username"`
 }
 
-func New(email string, username string, password string, geolocation string) (*User, error) {
+func New(email, username, password string) (*User, error) {
 
-	user, err := helpers.QueryRowType[User]("SELECT * FROM new_user($1, $2, $3, $4)", email, username, password, geolocation)
+	user, err := helpers.QueryRowType[User]("SELECT * FROM new_user($1, $2, $3)", email, username, password)
 
 	if err != nil {
 		log.Println(fmt.Errorf("userModel.go: NewUser: %s", err))

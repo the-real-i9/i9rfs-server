@@ -2,7 +2,6 @@ package appcontrollers
 
 import (
 	"i9rfs/server/appTypes"
-	user "i9rfs/server/models/userModel"
 	"log"
 
 	"github.com/gofiber/contrib/websocket"
@@ -10,7 +9,7 @@ import (
 )
 
 var GetSessionUser = websocket.New(func(c *websocket.Conn) {
-	user := c.Locals("user").(user.User)
+	user := c.Locals("user").(appTypes.ClientUser)
 
 	var body struct{}
 

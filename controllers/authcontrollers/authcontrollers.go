@@ -119,7 +119,7 @@ var RegisterUser = websocket.New(func(c *websocket.Conn) {
 			continue
 		}
 
-		userData, authJwt, app_err := authservices.RegisterUser(sessionData.SessionId, sessionData.Email, body.Username, body.Password, body.Geolocation)
+		userData, authJwt, app_err := authservices.RegisterUser(sessionData.SessionId, sessionData.Email, body.Username, body.Password)
 
 		if app_err != nil {
 			w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err))

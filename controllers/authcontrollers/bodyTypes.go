@@ -40,9 +40,8 @@ func (b verifyEmailBody) Validate() error {
 }
 
 type registerUserBody struct {
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	Geolocation string `json:"geolocation"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 func (b registerUserBody) Validate() error {
@@ -56,10 +55,6 @@ func (b registerUserBody) Validate() error {
 		validation.Field(&b.Password,
 			validation.Required,
 			validation.Length(8, 0).Error("minimum of 8 characters"),
-		),
-		validation.Field(&b.Geolocation,
-			validation.Required,
-			validation.Match(regexp.MustCompile("^[0-9]+, ?[0-9]+, ?[0-9]+$")).Error("invalid circle format; format: pointX, pointY, radiusR"),
 		),
 	)
 }

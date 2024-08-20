@@ -66,7 +66,7 @@ func VerifyEmail(sessionId string, inputVerfCode int, email string) (string, err
 	return signupSessionJwt, nil
 }
 
-func RegisterUser(sessionId string, email string, username string, password string, geolocation string) (*user.User, string, error) {
+func RegisterUser(sessionId, email, username, password string) (*user.User, string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Println(fmt.Errorf("authServices.go: RegisterUser: %s", err))
@@ -82,7 +82,7 @@ func RegisterUser(sessionId string, email string, username string, password stri
 		return nil, "", fmt.Errorf("username error: username '%s' is unavailable", username)
 	}
 
-	user, err := user.New(email, username, string(hashedPassword), geolocation)
+	user, err := user.New(email, username, string(hashedPassword))
 	if err != nil {
 		return nil, "", err
 	}
@@ -97,7 +97,7 @@ func RegisterUser(sessionId string, email string, username string, password stri
 	return user, authJwt, nil
 }
 
-func Signin(emailOrUsername string, password string) (*user.User, string, error) {
+func Signin(emailOrUsername, password string) (*user.User, string, error) {
 	user, err := user.FindOne(emailOrUsername)
 	if err != nil {
 		return nil, "", err

@@ -39,3 +39,15 @@ func RegisterUser(c *fiber.Ctx) error {
 
 	return c.Next()
 }
+
+func GetSessionUser(c *fiber.Ctx) error {
+	jwtData := c.Locals("auth").(*jwt.Token).Claims.(jwt.MapClaims)["data"].(map[string]any)
+
+	var user appTypes.ClientUser
+
+	helpers.MapToStruct(jwtData, &user)
+
+	c.Locals("user", user)
+
+	return c.Next()
+}

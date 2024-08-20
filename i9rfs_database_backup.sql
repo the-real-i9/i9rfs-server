@@ -17,6 +17,18 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: i9rfs_user_t; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.i9rfs_user_t AS (
+	id integer,
+	username character varying
+);
+
+
+ALTER TYPE public.i9rfs_user_t OWNER TO postgres;
+
+--
 -- Name: account_exists(character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -50,6 +62,41 @@ $$;
 ALTER FUNCTION public.end_signup_session(in_session_id uuid) OWNER TO postgres;
 
 --
+-- Name: get_user(anycompatible); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.get_user(unique_identifier anycompatible) RETURNS SETOF public.i9rfs_user_t
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RETURN QUERY SELECT id, username FROM i9rfs_user 
+  WHERE unique_identifier::varchar = ANY(ARRAY[id::varchar, email, username]);
+  
+  RETURN;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_user(unique_identifier anycompatible) OWNER TO postgres;
+
+--
+-- Name: get_user_password(anycompatible); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.get_user_password(unique_identifier anycompatible, OUT password character varying) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  SELECT i9rfs_user.password FROM i9rfs_user 
+  WHERE unique_identifier::varchar = ANY(ARRAY[id::varchar, email, username]) 
+  INTO "password";
+END;
+$$;
+
+
+ALTER FUNCTION public.get_user_password(unique_identifier anycompatible, OUT password character varying) OWNER TO postgres;
+
+--
 -- Name: new_signup_session(character varying, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -69,6 +116,25 @@ $$;
 
 
 ALTER FUNCTION public.new_signup_session(in_email character varying, in_verification_code integer, OUT session_id uuid) OWNER TO postgres;
+
+--
+-- Name: new_user(character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.new_user(in_email character varying, in_username character varying, in_password character varying) RETURNS SETOF public.i9rfs_user_t
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RETURN QUERY INSERT INTO i9rfs_user (email, username, password) 
+  VALUES (in_email, in_username, in_password)
+  RETURNING id, username;
+  
+  RETURN;
+END;
+$$;
+
+
+ALTER FUNCTION public.new_user(in_email character varying, in_username character varying, in_password character varying) OWNER TO postgres;
 
 --
 -- Name: verify_email(uuid, integer); Type: FUNCTION; Schema: public; Owner: postgres
