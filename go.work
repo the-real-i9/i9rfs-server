@@ -1,9 +1,0 @@
-go 1.22.0
-
-use (
-  .
-  ../../../pkg/i9-packages/i9auth
-  ../../../pkg/i9-packages/i9helpers
-  ../../../pkg/i9-packages/i9services
-  ../../../pkg/i9-packages/i9types
-)

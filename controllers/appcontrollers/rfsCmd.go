@@ -1,40 +1,35 @@
 package appcontrollers
 
 import (
-	"errors"
-	"fmt"
+	"i9rfs/server/appTypes"
+	"i9rfs/server/helpers"
 	"i9rfs/server/services/rfscmdservice"
 	"log"
-	"net/http"
 
-	"nhooyr.io/websocket"
-	"nhooyr.io/websocket/wsjson"
+	"github.com/gofiber/contrib/websocket"
+	"github.com/gofiber/fiber/v2"
 )
 
-func RFSCmd(w http.ResponseWriter, r *http.Request) {
-	connStream, err := websocket.Accept(w, r, wsOpts)
-	if err != nil {
-		return
-	}
+var RFSCmd = websocket.New(func(c *websocket.Conn) {
 
-	defer connStream.CloseNow()
-
-	var body struct {
-		WorkPath string
-		Command  string
-		CmdArgs  []string
-	}
+	var w_err error
 
 	for {
-		r_err := wsjson.Read(r.Context(), connStream, &body)
+		var body struct {
+			WorkPath string
+			Command  string
+			CmdArgs  []string
+		}
+
+		if w_err != nil {
+			log.Println(w_err)
+			break
+		}
+
+		r_err := c.ReadJSON(&body)
 		if r_err != nil {
-			var ce websocket.CloseError
-			if errors.As(r_err, &ce) {
-				fmt.Printf("(websocket closed): %d (%s): reason: %s\n", ce.Code, ce.Code.String(), ce.Reason)
-				return
-			}
 			log.Println(r_err)
-			return
+			break
 		}
 
 		var (
@@ -53,17 +48,14 @@ func RFSCmd(w http.ResponseWriter, r *http.Request) {
 			resp, app_err = rfscmdservice.BashCommand(body.WorkPath, body.Command, body.CmdArgs)
 		}
 
-		var w_err error
-
 		if app_err != nil {
-			w_err = wsjson.Write(r.Context(), connStream, map[string]any{"status": "f", "error": app_err.Error()})
-		} else {
-			w_err = wsjson.Write(r.Context(), connStream, map[string]any{"status": "s", "body": resp})
+			w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err))
+			continue
 		}
 
-		if w_err != nil {
-			log.Println(w_err)
-			return
-		}
+		w_err = c.WriteJSON(appTypes.WSResp{
+			StatusCode: fiber.StatusOK,
+			Body:       resp,
+		})
 	}
-}
+})

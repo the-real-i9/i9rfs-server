@@ -1,25 +1,34 @@
 package main
 
 import (
-	"i9pkgs/i9helpers"
+	"i9rfs/server/initializers"
 	"i9rfs/server/routes/approutes"
 	"i9rfs/server/routes/authroutes"
 
-	"log"
 	"net/http"
+
+	"github.com/gofiber/contrib/websocket"
+	"github.com/gofiber/fiber/v2"
 )
 
+func init() {
+	initializers.InitApp()
+}
+
 func main() {
-	if err := i9helpers.LoadEnv(".env"); err != nil {
-		log.Fatal(err)
-	}
+	app := fiber.New(fiber.Config{DisableStartupMessage: true})
 
-	if err := i9helpers.InitDBPool(); err != nil {
-		log.Fatal(err)
-	}
+	app.Use("/", func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			return c.Next()
+		}
 
-	authroutes.Init()
-	approutes.Init()
+		return fiber.ErrUpgradeRequired
+	})
+
+	app.Route("/api/auth", authroutes.Init)
+
+	app.Route("/api/app", approutes.Init)
 
 	http.ListenAndServe(":8000", nil)
 }

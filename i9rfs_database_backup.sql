@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 16.1
--- Dumped by pg_dump version 16.1
+-- Dumped from database version 16.3 (Ubuntu 16.3-1.pgdg22.04+1)
+-- Dumped by pg_dump version 16.3 (Ubuntu 16.3-1.pgdg22.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -15,6 +15,83 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: account_exists(character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.account_exists(email_or_username character varying, OUT exist boolean) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  SELECT EXISTS(SELECT 1 FROM i9rfs_user WHERE email_or_username = ANY(ARRAY[email, username])) INTO exist;
+END;
+$$;
+
+
+ALTER FUNCTION public.account_exists(email_or_username character varying, OUT exist boolean) OWNER TO postgres;
+
+--
+-- Name: end_signup_session(uuid); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.end_signup_session(in_session_id uuid) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  DELETE FROM ongoing_signup 
+  WHERE session_id = in_session_id;
+  
+  RETURN true;
+END;
+$$;
+
+
+ALTER FUNCTION public.end_signup_session(in_session_id uuid) OWNER TO postgres;
+
+--
+-- Name: new_signup_session(character varying, integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.new_signup_session(in_email character varying, in_verification_code integer, OUT session_id uuid) RETURNS uuid
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  DELETE FROM ongoing_signup WHERE email = in_email;  
+  
+  INSERT INTO ongoing_signup (email, verification_code)
+  VALUES (in_email, in_verification_code)
+  RETURNING ongoing_signup.session_id INTO session_id;
+  
+  RETURN;
+END;
+$$;
+
+
+ALTER FUNCTION public.new_signup_session(in_email character varying, in_verification_code integer, OUT session_id uuid) OWNER TO postgres;
+
+--
+-- Name: verify_email(uuid, integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.verify_email(in_session_id uuid, in_verf_code integer, OUT is_success boolean) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN    
+  IF (SELECT verification_code FROM ongoing_signup WHERE session_id = in_session_id) = in_verf_code THEN
+    UPDATE ongoing_signup SET verified = true 
+        WHERE session_id = in_session_id;
+    is_success := true;
+  ELSE 
+    is_success := false;
+  END IF;
+  
+  RETURN;
+END;
+$$;
+
+
+ALTER FUNCTION public.verify_email(in_session_id uuid, in_verf_code integer, OUT is_success boolean) OWNER TO postgres;
 
 SET default_tablespace = '';
 
