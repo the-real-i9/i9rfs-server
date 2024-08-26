@@ -3,8 +3,8 @@ package helpers
 import (
 	"encoding/json"
 	"errors"
+	"i9rfs/server/appGlobals"
 	"i9rfs/server/appTypes"
-	"i9rfs/server/globalVars"
 )
 
 func MapToStruct(val map[string]any, structData any) {
@@ -20,8 +20,8 @@ func ToStruct(val any, structData any) {
 }
 
 func ErrResp(code int, err error) appTypes.WSResp {
-	if errors.Is(err, globalVars.ErrInternalServerError) {
-		return appTypes.WSResp{StatusCode: 500, Error: globalVars.ErrInternalServerError.Error()}
+	if errors.Is(err, appGlobals.ErrInternalServerError) {
+		return appTypes.WSResp{StatusCode: 500, Error: appGlobals.ErrInternalServerError.Error()}
 	}
 
 	return appTypes.WSResp{StatusCode: code, Error: err.Error()}

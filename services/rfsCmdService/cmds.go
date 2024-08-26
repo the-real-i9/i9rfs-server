@@ -2,17 +2,16 @@ package rfsCmdService
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"strings"
 )
 
-var fsHome = "i9FSHome"
+var fsHome = ""
 
-func init() {
-	if hdir, err := os.UserCacheDir(); err == nil {
-		fsHome = hdir + "/i9FSHome"
-	}
+func SetHome(homePath string) {
+	fsHome = homePath
 }
 
 func PathExists(workPath string) (bool, error) {
@@ -46,7 +45,7 @@ func UploadFile(workPath string, cmdArgs []string) (string, error) {
 	fileData := []byte(cmdArgs[0])
 	filename := cmdArgs[1]
 
-	if err := os.WriteFile(fsHome+workPath+"/"+filename, fileData, 0644); err != nil {
+	if err := os.WriteFile(fsHome+workPath+"/"+filename, fileData, fs.ModePerm); err != nil {
 		return "", err
 	}
 

@@ -2,8 +2,11 @@ package initializers
 
 import (
 	"context"
-	"i9rfs/server/globalVars"
+	"fmt"
+	"i9rfs/server/appGlobals"
+	"i9rfs/server/services/rfsCmdService"
 	"os"
+	"os/exec"
 
 	"cloud.google.com/go/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,7 +20,7 @@ func initGCSClient() error {
 		return err
 	}
 
-	globalVars.GCSClient = stClient
+	appGlobals.GCSClient = stClient
 
 	return nil
 }
@@ -27,9 +30,22 @@ func initDBPool() error {
 	if err != nil {
 		return err
 	}
-	globalVars.DBPool = pool
+	appGlobals.DBPool = pool
 
 	return nil
+}
+
+func initAppDataStore() {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+
+	appHomeDir := fmt.Sprintf("%s/.i9rfs-server/home", homeDir)
+
+	exec.Command("mkdir", "-p", appHomeDir).Run()
+
+	rfsCmdService.SetHome(appHomeDir)
 }
 
 func InitApp() error {
@@ -45,6 +61,8 @@ func InitApp() error {
 	if err := initGCSClient(); err != nil {
 		return err
 	}
+
+	initAppDataStore()
 
 	return nil
 }

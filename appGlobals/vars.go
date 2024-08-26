@@ -1,4 +1,4 @@
-package globalVars
+package appGlobals
 
 import (
 	"errors"

@@ -3,8 +3,8 @@ package authServices
 import (
 	"errors"
 	"fmt"
+	"i9rfs/server/appGlobals"
 	"i9rfs/server/appTypes"
-	"i9rfs/server/globalVars"
 	"i9rfs/server/helpers"
 	"i9rfs/server/models/appModel"
 	user "i9rfs/server/models/userModel"
@@ -70,7 +70,7 @@ func RegisterUser(sessionId, email, username, password string) (*user.User, stri
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Println(fmt.Errorf("authServices.go: RegisterUser: %s", err))
-		return nil, "", globalVars.ErrInternalServerError
+		return nil, "", appGlobals.ErrInternalServerError
 	}
 
 	accExists, err := appModel.AccountExists(username)
@@ -110,7 +110,7 @@ func Signin(emailOrUsername, password string) (*user.User, string, error) {
 	hashedPassword, err := helpers.QueryRowField[string]("SELECT password FROM get_user_password($1)", emailOrUsername)
 	if err != nil {
 		log.Println(fmt.Errorf("authServices.go: Signin: DB query error: get_user_password(): %s", err))
-		return nil, "", globalVars.ErrInternalServerError
+		return nil, "", appGlobals.ErrInternalServerError
 	}
 
 	cmp_err := bcrypt.CompareHashAndPassword([]byte(*hashedPassword), []byte(password))
@@ -119,7 +119,7 @@ func Signin(emailOrUsername, password string) (*user.User, string, error) {
 			return nil, "", fmt.Errorf("signin error: incorrect email/username or password")
 		} else {
 			log.Println(fmt.Errorf("authServices.go: Signin: %s", cmp_err))
-			return nil, "", globalVars.ErrInternalServerError
+			return nil, "", appGlobals.ErrInternalServerError
 		}
 	}
 

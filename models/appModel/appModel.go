@@ -2,7 +2,7 @@ package appModel
 
 import (
 	"fmt"
-	"i9rfs/server/globalVars"
+	"i9rfs/server/appGlobals"
 	"i9rfs/server/helpers"
 	"log"
 )
@@ -12,7 +12,7 @@ func AccountExists(emailOrUsername string) (bool, error) {
 
 	if err != nil {
 		log.Println(fmt.Errorf("appModel.go: AccountExists: %s", err))
-		return false, globalVars.ErrInternalServerError
+		return false, appGlobals.ErrInternalServerError
 	}
 
 	return *exist, nil
@@ -23,7 +23,7 @@ func NewSignupSession(email string, verfCode int) (string, error) {
 
 	if err != nil {
 		log.Println(fmt.Errorf("appModel.go: NewSignupSession: %s", err))
-		return "", globalVars.ErrInternalServerError
+		return "", appGlobals.ErrInternalServerError
 	}
 
 	return *sessionId, nil
@@ -34,7 +34,7 @@ func VerifyEmail(sessionId string, verfCode int) (bool, error) {
 
 	if err != nil {
 		log.Println(fmt.Errorf("appModel.go: VerifyEmail: %s", err))
-		return false, globalVars.ErrInternalServerError
+		return false, appGlobals.ErrInternalServerError
 	}
 
 	return *isSuccess, nil
