@@ -9,6 +9,27 @@ import (
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
+type signupBody struct {
+	Step         string         `json:"step"`
+	SessionToken string         `json:"sessionToken"`
+	Data         map[string]any `json:"data"`
+}
+
+func (b signupBody) Validate() error {
+	return validation.ValidateStruct(&b,
+		validation.Field(&b.Step,
+			validation.Required,
+			validation.In("one", "two", "three").Error("invalid step"),
+		),
+		validation.Field(&b.SessionToken,
+			validation.When(b.Step != "one", validation.Required),
+		),
+		validation.Field(&b.Data,
+			validation.Required,
+		),
+	)
+}
+
 type requestNewAccountBody struct {
 	Email string `json:"email"`
 }

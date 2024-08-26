@@ -5,6 +5,7 @@ import (
 	"i9rfs/server/appTypes"
 	"i9rfs/server/helpers"
 	"i9rfs/server/services/authServices"
+	"i9rfs/server/services/rfsCmdService"
 	"log"
 	"os"
 	"os/exec"
@@ -13,12 +14,11 @@ import (
 	"github.com/gofiber/fiber"
 )
 
-var RequestNewAccount = websocket.New(func(c *websocket.Conn) {
-
+var Signup = websocket.New(func(c *websocket.Conn) {
 	var w_err error
 
 	for {
-		var body requestNewAccountBody
+		var body signupBody
 
 		if w_err != nil {
 			log.Println(w_err)
@@ -37,107 +37,124 @@ var RequestNewAccount = websocket.New(func(c *websocket.Conn) {
 			continue
 		}
 
-		signupSessionJwt, app_err := authServices.RequestNewAccount(body.Email)
+		switch body.Step {
+		case "one":
+			resp := requestNewAccount(body.Data)
 
-		if app_err != nil {
-			w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err))
-			continue
+			w_err = c.WriteJSON(resp)
+
+		case "two":
+			sessionData, err := helpers.JwtVerify[appTypes.SignupSessionData](body.SessionToken, os.Getenv("SIGNUP_SESSION_JWT_SECRET"))
+
+			if err != nil {
+				w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnauthorized, err))
+				break
+			}
+
+			if sessionData.State != "verify email" {
+				w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnauthorized, err))
+				break
+			}
+
+			resp := verifyEmail(sessionData, body.Data)
+
+			w_err = c.WriteJSON(resp)
+
+		case "three":
+			sessionData, err := helpers.JwtVerify[appTypes.SignupSessionData](body.SessionToken, os.Getenv("SIGNUP_SESSION_JWT_SECRET"))
+
+			if err != nil {
+				w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnauthorized, err))
+				break
+			}
+
+			if sessionData.State != "register user" {
+				w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnauthorized, err))
+				break
+			}
+
+			resp := registerUser(sessionData, body.Data)
+
+			w_err = c.WriteJSON(resp)
 		}
-
-		w_err = c.WriteJSON(appTypes.WSResp{
-			StatusCode: fiber.StatusOK,
-			Body: map[string]any{
-				"msg":           "A 6-digit verification code has been sent to " + body.Email,
-				"session_token": signupSessionJwt,
-			},
-		})
 	}
 })
 
-var VerifyEmail = websocket.New(func(c *websocket.Conn) {
-	sessionData := c.Locals("signupSessionData").(appTypes.SignupSessionData)
+func requestNewAccount(data map[string]any) any {
 
-	var w_err error
+	var body requestNewAccountBody
 
-	for {
-		var body verifyEmailBody
+	helpers.MapToStruct(data, &body)
 
-		if w_err != nil {
-			log.Println(w_err)
-			break
-		}
-
-		r_err := c.ReadJSON(&body)
-		if r_err != nil {
-			log.Println(r_err)
-			break
-		}
-
-		if val_err := body.Validate(); val_err != nil {
-			w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnprocessableEntity, val_err))
-			continue
-		}
-
-		signupSessionJwt, app_err := authServices.VerifyEmail(sessionData.SessionId, body.Code, sessionData.Email)
-
-		if app_err != nil {
-			w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err))
-			continue
-		}
-
-		w_err = c.WriteJSON(appTypes.WSResp{
-			StatusCode: fiber.StatusOK,
-			Body: map[string]any{
-				"msg":           fmt.Sprintf("Your email '%s' has been verified!", sessionData.Email),
-				"session_token": signupSessionJwt,
-			},
-		})
+	if val_err := body.Validate(); val_err != nil {
+		return helpers.ErrResp(fiber.StatusUnprocessableEntity, val_err)
 	}
-})
 
-var RegisterUser = websocket.New(func(c *websocket.Conn) {
-	sessionData := c.Locals("signupSessionData").(appTypes.SignupSessionData)
+	signupSessionJwt, app_err := authServices.RequestNewAccount(body.Email)
 
-	var w_err error
-
-	for {
-		var body registerUserBody
-
-		if w_err != nil {
-			log.Println(w_err)
-			break
-		}
-
-		r_err := c.ReadJSON(&body)
-		if r_err != nil {
-			log.Println(r_err)
-			break
-		}
-
-		if val_err := body.Validate(); val_err != nil {
-			w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnprocessableEntity, val_err))
-			continue
-		}
-
-		userData, authJwt, app_err := authServices.RegisterUser(sessionData.SessionId, sessionData.Email, body.Username, body.Password)
-
-		if app_err != nil {
-			w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err))
-			continue
-		}
-
-		go createUserAccountDirectory(userData.Username)
-
-		w_err = c.WriteJSON(appTypes.WSResp{
-			StatusCode: fiber.StatusOK,
-			Body: map[string]any{
-				"msg":     "Signup success!",
-				"user":    userData,
-				"authJwt": authJwt,
-			},
-		})
+	if app_err != nil {
+		return helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err)
 	}
-})
+
+	return appTypes.WSResp{
+		StatusCode: fiber.StatusOK,
+		Body: map[string]any{
+			"msg":          "A 6-digit verification code has been sent to " + body.Email,
+			"sessionToken": signupSessionJwt,
+		},
+	}
+}
+
+func verifyEmail(sessionData *appTypes.SignupSessionData, data map[string]any) any {
+	var body verifyEmailBody
+
+	helpers.MapToStruct(data, &body)
+
+	if val_err := body.Validate(); val_err != nil {
+		return helpers.ErrResp(fiber.StatusUnprocessableEntity, val_err)
+	}
+
+	signupSessionJwt, app_err := authServices.VerifyEmail(sessionData.SessionId, body.Code, sessionData.Email)
+
+	if app_err != nil {
+		return helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err)
+	}
+
+	return appTypes.WSResp{
+		StatusCode: fiber.StatusOK,
+		Body: map[string]any{
+			"msg":          fmt.Sprintf("Your email '%s' has been verified!", sessionData.Email),
+			"sessionToken": signupSessionJwt,
+		},
+	}
+}
+
+func registerUser(sessionData *appTypes.SignupSessionData, data map[string]any) any {
+	var body registerUserBody
+
+	helpers.MapToStruct(data, &body)
+
+	if val_err := body.Validate(); val_err != nil {
+		return helpers.ErrResp(fiber.StatusUnprocessableEntity, val_err)
+	}
+
+	userData, authJwt, app_err := authServices.RegisterUser(sessionData.SessionId, sessionData.Email, body.Username, body.Password)
+
+	if app_err != nil {
+		return helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err)
+	}
+
+	go createUserAccountDirectory(userData.Username)
+
+	return appTypes.WSResp{
+		StatusCode: fiber.StatusOK,
+		Body: map[string]any{
+			"msg":     "Signup success!",
+			"user":    userData,
+			"authJwt": authJwt,
+		},
+	}
+}
 
 var Signin = websocket.New(func(c *websocket.Conn) {
 
@@ -183,11 +200,7 @@ var Signin = websocket.New(func(c *websocket.Conn) {
 })
 
 func createUserAccountDirectory(userAcc string) {
-	fsHome := "i9FSHome"
-
-	if hdir, app_err := os.UserCacheDir(); app_err == nil {
-		fsHome = hdir + "/i9FSHome"
-	}
+	fsHome := rfsCmdService.GetHome()
 
 	exec.Command("mkdir", "-p", fsHome+"/"+userAcc).Run()
 }

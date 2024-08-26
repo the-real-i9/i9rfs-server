@@ -14,6 +14,10 @@ func SetHome(homePath string) {
 	fsHome = homePath
 }
 
+func GetHome() string {
+	return fsHome
+}
+
 func PathExists(workPath string) (bool, error) {
 	f, err := os.Open(fsHome + workPath)
 	if err != nil {
