@@ -2,7 +2,7 @@ package initializers
 
 import (
 	"context"
-	"i9rfs/server/globals"
+	"i9rfs/server/globalVars"
 	"os"
 
 	"cloud.google.com/go/storage"
@@ -17,7 +17,7 @@ func initGCSClient() error {
 		return err
 	}
 
-	globals.GCSClient = stClient
+	globalVars.GCSClient = stClient
 
 	return nil
 }
@@ -27,7 +27,7 @@ func initDBPool() error {
 	if err != nil {
 		return err
 	}
-	globals.DBPool = pool
+	globalVars.DBPool = pool
 
 	return nil
 }

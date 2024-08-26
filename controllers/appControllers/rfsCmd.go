@@ -1,9 +1,9 @@
-package appcontrollers
+package appControllers
 
 import (
 	"i9rfs/server/appTypes"
 	"i9rfs/server/helpers"
-	"i9rfs/server/services/rfscmdservice"
+	"i9rfs/server/services/rfsCmdService"
 	"log"
 
 	"github.com/gofiber/contrib/websocket"
@@ -39,13 +39,13 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 
 		switch body.Command {
 		case "pex":
-			resp, app_err = rfscmdservice.PathExists(body.WorkPath)
+			resp, app_err = rfsCmdService.PathExists(body.WorkPath)
 		case "upload", "up":
-			resp, app_err = rfscmdservice.UploadFile(body.WorkPath, body.CmdArgs)
+			resp, app_err = rfsCmdService.UploadFile(body.WorkPath, body.CmdArgs)
 		case "download", "down":
-			resp, app_err = rfscmdservice.DownloadFile(body.WorkPath, body.CmdArgs)
+			resp, app_err = rfsCmdService.DownloadFile(body.WorkPath, body.CmdArgs)
 		default:
-			resp, app_err = rfscmdservice.BashCommand(body.WorkPath, body.Command, body.CmdArgs)
+			resp, app_err = rfsCmdService.BashCommand(body.WorkPath, body.Command, body.CmdArgs)
 		}
 
 		if app_err != nil {

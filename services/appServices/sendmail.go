@@ -1,4 +1,4 @@
-package appservices
+package appServices
 
 import (
 	"crypto/tls"

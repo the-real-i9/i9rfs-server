@@ -1,4 +1,4 @@
-package rfscmdservice
+package rfsCmdService
 
 import (
 	"fmt"

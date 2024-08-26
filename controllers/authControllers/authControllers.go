@@ -1,10 +1,10 @@
-package authcontrollers
+package authControllers
 
 import (
 	"fmt"
 	"i9rfs/server/appTypes"
 	"i9rfs/server/helpers"
-	"i9rfs/server/services/authservices"
+	"i9rfs/server/services/authServices"
 	"log"
 	"os"
 	"os/exec"
@@ -37,7 +37,7 @@ var RequestNewAccount = websocket.New(func(c *websocket.Conn) {
 			continue
 		}
 
-		signupSessionJwt, app_err := authservices.RequestNewAccount(body.Email)
+		signupSessionJwt, app_err := authServices.RequestNewAccount(body.Email)
 
 		if app_err != nil {
 			w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err))
@@ -78,7 +78,7 @@ var VerifyEmail = websocket.New(func(c *websocket.Conn) {
 			continue
 		}
 
-		signupSessionJwt, app_err := authservices.VerifyEmail(sessionData.SessionId, body.Code, sessionData.Email)
+		signupSessionJwt, app_err := authServices.VerifyEmail(sessionData.SessionId, body.Code, sessionData.Email)
 
 		if app_err != nil {
 			w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err))
@@ -119,7 +119,7 @@ var RegisterUser = websocket.New(func(c *websocket.Conn) {
 			continue
 		}
 
-		userData, authJwt, app_err := authservices.RegisterUser(sessionData.SessionId, sessionData.Email, body.Username, body.Password)
+		userData, authJwt, app_err := authServices.RegisterUser(sessionData.SessionId, sessionData.Email, body.Username, body.Password)
 
 		if app_err != nil {
 			w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err))
@@ -162,7 +162,7 @@ var Signin = websocket.New(func(c *websocket.Conn) {
 			continue
 		}
 
-		userData, authJwt, app_err := authservices.Signin(body.EmailOrUsername, body.Password)
+		userData, authJwt, app_err := authServices.Signin(body.EmailOrUsername, body.Password)
 
 		if app_err != nil {
 			w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err))

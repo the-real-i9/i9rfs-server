@@ -2,7 +2,7 @@ package user
 
 import (
 	"fmt"
-	"i9rfs/server/globals"
+	"i9rfs/server/globalVars"
 	"i9rfs/server/helpers"
 	"log"
 )
@@ -18,7 +18,7 @@ func New(email, username, password string) (*User, error) {
 
 	if err != nil {
 		log.Println(fmt.Errorf("userModel.go: NewUser: %s", err))
-		return nil, globals.ErrInternalServerError
+		return nil, globalVars.ErrInternalServerError
 	}
 
 	return user, nil
@@ -30,7 +30,7 @@ func FindOne(uniqueId string) (*User, error) {
 
 	if err != nil {
 		log.Println(fmt.Errorf("userModel.go: FindOne: %s", err))
-		return nil, globals.ErrInternalServerError
+		return nil, globalVars.ErrInternalServerError
 	}
 
 	return user, nil

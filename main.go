@@ -2,8 +2,8 @@ package main
 
 import (
 	"i9rfs/server/initializers"
-	"i9rfs/server/routes/approutes"
-	"i9rfs/server/routes/authroutes"
+	"i9rfs/server/routes/appRoutes"
+	"i9rfs/server/routes/authRoutes"
 
 	"net/http"
 
@@ -26,9 +26,9 @@ func main() {
 		return fiber.ErrUpgradeRequired
 	})
 
-	app.Route("/api/auth", authroutes.Init)
+	app.Route("/api/auth", authRoutes.Init)
 
-	app.Route("/api/app", approutes.Init)
+	app.Route("/api/app", appRoutes.Init)
 
 	http.ListenAndServe(":8000", nil)
 }

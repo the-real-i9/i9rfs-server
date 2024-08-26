@@ -1,5 +1,5 @@
 --
--- PostgreSQL database dump
+-- i9QL database dump
 --
 
 -- Dumped from database version 16.3 (Ubuntu 16.3-1.pgdg22.04+1)
@@ -17,7 +17,7 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: i9rfs_user_t; Type: TYPE; Schema: public; Owner: postgres
+-- Name: i9rfs_user_t; Type: TYPE; Schema: public; Owner: i9
 --
 
 CREATE TYPE public.i9rfs_user_t AS (
@@ -26,10 +26,10 @@ CREATE TYPE public.i9rfs_user_t AS (
 );
 
 
-ALTER TYPE public.i9rfs_user_t OWNER TO postgres;
+ALTER TYPE public.i9rfs_user_t OWNER TO i9;
 
 --
--- Name: account_exists(character varying); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: account_exists(character varying); Type: FUNCTION; Schema: public; Owner: i9
 --
 
 CREATE FUNCTION public.account_exists(email_or_username character varying, OUT exist boolean) RETURNS boolean
@@ -41,10 +41,10 @@ END;
 $$;
 
 
-ALTER FUNCTION public.account_exists(email_or_username character varying, OUT exist boolean) OWNER TO postgres;
+ALTER FUNCTION public.account_exists(email_or_username character varying, OUT exist boolean) OWNER TO i9;
 
 --
--- Name: end_signup_session(uuid); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: end_signup_session(uuid); Type: FUNCTION; Schema: public; Owner: i9
 --
 
 CREATE FUNCTION public.end_signup_session(in_session_id uuid) RETURNS boolean
@@ -59,10 +59,10 @@ END;
 $$;
 
 
-ALTER FUNCTION public.end_signup_session(in_session_id uuid) OWNER TO postgres;
+ALTER FUNCTION public.end_signup_session(in_session_id uuid) OWNER TO i9;
 
 --
--- Name: get_user(anycompatible); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: get_user(anycompatible); Type: FUNCTION; Schema: public; Owner: i9
 --
 
 CREATE FUNCTION public.get_user(unique_identifier anycompatible) RETURNS SETOF public.i9rfs_user_t
@@ -77,10 +77,10 @@ END;
 $$;
 
 
-ALTER FUNCTION public.get_user(unique_identifier anycompatible) OWNER TO postgres;
+ALTER FUNCTION public.get_user(unique_identifier anycompatible) OWNER TO i9;
 
 --
--- Name: get_user_password(anycompatible); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: get_user_password(anycompatible); Type: FUNCTION; Schema: public; Owner: i9
 --
 
 CREATE FUNCTION public.get_user_password(unique_identifier anycompatible, OUT password character varying) RETURNS character varying
@@ -94,10 +94,10 @@ END;
 $$;
 
 
-ALTER FUNCTION public.get_user_password(unique_identifier anycompatible, OUT password character varying) OWNER TO postgres;
+ALTER FUNCTION public.get_user_password(unique_identifier anycompatible, OUT password character varying) OWNER TO i9;
 
 --
--- Name: new_signup_session(character varying, integer); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: new_signup_session(character varying, integer); Type: FUNCTION; Schema: public; Owner: i9
 --
 
 CREATE FUNCTION public.new_signup_session(in_email character varying, in_verification_code integer, OUT session_id uuid) RETURNS uuid
@@ -115,10 +115,10 @@ END;
 $$;
 
 
-ALTER FUNCTION public.new_signup_session(in_email character varying, in_verification_code integer, OUT session_id uuid) OWNER TO postgres;
+ALTER FUNCTION public.new_signup_session(in_email character varying, in_verification_code integer, OUT session_id uuid) OWNER TO i9;
 
 --
--- Name: new_user(character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: new_user(character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: i9
 --
 
 CREATE FUNCTION public.new_user(in_email character varying, in_username character varying, in_password character varying) RETURNS SETOF public.i9rfs_user_t
@@ -134,10 +134,10 @@ END;
 $$;
 
 
-ALTER FUNCTION public.new_user(in_email character varying, in_username character varying, in_password character varying) OWNER TO postgres;
+ALTER FUNCTION public.new_user(in_email character varying, in_username character varying, in_password character varying) OWNER TO i9;
 
 --
--- Name: verify_email(uuid, integer); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: verify_email(uuid, integer); Type: FUNCTION; Schema: public; Owner: i9
 --
 
 CREATE FUNCTION public.verify_email(in_session_id uuid, in_verf_code integer, OUT is_success boolean) RETURNS boolean
@@ -157,14 +157,14 @@ END;
 $$;
 
 
-ALTER FUNCTION public.verify_email(in_session_id uuid, in_verf_code integer, OUT is_success boolean) OWNER TO postgres;
+ALTER FUNCTION public.verify_email(in_session_id uuid, in_verf_code integer, OUT is_success boolean) OWNER TO i9;
 
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
 --
--- Name: i9rfs_user; Type: TABLE; Schema: public; Owner: postgres
+-- Name: i9rfs_user; Type: TABLE; Schema: public; Owner: i9
 --
 
 CREATE TABLE public.i9rfs_user (
@@ -175,10 +175,10 @@ CREATE TABLE public.i9rfs_user (
 );
 
 
-ALTER TABLE public.i9rfs_user OWNER TO postgres;
+ALTER TABLE public.i9rfs_user OWNER TO i9;
 
 --
--- Name: i9rfs_user_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: i9rfs_user_id_seq; Type: SEQUENCE; Schema: public; Owner: i9
 --
 
 CREATE SEQUENCE public.i9rfs_user_id_seq
@@ -190,17 +190,17 @@ CREATE SEQUENCE public.i9rfs_user_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE public.i9rfs_user_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.i9rfs_user_id_seq OWNER TO i9;
 
 --
--- Name: i9rfs_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: i9rfs_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: i9
 --
 
 ALTER SEQUENCE public.i9rfs_user_id_seq OWNED BY public.i9rfs_user.id;
 
 
 --
--- Name: ongoing_signup; Type: TABLE; Schema: public; Owner: postgres
+-- Name: ongoing_signup; Type: TABLE; Schema: public; Owner: i9
 --
 
 CREATE TABLE public.ongoing_signup (
@@ -211,17 +211,17 @@ CREATE TABLE public.ongoing_signup (
 );
 
 
-ALTER TABLE public.ongoing_signup OWNER TO postgres;
+ALTER TABLE public.ongoing_signup OWNER TO i9;
 
 --
--- Name: i9rfs_user id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: i9rfs_user id; Type: DEFAULT; Schema: public; Owner: i9
 --
 
 ALTER TABLE ONLY public.i9rfs_user ALTER COLUMN id SET DEFAULT nextval('public.i9rfs_user_id_seq'::regclass);
 
 
 --
--- Name: i9rfs_user i9rfs_user_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: i9rfs_user i9rfs_user_pkey; Type: CONSTRAINT; Schema: public; Owner: i9
 --
 
 ALTER TABLE ONLY public.i9rfs_user
@@ -229,7 +229,7 @@ ALTER TABLE ONLY public.i9rfs_user
 
 
 --
--- Name: ongoing_signup ongoing_signup_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: ongoing_signup ongoing_signup_pkey; Type: CONSTRAINT; Schema: public; Owner: i9
 --
 
 ALTER TABLE ONLY public.ongoing_signup
@@ -237,6 +237,6 @@ ALTER TABLE ONLY public.ongoing_signup
 
 
 --
--- PostgreSQL database dump complete
+-- i9QL database dump complete
 --
 

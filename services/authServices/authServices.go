@@ -1,14 +1,14 @@
-package authservices
+package authServices
 
 import (
 	"errors"
 	"fmt"
 	"i9rfs/server/appTypes"
-	"i9rfs/server/globals"
+	"i9rfs/server/globalVars"
 	"i9rfs/server/helpers"
 	"i9rfs/server/models/appModel"
 	user "i9rfs/server/models/userModel"
-	"i9rfs/server/services/appservices"
+	"i9rfs/server/services/appServices"
 	"log"
 	"math/rand"
 	"os"
@@ -29,7 +29,7 @@ func RequestNewAccount(email string) (string, error) {
 
 	verfCode, expires := rand.Intn(899999)+100000, time.Now().UTC().Add(1*time.Hour)
 
-	go appservices.SendMail(email, "Email Verification", fmt.Sprintf("Your email verification code is: <b>%d</b>", verfCode))
+	go appServices.SendMail(email, "Email Verification", fmt.Sprintf("Your email verification code is: <b>%d</b>", verfCode))
 
 	sessionId, err := appModel.NewSignupSession(email, verfCode)
 	if err != nil {
@@ -55,7 +55,7 @@ func VerifyEmail(sessionId string, inputVerfCode int, email string) (string, err
 		return "", fmt.Errorf("email verification error: incorrect verification code")
 	}
 
-	go appservices.SendMail(email, "Email Verification Success", fmt.Sprintf("Your email %s has been verified!", email))
+	go appServices.SendMail(email, "Email Verification Success", fmt.Sprintf("Your email %s has been verified!", email))
 
 	signupSessionJwt := helpers.JwtSign(appTypes.SignupSessionData{
 		SessionId: sessionId,
@@ -70,7 +70,7 @@ func RegisterUser(sessionId, email, username, password string) (*user.User, stri
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Println(fmt.Errorf("authServices.go: RegisterUser: %s", err))
-		return nil, "", globals.ErrInternalServerError
+		return nil, "", globalVars.ErrInternalServerError
 	}
 
 	accExists, err := appModel.AccountExists(username)
@@ -110,7 +110,7 @@ func Signin(emailOrUsername, password string) (*user.User, string, error) {
 	hashedPassword, err := helpers.QueryRowField[string]("SELECT password FROM get_user_password($1)", emailOrUsername)
 	if err != nil {
 		log.Println(fmt.Errorf("authServices.go: Signin: DB query error: get_user_password(): %s", err))
-		return nil, "", globals.ErrInternalServerError
+		return nil, "", globalVars.ErrInternalServerError
 	}
 
 	cmp_err := bcrypt.CompareHashAndPassword([]byte(*hashedPassword), []byte(password))
@@ -119,7 +119,7 @@ func Signin(emailOrUsername, password string) (*user.User, string, error) {
 			return nil, "", fmt.Errorf("signin error: incorrect email/username or password")
 		} else {
 			log.Println(fmt.Errorf("authServices.go: Signin: %s", cmp_err))
-			return nil, "", globals.ErrInternalServerError
+			return nil, "", globalVars.ErrInternalServerError
 		}
 	}
 

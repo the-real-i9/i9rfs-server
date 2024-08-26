@@ -1,7 +1,7 @@
-package approutes
+package appRoutes
 
 import (
-	"i9rfs/server/controllers/appcontrollers"
+	"i9rfs/server/controllers/appControllers"
 	"os"
 
 	jwtware "github.com/gofiber/contrib/jwt"
@@ -14,7 +14,7 @@ func Init(router fiber.Router) {
 		ContextKey: "auth",
 	}))
 
-	router.Get("/session_user", appcontrollers.GetSessionUser)
+	router.Get("/session_user", appControllers.GetSessionUser)
 
-	router.Get("/rfs", appcontrollers.RFSCmd)
+	router.Get("/rfs", appControllers.RFSCmd)
 }

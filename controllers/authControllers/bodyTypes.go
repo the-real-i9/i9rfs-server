@@ -1,4 +1,4 @@
-package authcontrollers
+package authControllers
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-package globals
+package globalVars
 
 import (
 	"errors"

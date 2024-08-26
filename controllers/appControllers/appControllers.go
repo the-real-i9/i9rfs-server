@@ -1,4 +1,4 @@
-package appcontrollers
+package appControllers
 
 import (
 	"i9rfs/server/appTypes"
