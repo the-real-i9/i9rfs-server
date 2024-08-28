@@ -9,5 +9,5 @@ import (
 func Init(router fiber.Router) {
 	router.Get("/signup", authControllers.Signup)
 
-	router.Get("/signin", authControllers.Signin)
+	router.Get("/login", authControllers.Login)
 }

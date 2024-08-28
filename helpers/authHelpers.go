@@ -41,9 +41,9 @@ func JwtVerify[T any](tokenString, secret string) (*T, error) {
 		return nil, err
 	}
 
-	var data *T
+	var data T
 
-	MapToStruct(token.Claims.(jwt.MapClaims)["data"].(map[string]any), data)
+	MapToStruct(token.Claims.(jwt.MapClaims)["data"].(map[string]any), &data)
 
-	return data, nil
+	return &data, nil
 }

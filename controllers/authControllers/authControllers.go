@@ -149,7 +149,7 @@ func registerUser(sessionData *appTypes.SignupSessionData, data map[string]any) 
 	}
 }
 
-var Signin = websocket.New(func(c *websocket.Conn) {
+var Login = websocket.New(func(c *websocket.Conn) {
 
 	var w_err error
 
@@ -172,7 +172,7 @@ var Signin = websocket.New(func(c *websocket.Conn) {
 			continue
 		}
 
-		userData, authJwt, app_err := authServices.Signin(body.EmailOrUsername, body.Password)
+		userData, authJwt, app_err := authServices.Login(body.EmailOrUsername, body.Password)
 
 		if app_err != nil {
 			w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err))
@@ -184,7 +184,7 @@ var Signin = websocket.New(func(c *websocket.Conn) {
 		w_err = c.WriteJSON(appTypes.WSResp{
 			StatusCode: fiber.StatusOK,
 			Body: map[string]any{
-				"msg":     "Signin success!",
+				"msg":     "Login success!",
 				"user":    userData,
 				"authJwt": authJwt,
 			},

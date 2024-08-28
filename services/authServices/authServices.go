@@ -97,7 +97,7 @@ func RegisterUser(sessionId, email, username, password string) (*user.User, stri
 	return user, authJwt, nil
 }
 
-func Signin(emailOrUsername, password string) (*user.User, string, error) {
+func Login(emailOrUsername, password string) (*user.User, string, error) {
 	user, err := user.FindOne(emailOrUsername)
 	if err != nil {
 		return nil, "", err
