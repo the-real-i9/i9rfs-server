@@ -2,8 +2,6 @@ package helpers
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -17,7 +15,7 @@ func JwtSign(data any, secret string, expires time.Time) string {
 	})
 
 	// sign token with secret -> (header.payload.signature)
-	jwt, err := token.SignedString([]byte(os.Getenv("SIGNUP_SESSION_JWT_SECRET")))
+	jwt, err := token.SignedString([]byte(secret))
 	if err != nil {
 		panic(err)
 	}
@@ -37,7 +35,6 @@ func JwtVerify[T any](tokenString, secret string) (*T, error) {
 	})
 
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 
