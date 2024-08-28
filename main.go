@@ -4,21 +4,22 @@ import (
 	"i9rfs/server/initializers"
 	"i9rfs/server/routes/appRoutes"
 	"i9rfs/server/routes/authRoutes"
-
-	"net/http"
+	"log"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 )
 
 func init() {
-	initializers.InitApp()
+	if err := initializers.InitApp(); err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func main() {
 	app := fiber.New(fiber.Config{DisableStartupMessage: true})
 
-	app.Use("/", func(c *fiber.Ctx) error {
+	app.Use(func(c *fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
 			return c.Next()
 		}
@@ -30,5 +31,5 @@ func main() {
 
 	app.Route("/api/app", appRoutes.Init)
 
-	http.ListenAndServe(":8000", nil)
+	app.Listen(":8000")
 }

@@ -1,7 +1,6 @@
 package authControllers
 
 import (
-	"fmt"
 	"i9rfs/server/appTypes"
 	"i9rfs/server/helpers"
 	"i9rfs/server/services/authServices"
@@ -98,10 +97,7 @@ func requestNewAccount(data map[string]any) any {
 
 	return appTypes.WSResp{
 		StatusCode: fiber.StatusOK,
-		Body: map[string]any{
-			"msg":          "A 6-digit verification code has been sent to " + body.Email,
-			"sessionToken": signupSessionJwt,
-		},
+		Body:       signupSessionJwt,
 	}
 }
 
@@ -122,10 +118,7 @@ func verifyEmail(sessionData *appTypes.SignupSessionData, data map[string]any) a
 
 	return appTypes.WSResp{
 		StatusCode: fiber.StatusOK,
-		Body: map[string]any{
-			"msg":          fmt.Sprintf("Your email '%s' has been verified!", sessionData.Email),
-			"sessionToken": signupSessionJwt,
-		},
+		Body:       signupSessionJwt,
 	}
 }
 

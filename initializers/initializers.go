@@ -11,11 +11,10 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
-	"google.golang.org/api/option"
 )
 
 func initGCSClient() error {
-	stClient, err := storage.NewClient(context.Background(), option.WithCredentialsFile("i9apps-storage.json"))
+	stClient, err := storage.NewClient(context.Background())
 	if err != nil {
 		return err
 	}
