@@ -1,8 +1,4 @@
-# i9 Remote File System - Server
-
-A Remote File System using WebSocket
-
-## ⚠ ATTENTION
+# ToDos
 
 I started rethinking the whole project from scratch and I figured that I've missed the goal of the project right from the beginning. I didn't quite understand what a remote file system should be like, I had a wrong knowledge of what it is.
 
