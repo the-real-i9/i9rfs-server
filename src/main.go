@@ -1,9 +1,9 @@
 package main
 
 import (
-	"i9rfs/server/initializers"
-	"i9rfs/server/routes/appRoutes"
-	"i9rfs/server/routes/authRoutes"
+	"i9rfs/server/src/initializers"
+	"i9rfs/server/src/routes/appRoutes"
+	"i9rfs/server/src/routes/authRoutes"
 	"log"
 
 	"github.com/gofiber/contrib/websocket"

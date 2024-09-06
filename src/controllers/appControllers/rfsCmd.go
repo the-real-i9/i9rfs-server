@@ -1,9 +1,9 @@
 package appControllers
 
 import (
-	"i9rfs/server/appTypes"
-	"i9rfs/server/helpers"
-	"i9rfs/server/services/rfsCmdService"
+	"i9rfs/server/src/appTypes"
+	"i9rfs/server/src/helpers"
+	"i9rfs/server/src/services/rfsCmdService"
 	"log"
 	"os"
 

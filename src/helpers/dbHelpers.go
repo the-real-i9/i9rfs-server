@@ -3,7 +3,7 @@ package helpers
 import (
 	"context"
 	"errors"
-	"i9rfs/server/appGlobals"
+	"i9rfs/server/src/appGlobals"
 
 	"github.com/jackc/pgx/v5"
 )

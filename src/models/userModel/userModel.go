@@ -2,8 +2,8 @@ package user
 
 import (
 	"fmt"
-	"i9rfs/server/appGlobals"
-	"i9rfs/server/helpers"
+	"i9rfs/server/src/appGlobals"
+	"i9rfs/server/src/helpers"
 	"log"
 )
 

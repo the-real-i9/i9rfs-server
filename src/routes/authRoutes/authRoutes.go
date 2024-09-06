@@ -1,7 +1,7 @@
 package authRoutes
 
 import (
-	"i9rfs/server/controllers/authControllers"
+	"i9rfs/server/src/controllers/authControllers"
 
 	"github.com/gofiber/fiber/v2"
 )

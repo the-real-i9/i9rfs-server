@@ -3,8 +3,8 @@ package initializers
 import (
 	"context"
 	"fmt"
-	"i9rfs/server/appGlobals"
-	"i9rfs/server/services/rfsCmdService"
+	"i9rfs/server/src/appGlobals"
+	"i9rfs/server/src/services/rfsCmdService"
 	"os"
 	"os/exec"
 

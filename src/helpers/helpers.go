@@ -3,8 +3,8 @@ package helpers
 import (
 	"encoding/json"
 	"errors"
-	"i9rfs/server/appGlobals"
-	"i9rfs/server/appTypes"
+	"i9rfs/server/src/appGlobals"
+	"i9rfs/server/src/appTypes"
 )
 
 func MapToStruct(val map[string]any, structData any) {
