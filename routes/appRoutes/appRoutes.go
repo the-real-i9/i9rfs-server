@@ -1,7 +1,7 @@
 package appRoutes
 
 import (
-	"i9rfs/server/src/controllers/appControllers"
+	"i9rfs/server/controllers/appControllers"
 
 	"github.com/gofiber/fiber/v2"
 )

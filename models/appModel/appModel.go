@@ -2,8 +2,8 @@ package appModel
 
 import (
 	"fmt"
-	"i9rfs/server/src/appGlobals"
-	"i9rfs/server/src/helpers"
+	"i9rfs/server/appGlobals"
+	"i9rfs/server/helpers"
 	"log"
 )
 

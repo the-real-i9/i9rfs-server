@@ -1,10 +1,10 @@
 package authControllers
 
 import (
-	"i9rfs/server/src/appTypes"
-	"i9rfs/server/src/helpers"
-	"i9rfs/server/src/services/authServices"
-	"i9rfs/server/src/services/rfsCmdService"
+	"i9rfs/server/appTypes"
+	"i9rfs/server/helpers"
+	"i9rfs/server/services/authServices"
+	"i9rfs/server/services/rfsCmdService"
 	"log"
 	"os"
 	"os/exec"
