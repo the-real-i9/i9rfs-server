@@ -12,6 +12,6 @@ var ErrInternalServerError = errors.New("internal server error: check logger")
 
 var GCSClient *storage.Client
 
-var DBClient *mongo.Client
+var DB *mongo.Database
 
 var SignupSessionStore *session.Store

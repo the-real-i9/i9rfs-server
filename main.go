@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"i9rfs/server/appGlobals"
 	"i9rfs/server/initializers"
 	"i9rfs/server/routes/appRoutes"
 	"i9rfs/server/routes/authRoutes"
@@ -13,17 +11,16 @@ import (
 )
 
 func init() {
-	if err := initializers.InitApp(); err != nil {
-		log.Fatalln(err)
-	}
+
 }
 
 func main() {
-	defer func() {
-		if err := appGlobals.DBClient.Disconnect(context.TODO()); err != nil {
-			log.Panic(err)
-		}
-	}()
+	cleanup, err := initializers.InitApp()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer cleanup()
 
 	app := fiber.New()
 
