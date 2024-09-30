@@ -1,21 +1,27 @@
 package appModel
 
 import (
+	"context"
 	"fmt"
 	"i9rfs/server/appGlobals"
 	"i9rfs/server/helpers"
 	"log"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func AccountExists(emailOrUsername string) (bool, error) {
-	exist, err := helpers.QueryRowField[bool]("SELECT exist FROM account_exists($1)", emailOrUsername)
-
+	count, err := appGlobals.DB.Collection("user").CountDocuments(context.TODO(), bson.M{"$or": bson.A{bson.M{"email": emailOrUsername}, bson.M{"username": emailOrUsername}}})
 	if err != nil {
-		log.Println(fmt.Errorf("appModel.go: AccountExists: %s", err))
+		log.Println(fmt.Errorf("appModel.go: NewSignupSession: %s", err))
 		return false, appGlobals.ErrInternalServerError
 	}
 
-	return *exist, nil
+	if count == 0 {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func NewSignupSession(email string, verfCode int) (string, error) {
