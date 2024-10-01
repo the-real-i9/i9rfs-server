@@ -2,17 +2,19 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"i9rfs/server/appGlobals"
-	"i9rfs/server/helpers"
 	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type User struct {
-	Id       string `json:"id"`
+	Id       string `bson:"_id" json:"id"`
 	Username string `json:"username"`
 }
 
@@ -31,14 +33,24 @@ func New(email, username, password string) (*User, error) {
 	return user, nil
 }
 
-func FindOne(uniqueId string) (*User, error) {
+func FindOne(uniqueIdent string) (*User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	user, err := helpers.QueryRowType[User]("SELECT * FROM get_user($1)", uniqueId)
+	uniqueIdentOid, _ := bson.ObjectIDFromHex(uniqueIdent)
 
-	if err != nil {
+	var user User
+
+	res := appGlobals.DB.Collection("user").FindOne(ctx, bson.M{"$or": bson.A{bson.M{"_id": uniqueIdentOid}, bson.M{"email": uniqueIdent}, bson.M{"username": uniqueIdent}}}, options.FindOne().SetProjection(bson.M{"username": 1}))
+	if err := res.Decode(&user); err != nil {
+
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+
 		log.Println(fmt.Errorf("userModel.go: FindOne: %s", err))
 		return nil, appGlobals.ErrInternalServerError
 	}
 
-	return user, nil
+	return &user, nil
 }

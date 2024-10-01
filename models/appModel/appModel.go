@@ -73,12 +73,12 @@ func VerifyEmail(sessionId string, verfCode int) (bool, error) {
 
 		// get verification code from coll
 		res := coll.FindOneAndUpdate(ctx, bson.M{"_id": sessionIdOid, "verification_code": verfCode}, bson.M{"$set": bson.M{"verified": true}})
-		if res.Err() != nil && !errors.Is(res.Err(), mongo.ErrNoDocuments) {
-			return nil, res.Err()
-		}
+		if err := res.Decode(&struct{}{}); err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				return false, nil
+			}
 
-		if !res.Acknowledged {
-			return false, nil
+			return false, err
 		}
 
 		return true, nil
