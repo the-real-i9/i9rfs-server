@@ -27,12 +27,13 @@ func initGCSClient() error {
 	return nil
 }
 
-func initDBClient() (func(), error) {
+func InitDBClient() (func(), error) {
 	client, err := mongo.Connect(options.Client().ApplyURI(os.Getenv("MONGODB_URL")))
 
 	if err != nil {
 		return nil, err
 	}
+
 	appGlobals.DB = client.Database(os.Getenv("MONGODB_DB"))
 
 	return func() {
@@ -56,24 +57,17 @@ func initAppDataStore() {
 	rfsCmdService.SetHome(appHomeDir)
 }
 
-func InitApp() (cleanup func(), err error) {
+func InitApp() error {
 
 	if err := godotenv.Load(".env"); err != nil {
-		return nil, err
-	}
-
-	dbcCleanup, err := initDBClient()
-	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := initGCSClient(); err != nil {
-		return nil, err
+		return err
 	}
 
 	initAppDataStore()
 
-	return func() {
-		dbcCleanup()
-	}, nil
+	return nil
 }

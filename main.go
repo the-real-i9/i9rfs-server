@@ -11,11 +11,14 @@ import (
 )
 
 func init() {
+	if err := initializers.InitApp(); err != nil {
+		log.Fatalln(err)
+	}
 
 }
 
 func main() {
-	cleanup, err := initializers.InitApp()
+	cleanup, err := initializers.InitDBClient()
 	if err != nil {
 		log.Fatalln(err)
 	}
