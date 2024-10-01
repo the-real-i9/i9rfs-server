@@ -14,8 +14,9 @@ import (
 )
 
 type User struct {
-	Id       string `bson:"_id" json:"id"`
-	Username string `json:"username"`
+	Id       string
+	Username string
+	Password string
 }
 
 func New(email, username, password string) (*User, error) {
@@ -39,10 +40,14 @@ func FindOne(uniqueIdent string) (*User, error) {
 
 	uniqueIdentOid, _ := bson.ObjectIDFromHex(uniqueIdent)
 
-	var user User
+	var resUser struct {
+		Id       bson.ObjectID `bson:"_id"`
+		Username string
+		Password string
+	}
 
-	res := appGlobals.DB.Collection("user").FindOne(ctx, bson.M{"$or": bson.A{bson.M{"_id": uniqueIdentOid}, bson.M{"email": uniqueIdent}, bson.M{"username": uniqueIdent}}}, options.FindOne().SetProjection(bson.M{"username": 1}))
-	if err := res.Decode(&user); err != nil {
+	res := appGlobals.DB.Collection("user").FindOne(ctx, bson.M{"$or": bson.A{bson.M{"_id": uniqueIdentOid}, bson.M{"email": uniqueIdent}, bson.M{"username": uniqueIdent}}}, options.FindOne().SetProjection(bson.M{"username": 1, "password": 1}))
+	if err := res.Decode(&resUser); err != nil {
 
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, nil
@@ -52,5 +57,5 @@ func FindOne(uniqueIdent string) (*User, error) {
 		return nil, appGlobals.ErrInternalServerError
 	}
 
-	return &user, nil
+	return &User{Id: resUser.Id.Hex(), Username: resUser.Username, Password: resUser.Password}, nil
 }

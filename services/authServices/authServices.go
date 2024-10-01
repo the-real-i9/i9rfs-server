@@ -66,7 +66,7 @@ func VerifyEmail(sessionId string, inputVerfCode int, email string) (string, err
 	return signupSessionJwt, nil
 }
 
-func RegisterUser(sessionId, email, username, password string) (*user.User, string, error) {
+func RegisterUser(sessionId, email, username, password string) (*appTypes.ClientUser, string, error) {
 	accExists, err := appModel.AccountExists(username)
 	if err != nil {
 		return nil, "", err
@@ -87,17 +87,19 @@ func RegisterUser(sessionId, email, username, password string) (*user.User, stri
 		return nil, "", err
 	}
 
-	authJwt := helpers.JwtSign(appTypes.ClientUser{
+	clientUser := &appTypes.ClientUser{
 		Id:       user.Id,
 		Username: user.Username,
-	}, os.Getenv("AUTH_JWT_SECRET"), time.Now().UTC().Add(365*24*time.Hour)) // 1 year
+	}
+
+	authJwt := helpers.JwtSign(clientUser, os.Getenv("AUTH_JWT_SECRET"), time.Now().UTC().Add(365*24*time.Hour)) // 1 year
 
 	appModel.EndSignupSession(sessionId)
 
-	return user, authJwt, nil
+	return clientUser, authJwt, nil
 }
 
-func Login(emailOrUsername, password string) (*user.User, string, error) {
+func Login(emailOrUsername, password string) (*appTypes.ClientUser, string, error) {
 	user, err := user.FindOne(emailOrUsername)
 	if err != nil {
 		return nil, "", err
@@ -107,13 +109,7 @@ func Login(emailOrUsername, password string) (*user.User, string, error) {
 		return nil, "", fmt.Errorf("signin error: incorrect email/username or password")
 	}
 
-	hashedPassword, err := helpers.QueryRowField[string]("SELECT password FROM get_user_password($1)", emailOrUsername)
-	if err != nil {
-		log.Println(fmt.Errorf("authServices.go: Signin: DB query error: get_user_password(): %s", err))
-		return nil, "", appGlobals.ErrInternalServerError
-	}
-
-	cmp_err := bcrypt.CompareHashAndPassword([]byte(*hashedPassword), []byte(password))
+	cmp_err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if cmp_err != nil {
 		if errors.Is(cmp_err, bcrypt.ErrMismatchedHashAndPassword) {
 			return nil, "", fmt.Errorf("signin error: incorrect email/username or password")
@@ -123,10 +119,12 @@ func Login(emailOrUsername, password string) (*user.User, string, error) {
 		}
 	}
 
-	authJwt := helpers.JwtSign(appTypes.ClientUser{
+	clientUser := &appTypes.ClientUser{
 		Id:       user.Id,
 		Username: user.Username,
-	}, os.Getenv("AUTH_JWT_SECRET"), time.Now().UTC().Add(365*24*time.Hour))
+	}
 
-	return user, authJwt, nil
+	authJwt := helpers.JwtSign(clientUser, os.Getenv("AUTH_JWT_SECRET"), time.Now().UTC().Add(365*24*time.Hour))
+
+	return clientUser, authJwt, nil
 }
