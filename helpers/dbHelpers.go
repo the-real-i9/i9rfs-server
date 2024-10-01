@@ -15,16 +15,19 @@ func MultiOpQuery(transactionQueries func(ctx context.Context) (any, error)) (an
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	txnOpts := options.Transaction().SetReadConcern(readconcern.Majority())
+	txnOpts := options.Transaction().SetReadConcern(readconcern.Majority()) // transaction options
 
 	opts := options.Session().SetDefaultTransactionOptions(txnOpts)
 
+	// transaction options for session
 	sess, err := appGlobals.DB.Client().StartSession(opts)
 	if err != nil {
 		log.Panic(err)
 	}
 	defer sess.EndSession(ctx)
 
+	// extending transaction options with read preference (just before starting the transaction)
+	// even if this is not set, "primary" will be the default
 	txnOpts.SetReadPreference(readpref.PrimaryPreferred())
 
 	result, err := sess.WithTransaction(ctx, transactionQueries, txnOpts)

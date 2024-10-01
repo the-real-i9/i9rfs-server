@@ -2,6 +2,7 @@ package appModel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"i9rfs/server/appGlobals"
 	"i9rfs/server/helpers"
@@ -9,15 +10,14 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 func AccountExists(emailOrUsername string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	coll := appGlobals.DB.Collection("user")
-
-	count, err := coll.CountDocuments(ctx, bson.M{"$or": bson.A{bson.M{"email": emailOrUsername}, bson.M{"username": emailOrUsername}}})
+	count, err := appGlobals.DB.Collection("user").CountDocuments(ctx, bson.M{"$or": bson.A{bson.M{"email": emailOrUsername}, bson.M{"username": emailOrUsername}}})
 	if err != nil {
 		log.Println(fmt.Errorf("appModel.go: NewSignupSession: %s", err))
 		return false, appGlobals.ErrInternalServerError
@@ -52,22 +52,45 @@ func NewSignupSession(email string, verfCode int) (string, error) {
 		return "", appGlobals.ErrInternalServerError
 	}
 
-	sessionId := result.(bson.ObjectID).String()
+	sessionId := result.(bson.ObjectID).Hex()
 
 	return sessionId, nil
 }
 
 func VerifyEmail(sessionId string, verfCode int) (bool, error) {
-	isSuccess, err := helpers.QueryRowField[bool]("SELECT is_success FROM verify_email($1, $2)", sessionId, verfCode)
+	sessionIdOid, err := bson.ObjectIDFromHex(sessionId)
+	if err != nil {
+		log.Println(fmt.Errorf("appModel.go: VerifyEmail: %s", err))
+		return false, appGlobals.ErrInternalServerError
+	}
+
+	result, err := helpers.MultiOpQuery(func(ctx context.Context) (any, error) {
+		coll := appGlobals.DB.Collection("ongoing_signup")
+
+		// get verification code from coll
+		res := coll.FindOneAndUpdate(ctx, bson.M{"_id": sessionIdOid, "verification_code": verfCode}, bson.M{"verified": true})
+		if res.Err() != nil && !errors.Is(res.Err(), mongo.ErrNoDocuments) {
+			return nil, res.Err()
+		}
+
+		if !res.Acknowledged {
+			return false, nil
+		}
+
+		return true, nil
+	})
 
 	if err != nil {
 		log.Println(fmt.Errorf("appModel.go: VerifyEmail: %s", err))
 		return false, appGlobals.ErrInternalServerError
 	}
 
-	return *isSuccess, nil
+	return result.(bool), nil
 }
 
 func EndSignupSession(sessionId string) {
-	go helpers.QueryRowField[bool]("SELECT end_signup_session ($1)", sessionId)
+	go func() {
+		sessionIdOid, _ := bson.ObjectIDFromHex(sessionId)
+		go appGlobals.DB.Collection("ongoing_signup").DeleteOne(context.TODO(), bson.M{"_id": sessionIdOid})
+	}()
 }
