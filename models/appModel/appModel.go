@@ -6,12 +6,18 @@ import (
 	"i9rfs/server/appGlobals"
 	"i9rfs/server/helpers"
 	"log"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func AccountExists(emailOrUsername string) (bool, error) {
-	count, err := appGlobals.DB.Collection("user").CountDocuments(context.TODO(), bson.M{"$or": bson.A{bson.M{"email": emailOrUsername}, bson.M{"username": emailOrUsername}}})
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	coll := appGlobals.DB.Collection("user")
+
+	count, err := coll.CountDocuments(ctx, bson.M{"$or": bson.A{bson.M{"email": emailOrUsername}, bson.M{"username": emailOrUsername}}})
 	if err != nil {
 		log.Println(fmt.Errorf("appModel.go: NewSignupSession: %s", err))
 		return false, appGlobals.ErrInternalServerError
@@ -25,14 +31,30 @@ func AccountExists(emailOrUsername string) (bool, error) {
 }
 
 func NewSignupSession(email string, verfCode int) (string, error) {
-	sessionId, err := helpers.QueryRowField[string]("SELECT session_id FROM new_signup_session($1, $2)", email, verfCode)
+	result, err := helpers.MultiOpQuery(func(ctx context.Context) (any, error) {
+		coll := appGlobals.DB.Collection("ongoing_signup")
+
+		_, err := coll.DeleteOne(ctx, bson.M{"email": email})
+		if err != nil {
+			return nil, err
+		}
+
+		res, err := coll.InsertOne(ctx, bson.M{"email": email, "verification_code": verfCode, "verified": false})
+		if err != nil {
+			return nil, err
+		}
+
+		return res.InsertedID, nil
+	})
 
 	if err != nil {
 		log.Println(fmt.Errorf("appModel.go: NewSignupSession: %s", err))
 		return "", appGlobals.ErrInternalServerError
 	}
 
-	return *sessionId, nil
+	sessionId := result.(bson.ObjectID).String()
+
+	return sessionId, nil
 }
 
 func VerifyEmail(sessionId string, verfCode int) (bool, error) {
