@@ -3,7 +3,7 @@ package appTypes
 type SignupSessionData struct {
 	SessionId string
 	Email     string
-	State     string
+	Step      string
 }
 
 type ClientUser struct {

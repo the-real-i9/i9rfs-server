@@ -50,7 +50,7 @@ var Signup = websocket.New(func(c *websocket.Conn) {
 				break
 			}
 
-			if sessionData.State != "verify email" {
+			if sessionData.Step != "verify email" {
 				w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnauthorized, err))
 				break
 			}
@@ -67,7 +67,7 @@ var Signup = websocket.New(func(c *websocket.Conn) {
 				break
 			}
 
-			if sessionData.State != "register user" {
+			if sessionData.Step != "register user" {
 				w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnauthorized, err))
 				break
 			}

@@ -23,7 +23,6 @@ func initGCSClient() error {
 	}
 
 	appGlobals.GCSClient = stClient
-
 	return nil
 }
 

@@ -39,7 +39,7 @@ func RequestNewAccount(email string) (string, error) {
 	signupSessionJwt := helpers.JwtSign(appTypes.SignupSessionData{
 		SessionId: sessionId,
 		Email:     email,
-		State:     "verify email",
+		Step:      "verify email",
 	}, os.Getenv("SIGNUP_SESSION_JWT_SECRET"), expires)
 
 	return signupSessionJwt, nil
@@ -60,7 +60,7 @@ func VerifyEmail(sessionId string, inputVerfCode int, email string) (string, err
 	signupSessionJwt := helpers.JwtSign(appTypes.SignupSessionData{
 		SessionId: sessionId,
 		Email:     email,
-		State:     "register user",
+		Step:      "register user",
 	}, os.Getenv("SIGNUP_SESSION_JWT_SECRET"), time.Now().UTC().Add(1*time.Hour))
 
 	return signupSessionJwt, nil

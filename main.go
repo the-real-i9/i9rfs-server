@@ -14,7 +14,6 @@ func init() {
 	if err := initializers.InitApp(); err != nil {
 		log.Fatalln(err)
 	}
-
 }
 
 func main() {
