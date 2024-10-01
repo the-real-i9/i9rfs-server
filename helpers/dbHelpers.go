@@ -2,17 +2,17 @@ package helpers
 
 import (
 	"context"
-	"i9rfs/server/appGlobals"
 	"log"
 	"time"
 
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
 )
 
-func MultiOpQuery(transactionQueries func(ctx context.Context) (any, error)) (any, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func MultiOpQuery(client *mongo.Client, transactionQueries func(ctx context.Context) (any, error)) (any, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	txnOpts := options.Transaction().SetReadConcern(readconcern.Majority()) // transaction options
@@ -20,7 +20,7 @@ func MultiOpQuery(transactionQueries func(ctx context.Context) (any, error)) (an
 	opts := options.Session().SetDefaultTransactionOptions(txnOpts)
 
 	// transaction options for session
-	sess, err := appGlobals.DB.Client().StartSession(opts)
+	sess, err := client.StartSession(opts)
 	if err != nil {
 		log.Panic(err)
 	}

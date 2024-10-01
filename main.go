@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"i9rfs/server/appGlobals"
 	"i9rfs/server/initializers"
 	"i9rfs/server/routes/appRoutes"
 	"i9rfs/server/routes/authRoutes"
@@ -17,14 +19,13 @@ func init() {
 }
 
 func main() {
-	cleanup, err := initializers.InitDBClient()
-	if err != nil {
-		log.Fatalln(err)
-	}
+	defer func() {
+		if err := appGlobals.DB.Client().Disconnect(context.TODO()); err != nil {
+			log.Panic(err)
+		}
+	}()
 
-	defer cleanup()
-
-	app := fiber.New()
+	app := fiber.New(fiber.Config{DisableStartupMessage: true})
 
 	app.Use(func(c *fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {

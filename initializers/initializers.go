@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"i9rfs/server/appGlobals"
 	"i9rfs/server/services/rfsCmdService"
-	"log"
 	"os"
 	"os/exec"
 
@@ -26,21 +25,16 @@ func initGCSClient() error {
 	return nil
 }
 
-func InitDBClient() (func(), error) {
+func initDBClient() error {
 	client, err := mongo.Connect(options.Client().ApplyURI(os.Getenv("MONGODB_URL")))
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	appGlobals.DB = client.Database(os.Getenv("MONGODB_DB"))
 
-	return func() {
-		if err := client.Disconnect(context.TODO()); err != nil {
-			log.Panic(err)
-		}
-
-	}, nil
+	return nil
 }
 
 func initAppDataStore() {
@@ -63,6 +57,10 @@ func InitApp() error {
 	}
 
 	if err := initGCSClient(); err != nil {
+		return err
+	}
+
+	if err := initDBClient(); err != nil {
 		return err
 	}
 

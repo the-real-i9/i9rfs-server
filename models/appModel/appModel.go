@@ -31,8 +31,10 @@ func AccountExists(emailOrUsername string) (bool, error) {
 }
 
 func NewSignupSession(email string, verfCode int) (string, error) {
-	result, err := helpers.MultiOpQuery(func(ctx context.Context) (any, error) {
-		coll := appGlobals.DB.Collection("ongoing_signup")
+	db := appGlobals.DB
+
+	result, err := helpers.MultiOpQuery(db.Client(), func(ctx context.Context) (any, error) {
+		coll := db.Collection("ongoing_signup")
 
 		_, err := coll.DeleteOne(ctx, bson.M{"email": email})
 		if err != nil {
@@ -64,8 +66,10 @@ func VerifyEmail(sessionId string, verfCode int) (bool, error) {
 		return false, appGlobals.ErrInternalServerError
 	}
 
-	result, err := helpers.MultiOpQuery(func(ctx context.Context) (any, error) {
-		coll := appGlobals.DB.Collection("ongoing_signup")
+	db := appGlobals.DB
+
+	result, err := helpers.MultiOpQuery(db.Client(), func(ctx context.Context) (any, error) {
+		coll := db.Collection("ongoing_signup")
 
 		// get verification code from coll
 		res := coll.FindOneAndUpdate(ctx, bson.M{"_id": sessionIdOid, "verification_code": verfCode}, bson.M{"verified": true})
