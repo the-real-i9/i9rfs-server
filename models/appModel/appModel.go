@@ -19,7 +19,7 @@ func AccountExists(emailOrUsername string) (bool, error) {
 
 	count, err := appGlobals.DB.Collection("user").CountDocuments(ctx, bson.M{"$or": bson.A{bson.M{"email": emailOrUsername}, bson.M{"username": emailOrUsername}}})
 	if err != nil {
-		log.Println(fmt.Errorf("appModel.go: NewSignupSession: %s", err))
+		log.Println(fmt.Errorf("appModel.go: AccountExists: %s", err))
 		return false, appGlobals.ErrInternalServerError
 	}
 
@@ -72,7 +72,7 @@ func VerifyEmail(sessionId string, verfCode int) (bool, error) {
 		coll := db.Collection("ongoing_signup")
 
 		// get verification code from coll
-		res := coll.FindOneAndUpdate(ctx, bson.M{"_id": sessionIdOid, "verification_code": verfCode}, bson.M{"verified": true})
+		res := coll.FindOneAndUpdate(ctx, bson.M{"_id": sessionIdOid, "verification_code": verfCode}, bson.M{"$set": bson.M{"verified": true}})
 		if res.Err() != nil && !errors.Is(res.Err(), mongo.ErrNoDocuments) {
 			return nil, res.Err()
 		}

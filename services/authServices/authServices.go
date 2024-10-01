@@ -29,12 +29,12 @@ func RequestNewAccount(email string) (string, error) {
 
 	verfCode, expires := rand.Intn(899999)+100000, time.Now().UTC().Add(1*time.Hour)
 
-	go appServices.SendMail(email, "Email Verification", fmt.Sprintf("Your email verification code is: <b>%d</b>", verfCode))
-
 	sessionId, err := appModel.NewSignupSession(email, verfCode)
 	if err != nil {
 		return "", err
 	}
+
+	go appServices.SendMail(email, "Email Verification", fmt.Sprintf("Your email verification code is: <b>%d</b>", verfCode))
 
 	signupSessionJwt := helpers.JwtSign(appTypes.SignupSessionData{
 		SessionId: sessionId,
@@ -67,12 +67,6 @@ func VerifyEmail(sessionId string, inputVerfCode int, email string) (string, err
 }
 
 func RegisterUser(sessionId, email, username, password string) (*user.User, string, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		log.Println(fmt.Errorf("authServices.go: RegisterUser: %s", err))
-		return nil, "", appGlobals.ErrInternalServerError
-	}
-
 	accExists, err := appModel.AccountExists(username)
 	if err != nil {
 		return nil, "", err
@@ -80,6 +74,12 @@ func RegisterUser(sessionId, email, username, password string) (*user.User, stri
 
 	if accExists {
 		return nil, "", fmt.Errorf("username error: username '%s' is unavailable", username)
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		log.Println(fmt.Errorf("authServices.go: RegisterUser: %s", err))
+		return nil, "", appGlobals.ErrInternalServerError
 	}
 
 	user, err := user.New(email, username, string(hashedPassword))

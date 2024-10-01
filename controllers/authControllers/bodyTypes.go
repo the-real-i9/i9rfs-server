@@ -61,6 +61,7 @@ func (b verifyEmailBody) Validate() error {
 }
 
 type registerUserBody struct {
+	Email    string `json:"email"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
@@ -68,6 +69,10 @@ type registerUserBody struct {
 func (b registerUserBody) Validate() error {
 
 	return validation.ValidateStruct(&b,
+		validation.Field(&b.Email,
+			validation.Required,
+			is.Email.Error("invalid email format"),
+		),
 		validation.Field(&b.Username,
 			validation.Required,
 			validation.Length(3, 0).Error("username too short"),
