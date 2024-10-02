@@ -7,6 +7,7 @@ import (
 	"i9rfs/server/appTypes"
 	"i9rfs/server/helpers"
 	"i9rfs/server/models/appModel"
+	"i9rfs/server/models/authModel"
 	user "i9rfs/server/models/userModel"
 	"i9rfs/server/services/appServices"
 	"log"
@@ -29,7 +30,7 @@ func RequestNewAccount(email string) (string, error) {
 
 	verfCode, expires := rand.Intn(899999)+100000, time.Now().UTC().Add(1*time.Hour)
 
-	sessionId, err := appModel.NewSignupSession(email, verfCode)
+	sessionId, err := authModel.NewSignupSession(email, verfCode)
 	if err != nil {
 		return "", err
 	}
@@ -46,7 +47,7 @@ func RequestNewAccount(email string) (string, error) {
 }
 
 func VerifyEmail(sessionId string, inputVerfCode int, email string) (string, error) {
-	isSuccess, err := appModel.VerifyEmail(sessionId, inputVerfCode)
+	isSuccess, err := authModel.VerifyEmail(sessionId, inputVerfCode)
 	if err != nil {
 		return "", err
 	}
@@ -94,7 +95,7 @@ func RegisterUser(sessionId, email, username, password string) (*appTypes.Client
 
 	authJwt := helpers.JwtSign(clientUser, os.Getenv("AUTH_JWT_SECRET"), time.Now().UTC().Add(365*24*time.Hour)) // 1 year
 
-	appModel.EndSignupSession(sessionId)
+	authModel.EndSignupSession(sessionId)
 
 	return clientUser, authJwt, nil
 }
