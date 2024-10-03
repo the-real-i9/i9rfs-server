@@ -52,12 +52,13 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 		switch body.Command {
 		case "pex":
 			resp, app_err = rfsCmdService.PathExists(body.WorkPath)
+		case "mkdir":
+			resp, app_err = rfsCmdService.MakeDirectory(body.WorkPath, body.CmdArgs)
 		case "upload", "up":
 			resp, app_err = rfsCmdService.UploadFile(body.WorkPath, body.CmdArgs)
 		case "download", "down":
 			resp, app_err = rfsCmdService.DownloadFile(body.WorkPath, body.CmdArgs)
 		default:
-			resp, app_err = rfsCmdService.BashCommand(body.WorkPath, body.Command, body.CmdArgs)
 		}
 
 		if app_err != nil {

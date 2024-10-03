@@ -2,11 +2,8 @@ package initializers
 
 import (
 	"context"
-	"fmt"
 	"i9rfs/server/appGlobals"
-	"i9rfs/server/services/rfsCmdService"
 	"os"
-	"os/exec"
 
 	"cloud.google.com/go/storage"
 	"github.com/joho/godotenv"
@@ -37,19 +34,6 @@ func initDBClient() error {
 	return nil
 }
 
-func initAppDataStore() {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-
-	appHomeDir := fmt.Sprintf("%s/.i9rfs-server/home", homeDir)
-
-	exec.Command("mkdir", "-p", appHomeDir).Run()
-
-	rfsCmdService.SetHome(appHomeDir)
-}
-
 func InitApp() error {
 
 	if err := godotenv.Load(".env"); err != nil {
@@ -63,8 +47,6 @@ func InitApp() error {
 	if err := initDBClient(); err != nil {
 		return err
 	}
-
-	initAppDataStore()
 
 	return nil
 }

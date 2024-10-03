@@ -4,10 +4,8 @@ import (
 	"i9rfs/server/appTypes"
 	"i9rfs/server/helpers"
 	"i9rfs/server/services/authServices"
-	"i9rfs/server/services/rfsCmdService"
 	"log"
 	"os"
-	"os/exec"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber"
@@ -137,8 +135,6 @@ func registerUser(sessionData *appTypes.SignupSessionData, data map[string]any) 
 		return helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err)
 	}
 
-	go createUserAccountDirectory(userData.Username)
-
 	return appTypes.WSResp{
 		StatusCode: fiber.StatusOK,
 		Body: map[string]any{
@@ -179,8 +175,6 @@ var Login = websocket.New(func(c *websocket.Conn) {
 			continue
 		}
 
-		go createUserAccountDirectory(userData.Username)
-
 		w_err = c.WriteJSON(appTypes.WSResp{
 			StatusCode: fiber.StatusOK,
 			Body: map[string]any{
@@ -191,9 +185,3 @@ var Login = websocket.New(func(c *websocket.Conn) {
 		})
 	}
 })
-
-func createUserAccountDirectory(userAcc string) {
-	fsHome := rfsCmdService.GetHome()
-
-	exec.Command("mkdir", "-p", fsHome+"/"+userAcc).Run()
-}
