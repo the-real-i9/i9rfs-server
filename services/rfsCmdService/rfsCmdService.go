@@ -1,18 +1,18 @@
 package rfsCmdService
 
-func PathExists(workPath string) (bool, error) {
+func ChangeDirectory(workPath string, cmdArgs []string) (string, error) {
 
-	return false, nil
+	return "", nil
 }
 
-func MakeDirectory(workPath string, cmdArgs []string) (bool, error) {
+func MakeDirectory(workPath string, cmdArgs []string) (string, error) {
 
-	return false, nil
+	return "Operation Successful", nil
 }
 
 func UploadFile(workPath string, cmdArgs []string) (string, error) {
-	fileData := []byte(cmdArgs[0])
-	filename := cmdArgs[1]
+	// fileData := []byte(cmdArgs[0])
+	// filename := cmdArgs[1]
 
 	// upload file to GCS
 
@@ -20,7 +20,7 @@ func UploadFile(workPath string, cmdArgs []string) (string, error) {
 }
 
 func DownloadFile(workPath string, cmdArgs []string) ([]byte, error) {
-	filename := cmdArgs[0]
+	// filename := cmdArgs[0]
 
 	// retrieve file from GCS
 

@@ -11,6 +11,8 @@ import (
 )
 
 var RFSCmd = websocket.New(func(c *websocket.Conn) {
+	// user := c.Locals("user").(*appTypes.ClientUser)
+
 	var w_err error
 
 	for {
@@ -37,8 +39,8 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 		)
 
 		switch body.Command {
-		case "pex":
-			resp, app_err = rfsCmdService.PathExists(body.WorkPath)
+		case "cd":
+			resp, app_err = rfsCmdService.ChangeDirectory(body.WorkPath, body.CmdArgs)
 		case "mkdir":
 			resp, app_err = rfsCmdService.MakeDirectory(body.WorkPath, body.CmdArgs)
 		case "upload", "up":
