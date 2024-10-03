@@ -25,7 +25,7 @@ func New(email, username, password string) (*User, error) {
 
 	res, err := appGlobals.DB.Collection("user").InsertOne(ctx, bson.M{"email": email, "username": username, "password": password})
 	if err != nil {
-		log.Println(fmt.Errorf("userModel.go: NewUser: %s", err))
+		log.Println(fmt.Errorf("userModel.go: New: %s", err))
 		return nil, appGlobals.ErrInternalServerError
 	}
 

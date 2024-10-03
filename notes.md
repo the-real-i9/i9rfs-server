@@ -14,10 +14,10 @@ Arg: `folderName`
 
 #### Implementation
 
-- Take the name of the folder, and with the name
-- In the database, create a new "folder" and set the last segment of the work path as the parent folder. To set the last segment of the work path as the parent folder, it's either 
-  - you have the parent folder's objectId or
-  - you trace the folder from the root segment of the work path by name, since a parent-folder combination is unique (i.e. a folder can't have two children of the same name)
+- Take the `dirName` of the directory
+- Create a new directory with the `dirName` in the database
+- If the `workPath` is "/" then the parent_directory_id is empty, else parent directory is the id of the directory with the `path` of `workPath`.
+- The path attribute of the new directory is `workPath` + `/dirName` (or `workPath` + `dirName`, if `workPath` is `/`)
 
 ### Remove directory
 
