@@ -5,25 +5,12 @@ import (
 	"i9rfs/server/helpers"
 	"i9rfs/server/services/rfsCmdService"
 	"log"
-	"os"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 )
 
 var RFSCmd = websocket.New(func(c *websocket.Conn) {
-	sessionToken := c.Headers("Authorization")
-
-	_, err := helpers.JwtVerify[appTypes.ClientUser](sessionToken, os.Getenv("AUTH_JWT_SECRET"))
-
-	if err != nil {
-		w_err := c.WriteJSON(helpers.ErrResp(fiber.StatusUnauthorized, err))
-		if w_err != nil {
-			log.Println(w_err)
-		}
-		return
-	}
-
 	var w_err error
 
 	for {
