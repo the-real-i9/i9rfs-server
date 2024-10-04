@@ -19,7 +19,7 @@ func PathExists(path string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	err := appGlobals.DB.Collection("directory").FindOne(ctx, bson.M{"path": path}).Decode(&struct{}{})
+	err := appGlobals.DB.Collection("directory").FindOne(ctx, bson.M{"properties.path": bson.M{"$eq": path}}).Decode(&struct{}{})
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return false, nil
@@ -52,7 +52,8 @@ func NewDirectory(parentDirPath string, newDirTree []string, userId string) (boo
 		// this new directory, hence, will have no parent i.e it will conceptually be in the root directory ("/newDir")
 		err := db.Collection("directory").FindOne(ctx, bson.M{"properties.path": bson.M{"$eq": parentDirPath}}, options.FindOne().SetProjection(bson.M{"_id": 1, "properties.path": 1})).Decode(&parentDir)
 		if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-			return false, err
+			log.Println(fmt.Errorf("rfsCmdModel.go: NewDirectory: %s", err))
+			return false, appGlobals.ErrInternalServerError
 		}
 
 		// we want every new directory in the tree to be created at the same "time"
@@ -73,7 +74,8 @@ func NewDirectory(parentDirPath string, newDirTree []string, userId string) (boo
 			// check if a directory along the tree path already exists
 			err := db.Collection("directory").FindOne(ctx, bson.M{"properties.path": bson.M{"$eq": parentDir.Properties.Path + "/" + dirName}}, options.FindOne().SetProjection(bson.M{"_id": 1, "properties.path": 1})).Decode(&dir)
 			if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-				return false, err
+				log.Println(fmt.Errorf("rfsCmdModel.go: NewDirectory: %s", err))
+				return false, appGlobals.ErrInternalServerError
 			}
 
 			// if a directory along the tree path already exists
@@ -111,7 +113,8 @@ func NewDirectory(parentDirPath string, newDirTree []string, userId string) (boo
 
 			res, err := db.Collection("directory").InsertOne(ctx, dirDoc)
 			if err != nil {
-				return nil, err
+				log.Println(fmt.Errorf("rfsCmdModel.go: NewDirectory: %s", err))
+				return false, appGlobals.ErrInternalServerError
 			}
 
 			// having created the directory
@@ -126,14 +129,49 @@ func NewDirectory(parentDirPath string, newDirTree []string, userId string) (boo
 		return true, nil
 	})
 
-	if err != nil {
-		if errors.Is(err, appGlobals.ErrInternalServerError) {
-			log.Println(fmt.Errorf("rfsCmdModel.go: NewDirectory: %s", err))
+	return result.(bool), err
+}
+
+func DeleteDirectory(dirPath string) (bool, error) {
+	db := appGlobals.DB
+
+	result, err := helpers.MultiOpQuery(db.Client(), func(ctx context.Context) (any, error) {
+		var dir struct {
+			Oid        bson.ObjectID `bson:"_id"`
+			Properties struct {
+				Name string `bson:"name"`
+				Path string `bson:"path"`
+			} `bson:"properties"`
+		}
+
+		err1 := db.Collection("directory").FindOne(ctx, bson.M{"properties.path": bson.M{"$eq": dirPath}}).Decode(&dir)
+		if err1 != nil {
+			if errors.Is(err1, mongo.ErrNoDocuments) {
+				return false, fmt.Errorf("no such file or directory")
+			}
+
+			log.Println(fmt.Errorf("rfsCmdModel.go: NewDirectory: %s", err1))
 			return false, appGlobals.ErrInternalServerError
 		}
 
-		return false, err
-	}
+		err2 := db.Collection("directory").FindOne(ctx, bson.M{"parent_directory_id": dir.Oid}).Decode(&struct{}{})
+		if err2 != nil {
+			if errors.Is(err2, mongo.ErrNoDocuments) {
+				_, err3 := db.Collection("directory").DeleteOne(ctx, bson.M{"_id": dir.Oid})
+				if err3 != nil {
+					log.Println(fmt.Errorf("rfsCmdModel.go: NewDirectory: %s", err3))
+					return false, appGlobals.ErrInternalServerError
+				}
 
-	return result.(bool), nil
+				return true, nil
+			}
+
+			log.Println(fmt.Errorf("rfsCmdModel.go: NewDirectory: %s", err2))
+			return false, appGlobals.ErrInternalServerError
+		}
+
+		return false, fmt.Errorf("failed to remove '%s': Directory not empty", dir.Properties.Name)
+	})
+
+	return result.(bool), err
 }

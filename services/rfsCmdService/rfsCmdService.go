@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-func resolveToTargetPath(currentWorkPath, targetPath string) string {
-	dirs := strings.Split(targetPath, "/")
+func resolveToTargetDir(currentWorkPath, targetDir string) string {
+	dirs := strings.Split(targetDir, "/")
 
 	newWorkPath := currentWorkPath
 
@@ -43,12 +43,7 @@ func resolveToTargetPath(currentWorkPath, targetPath string) string {
 }
 
 func ChangeDirectory(workPath string, cmdArgs []string) (string, error) {
-	targetPath := cmdArgs[0]
-	if strings.HasPrefix(targetPath, "/") {
-		return "", fmt.Errorf("invalid target path %s. Did you mean to prefix with ./ instead?", targetPath)
-	}
-
-	resolvedPath := resolveToTargetPath(workPath, targetPath)
+	resolvedPath := resolveToTargetDir(workPath, cmdArgs[0])
 
 	if resolvedPath == "/" {
 		return resolvedPath, nil
@@ -68,12 +63,13 @@ func ChangeDirectory(workPath string, cmdArgs []string) (string, error) {
 
 func MakeDirectory(workPath string, cmdArgs []string, userId string) (bool, error) {
 
-	res, err := rfsCmdModel.NewDirectory(workPath, strings.Split(cmdArgs[0], "/"), userId)
-	if err != nil {
-		return false, err
-	}
+	return rfsCmdModel.NewDirectory(workPath, strings.Split(cmdArgs[0], "/"), userId)
+}
 
-	return res, nil
+func RemoveDirectory(workPath string, cmdArgs []string) (bool, error) {
+	targetDirPath := resolveToTargetDir(workPath, cmdArgs[0])
+
+	return rfsCmdModel.DeleteDirectory(targetDirPath)
 }
 
 func UploadFile(workPath string, cmdArgs []string) (string, error) {
