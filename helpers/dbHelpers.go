@@ -28,7 +28,7 @@ func MultiOpQuery(client *mongo.Client, transactionQueries func(ctx context.Cont
 
 	// extending transaction options with read preference (just before starting the transaction)
 	// even if this is not set, "primary" will be the default
-	txnOpts.SetReadPreference(readpref.PrimaryPreferred())
+	txnOpts.SetReadPreference(readpref.Primary())
 
 	result, err := sess.WithTransaction(ctx, transactionQueries, txnOpts)
 

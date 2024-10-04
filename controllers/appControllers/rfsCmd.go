@@ -11,7 +11,7 @@ import (
 )
 
 var RFSCmd = websocket.New(func(c *websocket.Conn) {
-	// user := c.Locals("user").(*appTypes.ClientUser)
+	user := c.Locals("user").(*appTypes.ClientUser)
 
 	var w_err error
 
@@ -42,7 +42,7 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 		case "cd":
 			resp, app_err = rfsCmdService.ChangeDirectory(body.WorkPath, body.CmdArgs)
 		case "mkdir":
-			resp, app_err = rfsCmdService.MakeDirectory(body.WorkPath, body.CmdArgs)
+			resp, app_err = rfsCmdService.MakeDirectory(body.WorkPath, body.CmdArgs, user.Id)
 		case "upload", "up":
 			resp, app_err = rfsCmdService.UploadFile(body.WorkPath, body.CmdArgs)
 		case "download", "down":

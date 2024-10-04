@@ -66,9 +66,14 @@ func ChangeDirectory(workPath string, cmdArgs []string) (string, error) {
 	return resolvedPath, nil
 }
 
-func MakeDirectory(workPath string, cmdArgs []string) (string, error) {
+func MakeDirectory(workPath string, cmdArgs []string, userId string) (bool, error) {
 
-	return "Operation Successful", nil
+	res, err := rfsCmdModel.NewDirectory(workPath, strings.Split(cmdArgs[0], "/"), userId)
+	if err != nil {
+		return false, err
+	}
+
+	return res, nil
 }
 
 func UploadFile(workPath string, cmdArgs []string) (string, error) {

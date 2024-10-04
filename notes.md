@@ -65,6 +65,3 @@ Command: `upload`
 
 Arg: `pathToFile`
 
-### Change Directory (Path exists test)
-
-Command: `cd`
