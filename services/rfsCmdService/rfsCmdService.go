@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-func resolveToTargetDir(currentWorkPath, targetDir string) string {
-	dirs := strings.Split(targetDir, "/")
+func resolveToTarget(currentWorkPath, target string) string {
+	dirs := strings.Split(target, "/")
 
 	newWorkPath := currentWorkPath
 
@@ -43,7 +43,7 @@ func resolveToTargetDir(currentWorkPath, targetDir string) string {
 }
 
 func ChangeDirectory(workPath string, cmdArgs []string) (string, error) {
-	resolvedPath := resolveToTargetDir(workPath, cmdArgs[0])
+	resolvedPath := resolveToTarget(workPath, cmdArgs[0])
 
 	if resolvedPath == "/" {
 		return resolvedPath, nil
@@ -67,9 +67,19 @@ func MakeDirectory(workPath string, cmdArgs []string, userId string) (bool, erro
 }
 
 func RemoveDirectory(workPath string, cmdArgs []string) (bool, error) {
-	targetDirPath := resolveToTargetDir(workPath, cmdArgs[0])
+	targetDirPath := resolveToTarget(workPath, cmdArgs[0])
 
 	return rfsCmdModel.DeleteDirectory(targetDirPath)
+}
+
+func Remove(workPath string, cmdArgs []string) (bool, error) {
+	if cmdArgs[0] != "-r" {
+		targetEntityPath := resolveToTarget(workPath, cmdArgs[0])
+		return rfsCmdModel.DeleteEntity(targetEntityPath, false)
+	}
+
+	targetEntityPath := resolveToTarget(workPath, cmdArgs[1])
+	return rfsCmdModel.DeleteEntity(targetEntityPath, true)
 }
 
 func UploadFile(workPath string, cmdArgs []string) (string, error) {

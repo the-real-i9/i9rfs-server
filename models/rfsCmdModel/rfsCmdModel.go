@@ -50,7 +50,7 @@ func NewDirectory(parentDirPath string, newDirTree []string, userId string) (boo
 		// the parent directory is one whose path is parentDirPath
 		// if the parentDirPath is "/", we won't find a parent directory, and parentDir will have nil values,
 		// this new directory, hence, will have no parent i.e it will conceptually be in the root directory ("/newDir")
-		err := db.Collection("directory").FindOne(ctx, bson.M{"properties.path": bson.M{"$eq": parentDirPath}}, options.FindOne().SetProjection(bson.M{"_id": 1, "properties.path": 1})).Decode(&parentDir)
+		err := db.Collection("directory").FindOne(ctx, bson.M{"properties.path": bson.M{"$eq": parentDirPath}}, options.FindOne()).Decode(&parentDir)
 		if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 			log.Println(fmt.Errorf("rfsCmdModel.go: NewDirectory: %s", err))
 			return false, appGlobals.ErrInternalServerError
@@ -72,7 +72,7 @@ func NewDirectory(parentDirPath string, newDirTree []string, userId string) (boo
 			}
 
 			// check if a directory along the tree path already exists
-			err := db.Collection("directory").FindOne(ctx, bson.M{"properties.path": bson.M{"$eq": parentDir.Properties.Path + "/" + dirName}}, options.FindOne().SetProjection(bson.M{"_id": 1, "properties.path": 1})).Decode(&dir)
+			err := db.Collection("directory").FindOne(ctx, bson.M{"properties.path": bson.M{"$eq": parentDir.Properties.Path + "/" + dirName}}, options.FindOne()).Decode(&dir)
 			if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 				log.Println(fmt.Errorf("rfsCmdModel.go: NewDirectory: %s", err))
 				return false, appGlobals.ErrInternalServerError
@@ -171,6 +171,57 @@ func DeleteDirectory(dirPath string) (bool, error) {
 		}
 
 		return false, fmt.Errorf("failed to remove '%s': Directory not empty", dir.Properties.Name)
+	})
+
+	return result.(bool), err
+}
+
+func DeleteEntity(entityPath string, recursive bool) (bool, error) {
+	db := appGlobals.DB
+
+	result, err := helpers.MultiOpQuery(db.Client(), func(ctx context.Context) (any, error) {
+		delRes, err := db.Collection("file").DeleteOne(ctx, bson.M{"properties.path": bson.M{"$eq": entityPath}})
+		if err != nil {
+			log.Println(fmt.Errorf("rfsCmdModel.go: NewDirectory: %s", err))
+			return false, appGlobals.ErrInternalServerError
+		}
+
+		if delRes.DeletedCount == 1 {
+			return true, nil
+		}
+
+		var dir struct {
+			Properties struct {
+				Name string `bson:"name"`
+			} `bson:"properties"`
+		}
+
+		err2 := db.Collection("directory").FindOne(ctx, bson.M{"properties.path": bson.M{"$eq": entityPath}}).Decode(&dir)
+		if err2 != nil {
+			if errors.Is(err2, mongo.ErrNoDocuments) {
+				return false, fmt.Errorf("no such file or directory")
+			}
+
+			log.Println(fmt.Errorf("rfsCmdModel.go: NewDirectory: %s", err2))
+			return false, appGlobals.ErrInternalServerError
+		}
+
+		if !recursive {
+			return false, fmt.Errorf("cannot remove '%s': Is a directory", dir.Properties.Name)
+		}
+
+		_, err3 := db.Collection("file").DeleteMany(ctx, bson.M{"properties.path": bson.M{"$regex": fmt.Sprintf("^%s", entityPath)}})
+		if err3 != nil {
+			log.Println(fmt.Errorf("rfsCmdModel.go: NewDirectory: %s", err3))
+			return false, appGlobals.ErrInternalServerError
+		}
+		_, err4 := db.Collection("directory").DeleteMany(ctx, bson.M{"properties.path": bson.M{"$regex": fmt.Sprintf("^%s", entityPath)}})
+		if err4 != nil {
+			log.Println(fmt.Errorf("rfsCmdModel.go: NewDirectory: %s", err4))
+			return false, appGlobals.ErrInternalServerError
+		}
+
+		return true, nil
 	})
 
 	return result.(bool), err
