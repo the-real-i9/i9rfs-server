@@ -64,10 +64,28 @@ $$;
 ALTER FUNCTION public.end_signup_session(in_session_id uuid) OWNER TO i9;
 
 --
--- Name: get_user(uuid); Type: FUNCTION; Schema: public; Owner: i9
+-- Name: find_user_by_email_or_username(character varying); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.get_user(user_id uuid) RETURNS SETOF public.i9rfs_user_t
+CREATE FUNCTION public.find_user_by_email_or_username(email_or_username character varying) RETURNS SETOF public.i9rfs_user_t
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RETURN QUERY SELECT id, username, password FROM i9rfs_user 
+  WHERE email_or_username = ANY(ARRAY[email, username]);
+  
+  RETURN;
+END;
+$$;
+
+
+ALTER FUNCTION public.find_user_by_email_or_username(email_or_username character varying) OWNER TO i9;
+
+--
+-- Name: find_user_by_id(uuid); Type: FUNCTION; Schema: public; Owner: i9
+--
+
+CREATE FUNCTION public.find_user_by_id(user_id uuid) RETURNS SETOF public.i9rfs_user_t
     LANGUAGE plpgsql
     AS $$
 BEGIN
@@ -79,7 +97,7 @@ END;
 $$;
 
 
-ALTER FUNCTION public.get_user(user_id uuid) OWNER TO i9;
+ALTER FUNCTION public.find_user_by_id(user_id uuid) OWNER TO i9;
 
 --
 -- Name: mkdir(text, text[], uuid); Type: FUNCTION; Schema: public; Owner: i9
@@ -92,9 +110,7 @@ DECLARE
   parent_dir_id uuid;
   parent_dir_path text;
 
-  new_dir_name text;
-  new_dir_path text;
-  new_dir_date timestamp := now();
+  new_dir_node text;
 BEGIN
   -- retrieve the parent directory's id and path from the database
   -- the parent directory is one whose path is in_parent_dir_path
@@ -102,31 +118,46 @@ BEGIN
   -- this new directory, hence, will have no parent i.e it will conceptually be located at the root dir
   SELECT id, path INTO parent_dir_id, parent_dir_path 
   FROM fs_object 
-  WHERE path = in_parent_dir_path AND object_type = 'directory';
+  WHERE path = in_parent_dir_path;
 
   -- since the user is able to specify a directory path separated by "/" to create a directory (degenerate) tree
   -- each directory in the (degenerate) tree will be the parent of the next
   -- the first directory in the (degenerate) tree will have parent_dir(_id) above, as its parent
-  FOREACH new_dir_name IN ARRAY new_dir_tree
+  FOREACH new_dir_node IN ARRAY new_dir_tree
   LOOP
-    new_dir_name := trim('"' from new_dir_name);
 
-	new_dir_path := parent_dir_path || '/' || new_dir_name;
+    DECLARE
+      new_dir_name text := trim('"' from new_dir_node);
+	  new_dir_path text := concat(parent_dir_path, '/', new_dir_name);
+	  new_dir_date timestamp := now();
 
-    -- if a directory along the tree path already exists, rather than raising an error, we just go ahead and use it,
-    -- make it our parent_dir_* for the next directory in the tree and skip creating a duplicate.
-	-- otherwise, we create it
+	  existing_dir_id uuid;
+	  existing_dir_path text;
+	BEGIN
+	  SELECT id, path INTO existing_dir_id, existing_dir_path 
+	  FROM fs_object
+	  WHERE path = new_dir_path;
 
-	-- if we have no parent directory,
-	-- (i.e. our starting in_parent_dir_path is "/", and, of course, our parent_dir_* above values are empty)
-    -- this new directory is going to be directly in the root, since
-    -- its parent_directory_id attribute will be NULL and its path attribute will be '/new_dir_name'
-	-- otherwhise, we give this new directory as a child to
-    -- the previous directory in the tree, which is currently the parent
-	INSERT INTO fs_object (owner_user_id, parent_directory_id, path, object_type, properties)
-	VALUES (user_id, parent_dir_id, new_dir_path, 'directory', jsonb_build_object('name', new_dir_name, 'date_created', new_dir_date, 'date_modified', new_dir_date))
-	ON CONFLICT (path) DO NOTHING
-	RETURNING id, path INTO parent_dir_id, parent_dir_path;
+	  -- if a directory along the tree path already exists, rather than raising an error, we just go ahead and use it,
+      -- make it our parent_dir_* for the next directory in the tree and skip creating a duplicate.
+	  -- otherwise, we create it
+	  IF existing_dir_id IS NULL THEN
+	    -- if we have no parent directory,
+	    -- (i.e. our starting in_parent_dir_path is "/", and, of course, our parent_dir_* above values are empty)
+        -- this new directory is going to be directly in the root, since
+        -- its parent_directory_id attribute will be NULL and its path attribute will be '/new_dir_name'
+	    -- otherwise, we give this new directory as a child to
+        -- the previous directory in the tree, which is currently the parent
+	    INSERT INTO fs_object (owner_user_id, parent_directory_id, path, object_type, properties)
+	    VALUES (user_id, parent_dir_id, new_dir_path, 'directory', jsonb_build_object('name', new_dir_name, 'date_created', new_dir_date, 'date_modified', new_dir_date))
+		-- setting this new directory to the parent of the next in the tree
+	    RETURNING id, path INTO parent_dir_id, parent_dir_path;
+      ELSE
+	    -- setting this existing directory to the parent of the next in the tree
+  	    parent_dir_id := existing_dir_id;
+	    parent_dir_path := existing_dir_path;
+	  END IF;
+	END;
 	
   END LOOP;
 
@@ -203,7 +234,7 @@ BEGIN
   -- if fs_object_type is 'directory' AND the recursive flag is not set
   IF fs_object_type = 'directory' AND rflag = false THEN
     status := false;
-	err_msg := concat('cannot remove ', fs_object_name, ': Is a directory');
+	err_msg := concat('cannot remove ', quote_literal(fs_object_name), ': Is a directory');
 
 	RETURN;
   END IF;
@@ -249,7 +280,7 @@ BEGIN
   -- if fs object type is not a directory, return error: failed to remove '{object name}': Not a directory
   IF fs_object_type <> 'directory' THEN
     status := false;
-	err_msg := concat('failed to remove ', fs_object_name, ': Not a directory');
+	err_msg := concat('failed to remove ', quote_literal(fs_object_name), ': Not a directory');
 
 	RETURN;
   END IF;
@@ -257,7 +288,7 @@ BEGIN
   -- if directory is the parent of any other fs object, return error: failed to remove '{object name}': Directory not empty
   IF EXISTS(SELECT 1 FROM fs_object WHERE parent_directory_id = fs_object_id) THEN
     status := false;
-	err_msg := concat('failed to remove ', fs_object_name, ': Directory not empty');
+	err_msg := concat('failed to remove ', quote_literal(fs_object_name), ': Directory not empty');
 
 	RETURN;
   END IF;
@@ -349,6 +380,7 @@ ALTER TABLE public.ongoing_signup OWNER TO i9;
 --
 
 COPY public.fs_object (id, owner_user_id, parent_directory_id, path, object_type, properties) FROM stdin;
+cc65b935-ba6b-43e9-b47c-fb00386d22eb	b578f2a6-6263-469b-a326-fb0ec6f0abe4	\N	/dude	directory	{"name": "dude", "date_created": "2024-10-09T22:03:37.756761", "date_modified": "2024-10-09T22:03:37.756761"}
 \.
 
 
@@ -358,6 +390,7 @@ COPY public.fs_object (id, owner_user_id, parent_directory_id, path, object_type
 
 COPY public.i9rfs_user (id, email, username, password) FROM stdin;
 b6f39c6f-1347-491a-b455-990bdc4c14f4	ken@gmail.com	ken	dode
+b578f2a6-6263-469b-a326-fb0ec6f0abe4	oluwarinolasam@gmail.com	the_real_i9	$2a$10$MKjpzDFwQAxV.9nxFUJkoelpv1saVYu.Wrtl5kXW2GWEpGudEgdZm
 \.
 
 
