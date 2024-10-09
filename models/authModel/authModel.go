@@ -9,7 +9,6 @@ import (
 
 func NewSignupSession(email string, verfCode int) (string, error) {
 	sessionId, err := helpers.QueryRowField[string]("SELECT session_id FROM new_signup_session($1, $2)", email, verfCode)
-
 	if err != nil {
 		log.Println("authModel.go: NewSignupSession:", err)
 		return "", appGlobals.ErrInternalServerError
@@ -20,7 +19,6 @@ func NewSignupSession(email string, verfCode int) (string, error) {
 
 func VerifyEmail(sessionId string, verfCode int) (bool, error) {
 	isSuccess, err := helpers.QueryRowField[bool]("SELECT is_success FROM verify_email($1, $2)", sessionId, verfCode)
-
 	if err != nil {
 		log.Println(fmt.Errorf("appModel.go: VerifyEmail: %s", err))
 		return false, appGlobals.ErrInternalServerError

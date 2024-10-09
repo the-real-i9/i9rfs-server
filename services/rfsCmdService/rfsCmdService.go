@@ -63,23 +63,23 @@ func ChangeDirectory(workPath string, cmdArgs []string) (string, error) {
 
 func MakeDirectory(workPath string, cmdArgs []string, userId string) (bool, error) {
 
-	return rfsCmdModel.NewDirectory(workPath, strings.Split(cmdArgs[0], "/"), userId)
+	return rfsCmdModel.Mkdir(workPath, strings.Split(cmdArgs[0], "/"), userId)
 }
 
 func RemoveDirectory(workPath string, cmdArgs []string) (bool, error) {
 	targetDirPath := resolveToTarget(workPath, cmdArgs[0])
 
-	return rfsCmdModel.DeleteDirectory(targetDirPath)
+	return rfsCmdModel.Rmdir(targetDirPath)
 }
 
 func Remove(workPath string, cmdArgs []string) (bool, error) {
 	if cmdArgs[0] != "-r" {
-		targetEntityPath := resolveToTarget(workPath, cmdArgs[0])
-		return rfsCmdModel.DeleteEntity(targetEntityPath, false)
+		fsObjectPath := resolveToTarget(workPath, cmdArgs[0])
+		return rfsCmdModel.Rm(fsObjectPath, false)
 	}
 
-	targetEntityPath := resolveToTarget(workPath, cmdArgs[1])
-	return rfsCmdModel.DeleteEntity(targetEntityPath, true)
+	fsObjectPath := resolveToTarget(workPath, cmdArgs[1])
+	return rfsCmdModel.Rm(fsObjectPath, true)
 }
 
 func UploadFile(workPath string, cmdArgs []string) (string, error) {
