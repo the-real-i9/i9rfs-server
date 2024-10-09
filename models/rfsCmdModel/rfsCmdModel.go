@@ -16,20 +16,13 @@ import (
 )
 
 func PathExists(path string) (bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	err := appGlobals.DB.Collection("directory").FindOne(ctx, bson.M{"properties.path": bson.M{"$eq": path}}).Decode(&struct{}{})
+	exists, err := helpers.QueryRowField[bool]("SELECT EXISTS(SELECT 1 FROM directory WHERE path = $1)", path)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return false, nil
-		}
-
-		log.Println(fmt.Errorf("rmsCmdModel.go: PathExists: %s", err))
+		log.Println(fmt.Errorf("rfsCmdModel.go: PathExists: %s", err))
 		return false, appGlobals.ErrInternalServerError
 	}
 
-	return true, nil
+	return *exists, nil
 }
 
 func NewDirectory(parentDirPath string, newDirTree []string, userId string) (bool, error) {

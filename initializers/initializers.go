@@ -6,10 +6,8 @@ import (
 	"os"
 
 	"cloud.google.com/go/storage"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
-
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 func initGCSClient() error {
@@ -22,14 +20,12 @@ func initGCSClient() error {
 	return nil
 }
 
-func initDBClient() error {
-	client, err := mongo.Connect(options.Client().ApplyURI(os.Getenv("MONGODB_URL")))
-
+func initDBPool() error {
+	pool, err := pgxpool.New(context.Background(), os.Getenv("PGDATABASE_URL"))
 	if err != nil {
 		return err
 	}
-
-	appGlobals.DB = client.Database(os.Getenv("MONGODB_DB"))
+	appGlobals.DBPool = pool
 
 	return nil
 }
@@ -44,7 +40,7 @@ func InitApp() error {
 		return err
 	}
 
-	if err := initDBClient(); err != nil {
+	if err := initDBPool(); err != nil {
 		return err
 	}
 

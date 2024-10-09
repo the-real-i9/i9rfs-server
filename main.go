@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"i9rfs/server/appGlobals"
 	"i9rfs/server/initializers"
 	"i9rfs/server/routes/appRoutes"
 	"i9rfs/server/routes/authRoutes"
@@ -19,12 +17,6 @@ func init() {
 }
 
 func main() {
-	defer func() {
-		if err := appGlobals.DB.Client().Disconnect(context.TODO()); err != nil {
-			log.Panic(err)
-		}
-	}()
-
 	app := fiber.New(fiber.Config{DisableStartupMessage: true})
 
 	app.Use(func(c *fiber.Ctx) error {

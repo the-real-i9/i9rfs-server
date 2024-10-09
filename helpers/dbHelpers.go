@@ -2,60 +2,101 @@ package helpers
 
 import (
 	"context"
-	"log"
+	"errors"
+	"i9rfs/server/appGlobals"
 	"time"
 
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
+	"github.com/jackc/pgx/v5"
 )
 
-func MultiOpQuery(client *mongo.Client, transactionQueries func(ctx context.Context) (any, error)) (any, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+func QueryRowField[T any](sql string, params ...any) (*T, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	txnOpts := options.Transaction().SetReadConcern(readconcern.Majority()) // transaction options
+	rows, _ := appGlobals.DBPool.Query(ctx, sql, params...)
 
-	opts := options.Session().SetDefaultTransactionOptions(txnOpts)
-
-	// transaction options for session
-	sess, err := client.StartSession(opts)
+	res, err := pgx.CollectOneRow(rows, pgx.RowToAddrOf[T])
 	if err != nil {
-		log.Panic(err)
+		return nil, err
 	}
-	defer sess.EndSession(ctx)
 
-	// extending transaction options with read preference (just before starting the transaction)
-	// even if this is not set, "primary" will be the default
-	txnOpts.SetReadPreference(readpref.Primary())
-
-	result, err := sess.WithTransaction(ctx, transactionQueries, txnOpts)
-
-	return result, err
-}
-
-func QueryRowField[T any](sql string, params ...any) (*T, error) {
-
-	return nil, nil
+	return res, err
 }
 
 func QueryRowsField[T any](sql string, params ...any) ([]*T, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
 
-	return nil, nil
+	rows, _ := appGlobals.DBPool.Query(ctx, sql, params...)
+
+	res, err := pgx.CollectRows(rows, pgx.RowToAddrOf[T])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return make([]*T, 0), nil
+		}
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func QueryRowType[T any](sql string, params ...any) (*T, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
 
-	return nil, nil
+	rows, _ := appGlobals.DBPool.Query(ctx, sql, params...)
+
+	res, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByNameLax[T])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func QueryRowsType[T any](sql string, params ...any) ([]*T, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
 
-	return nil, nil
+	rows, _ := appGlobals.DBPool.Query(ctx, sql, params...)
+
+	res, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByNameLax[T])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func BatchQuery[T any](sqls []string, params [][]any) ([]*T, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
 
-	return nil, nil
+	var res = make([]*T, len(sqls))
+
+	batch := &pgx.Batch{}
+
+	for i, sql := range sqls {
+		batch.Queue(sql, params[i]...).QueryRow(func(row pgx.Row) error {
+			var sr *T
+
+			if err := row.Scan(sr); err != nil {
+				return err
+			}
+
+			res[i] = sr
+
+			return nil
+		})
+	}
+
+	s_err := appGlobals.DBPool.SendBatch(ctx, batch).Close()
+
+	return res, s_err
 }

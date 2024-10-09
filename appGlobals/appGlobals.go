@@ -5,13 +5,13 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/gofiber/fiber/v2/middleware/session"
-	"go.mongodb.org/mongo-driver/v2/mongo"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var ErrInternalServerError = errors.New("internal server error: check logger")
 
 var GCSClient *storage.Client
 
-var DB *mongo.Database
+var DBPool *pgxpool.Pool
 
 var SignupSessionStore *session.Store
