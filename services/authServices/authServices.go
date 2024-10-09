@@ -101,7 +101,7 @@ func RegisterUser(sessionId, email, username, password string) (*appTypes.Client
 }
 
 func Login(emailOrUsername, password string) (*appTypes.ClientUser, string, error) {
-	user, err := user.FindOne(emailOrUsername)
+	user, err := user.FindByEmailOrUsername(emailOrUsername)
 	if err != nil {
 		return nil, "", err
 	}

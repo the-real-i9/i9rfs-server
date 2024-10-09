@@ -23,10 +23,20 @@ func New(email, username, password string) (*user, error) {
 	return newUser, nil
 }
 
-func FindOne(userId string) (*user, error) {
-	resUser, err := helpers.QueryRowType[user]("SELECT * FROM get_user($1)", userId)
+func FindById(userId string) (*user, error) {
+	resUser, err := helpers.QueryRowType[user]("SELECT * FROM find_user_by_id($1)", userId)
 	if err != nil {
-		log.Println(fmt.Errorf("userModel.go: FindOne: %s", err))
+		log.Println(fmt.Errorf("userModel.go: FindById: %s", err))
+		return nil, appGlobals.ErrInternalServerError
+	}
+
+	return resUser, nil
+}
+
+func FindByEmailOrUsername(emailOrUsername string) (*user, error) {
+	resUser, err := helpers.QueryRowType[user]("SELECT * FROM find_user_by_email_or_username($1)", emailOrUsername)
+	if err != nil {
+		log.Println(fmt.Errorf("userModel.go: FindByEmailOrUsername: %s", err))
 		return nil, appGlobals.ErrInternalServerError
 	}
 
