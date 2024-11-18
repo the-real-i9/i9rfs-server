@@ -1,9 +1,9 @@
 package appTypes
 
 type SignupSessionData struct {
-	SessionId string
-	Email     string
-	Step      string
+	Step     string
+	Email    string
+	VerfCode int
 }
 
 type ClientUser struct {

@@ -3,7 +3,7 @@ package appRoutes
 import (
 	"i9rfs/server/appTypes"
 	"i9rfs/server/controllers/appControllers"
-	"i9rfs/server/helpers"
+	"i9rfs/server/services/securityServices"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
@@ -12,7 +12,7 @@ import (
 func authenticateUser(c *fiber.Ctx) error {
 	sessionToken := c.Get("Authorization")
 
-	clientUser, err := helpers.JwtVerify[appTypes.ClientUser](sessionToken, os.Getenv("AUTH_JWT_SECRET"))
+	clientUser, err := securityServices.JwtVerify[appTypes.ClientUser](sessionToken, os.Getenv("AUTH_JWT_SECRET"))
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString(err.Error())
 	}

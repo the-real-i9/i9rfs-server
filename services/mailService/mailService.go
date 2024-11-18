@@ -1,4 +1,4 @@
-package appServices
+package mailService
 
 import (
 	"crypto/tls"

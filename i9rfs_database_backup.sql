@@ -46,24 +46,6 @@ $$;
 ALTER FUNCTION public.account_exists(email_or_username character varying, OUT exist boolean) OWNER TO i9;
 
 --
--- Name: end_signup_session(uuid); Type: FUNCTION; Schema: public; Owner: i9
---
-
-CREATE FUNCTION public.end_signup_session(in_session_id uuid) RETURNS boolean
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  DELETE FROM ongoing_signup 
-  WHERE session_id = in_session_id;
-  
-  RETURN true;
-END;
-$$;
-
-
-ALTER FUNCTION public.end_signup_session(in_session_id uuid) OWNER TO i9;
-
---
 -- Name: find_user_by_email_or_username(character varying); Type: FUNCTION; Schema: public; Owner: i9
 --
 
@@ -167,27 +149,6 @@ $$;
 
 
 ALTER FUNCTION public.mkdir(in_parent_dir_path text, new_dir_tree text[], user_id uuid) OWNER TO i9;
-
---
--- Name: new_signup_session(character varying, integer); Type: FUNCTION; Schema: public; Owner: i9
---
-
-CREATE FUNCTION public.new_signup_session(in_email character varying, in_verification_code integer, OUT session_id uuid) RETURNS uuid
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  DELETE FROM ongoing_signup WHERE email = in_email;  
-  
-  INSERT INTO ongoing_signup (email, verification_code)
-  VALUES (in_email, in_verification_code)
-  RETURNING ongoing_signup.session_id INTO session_id;
-  
-  RETURN;
-END;
-$$;
-
-
-ALTER FUNCTION public.new_signup_session(in_email character varying, in_verification_code integer, OUT session_id uuid) OWNER TO i9;
 
 --
 -- Name: new_user(character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: i9
@@ -306,26 +267,6 @@ $$;
 
 ALTER FUNCTION public.rmdir(dir_path text, OUT status boolean, OUT err_msg text) OWNER TO i9;
 
---
--- Name: verify_email(uuid, integer); Type: FUNCTION; Schema: public; Owner: i9
---
-
-CREATE FUNCTION public.verify_email(in_session_id uuid, in_verf_code integer, OUT is_success boolean) RETURNS boolean
-    LANGUAGE plpgsql
-    AS $$
-BEGIN    
-
-    UPDATE ongoing_signup SET verified = true 
-    WHERE session_id = in_session_id AND verification_code = in_verf_code
-	RETURNING session_id IS NOT NULL INTO is_success;
-   
-  RETURN;
-END;
-$$;
-
-
-ALTER FUNCTION public.verify_email(in_session_id uuid, in_verf_code integer, OUT is_success boolean) OWNER TO i9;
-
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -367,40 +308,11 @@ ALTER TABLE public.i9rfs_user OWNER TO i9;
 
 CREATE TABLE public.ongoing_signup (
     session_id uuid DEFAULT gen_random_uuid() NOT NULL,
-    email character varying NOT NULL,
-    verification_code integer NOT NULL,
-    verified boolean DEFAULT false NOT NULL
+    session_data json NOT NULL
 );
 
 
 ALTER TABLE public.ongoing_signup OWNER TO i9;
-
---
--- Data for Name: fs_object; Type: TABLE DATA; Schema: public; Owner: i9
---
-
-COPY public.fs_object (id, owner_user_id, parent_directory_id, path, object_type, properties) FROM stdin;
-cc65b935-ba6b-43e9-b47c-fb00386d22eb	b578f2a6-6263-469b-a326-fb0ec6f0abe4	\N	/dude	directory	{"name": "dude", "date_created": "2024-10-09T22:03:37.756761", "date_modified": "2024-10-09T22:03:37.756761"}
-\.
-
-
---
--- Data for Name: i9rfs_user; Type: TABLE DATA; Schema: public; Owner: i9
---
-
-COPY public.i9rfs_user (id, email, username, password) FROM stdin;
-b6f39c6f-1347-491a-b455-990bdc4c14f4	ken@gmail.com	ken	dode
-b578f2a6-6263-469b-a326-fb0ec6f0abe4	oluwarinolasam@gmail.com	the_real_i9	$2a$10$MKjpzDFwQAxV.9nxFUJkoelpv1saVYu.Wrtl5kXW2GWEpGudEgdZm
-\.
-
-
---
--- Data for Name: ongoing_signup; Type: TABLE DATA; Schema: public; Owner: i9
---
-
-COPY public.ongoing_signup (session_id, email, verification_code, verified) FROM stdin;
-\.
-
 
 --
 -- Name: fs_object fs_object_path_key; Type: CONSTRAINT; Schema: public; Owner: i9
