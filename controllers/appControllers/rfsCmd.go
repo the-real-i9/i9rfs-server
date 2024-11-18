@@ -1,6 +1,7 @@
 package appControllers
 
 import (
+	"fmt"
 	"i9rfs/server/appTypes"
 	"i9rfs/server/helpers"
 	"i9rfs/server/services/rfsCmdService"
@@ -52,6 +53,7 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 		case "download", "down":
 			resp, app_err = rfsCmdService.DownloadFile(body.WorkPath, body.CmdArgs)
 		default:
+			resp, app_err = nil, fmt.Errorf("unknown command: \"%s\"", body.Command)
 		}
 
 		if app_err != nil {
