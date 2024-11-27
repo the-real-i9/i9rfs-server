@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 17.0 (Ubuntu 17.0-1.pgdg24.04+1)
--- Dumped by pg_dump version 17.0 (Ubuntu 17.0-1.pgdg24.04+1)
+-- Dumped from database version 17.2 (Ubuntu 17.2-1.pgdg24.04+1)
+-- Dumped by pg_dump version 17.2 (Ubuntu 17.2-1.pgdg24.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -82,6 +82,32 @@ $$;
 ALTER FUNCTION public.find_user_by_id(user_id uuid) OWNER TO i9;
 
 --
+-- Name: fs_object_path(uuid); Type: FUNCTION; Schema: public; Owner: i9
+--
+
+CREATE FUNCTION public.fs_object_path(fs_obj_id uuid) RETURNS text
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  obj_path text;
+  par_dir_id uuid;
+BEGIN
+  SELECT parent_directory_id, concat('/', properties ->> 'name') FROM fs_object 
+  INTO par_dir_id, obj_path 
+  WHERE id = fs_obj_id;
+
+  IF par_dir_id IS NULL THEN
+    RETURN obj_path;
+  END IF;
+
+  RETURN concat(fs_object_path(par_dir_id), obj_path);
+END;
+$$;
+
+
+ALTER FUNCTION public.fs_object_path(fs_obj_id uuid) OWNER TO i9;
+
+--
 -- Name: mkdir(text, text[], uuid); Type: FUNCTION; Schema: public; Owner: i9
 --
 
@@ -99,7 +125,7 @@ BEGIN
   -- if the in_parent_dir_path is "/", we won't find a parent directory, and parent_dir_* values above will be empty,
   -- this new directory, hence, will have no parent i.e it will conceptually be located at the root dir
   SELECT id, path INTO parent_dir_id, parent_dir_path 
-  FROM fs_object 
+  FROM fs_object_view 
   WHERE path = in_parent_dir_path;
 
   -- since the user is able to specify a directory path separated by "/" to create a directory (degenerate) tree
@@ -117,7 +143,7 @@ BEGIN
 	  existing_dir_path text;
 	BEGIN
 	  SELECT id, path INTO existing_dir_id, existing_dir_path 
-	  FROM fs_object
+	  FROM fs_object_view
 	  WHERE path = new_dir_path;
 
 	  -- if a directory along the tree path already exists, rather than raising an error, we just go ahead and use it,
@@ -130,10 +156,10 @@ BEGIN
         -- its parent_directory_id attribute will be NULL and its path attribute will be '/new_dir_name'
 	    -- otherwise, we give this new directory as a child to
         -- the previous directory in the tree, which is currently the parent
-	    INSERT INTO fs_object (owner_user_id, parent_directory_id, path, object_type, properties)
-	    VALUES (user_id, parent_dir_id, new_dir_path, 'directory', jsonb_build_object('name', new_dir_name, 'date_created', new_dir_date, 'date_modified', new_dir_date))
+	    INSERT INTO fs_object (owner_user_id, parent_directory_id, object_type, properties)
+	    VALUES (user_id, parent_dir_id, 'directory', jsonb_build_object('name', new_dir_name, 'date_created', new_dir_date, 'date_modified', new_dir_date))
 		-- setting this new directory to the parent of the next in the tree
-	    RETURNING id, path INTO parent_dir_id, parent_dir_path;
+	    RETURNING id, new_dir_path INTO parent_dir_id, parent_dir_path;
       ELSE
 	    -- setting this existing directory to the parent of the next in the tree
   	    parent_dir_id := existing_dir_id;
@@ -182,7 +208,7 @@ DECLARE
   fs_object_name text;
 BEGIN
 
-  SELECT id, object_type, properties ->> 'name' INTO fs_object_id, fs_object_type, fs_object_name FROM fs_object WHERE path = fs_object_path;
+  SELECT id, object_type, properties ->> 'name' INTO fs_object_id, fs_object_type, fs_object_name FROM fs_object_view WHERE path = fs_object_path;
   
   -- if fs_object_path doesn't exist at all in fs objects, return error: no such file or directory
   IF fs_object_id IS NULL THEN
@@ -228,7 +254,7 @@ DECLARE
   fs_object_name text;
 BEGIN
 
-  SELECT id, object_type, properties ->> 'name' INTO fs_object_id, fs_object_type, fs_object_name FROM fs_object WHERE path = dir_path;
+  SELECT id, object_type, properties ->> 'name' INTO fs_object_id, fs_object_type, fs_object_name FROM fs_object_view WHERE path = dir_path;
   
   -- if dir_path path doesn't exist at all in fs object, return error: no such file or directory
   IF fs_object_id IS NULL THEN
@@ -279,7 +305,6 @@ CREATE TABLE public.fs_object (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     owner_user_id uuid NOT NULL,
     parent_directory_id uuid,
-    path text NOT NULL,
     object_type text NOT NULL,
     properties jsonb NOT NULL,
     CONSTRAINT fs_object_object_type_check CHECK ((object_type = ANY (ARRAY['directory'::text, 'file'::text])))
@@ -287,6 +312,21 @@ CREATE TABLE public.fs_object (
 
 
 ALTER TABLE public.fs_object OWNER TO i9;
+
+--
+-- Name: fs_object_view; Type: VIEW; Schema: public; Owner: i9
+--
+
+CREATE VIEW public.fs_object_view AS
+ SELECT id,
+    parent_directory_id,
+    public.fs_object_path(id) AS path,
+    object_type,
+    properties
+   FROM public.fs_object;
+
+
+ALTER VIEW public.fs_object_view OWNER TO i9;
 
 --
 -- Name: i9rfs_user; Type: TABLE; Schema: public; Owner: i9
@@ -313,14 +353,6 @@ CREATE TABLE public.ongoing_signup (
 
 
 ALTER TABLE public.ongoing_signup OWNER TO i9;
-
---
--- Name: fs_object fs_object_path_key; Type: CONSTRAINT; Schema: public; Owner: i9
---
-
-ALTER TABLE ONLY public.fs_object
-    ADD CONSTRAINT fs_object_path_key UNIQUE (path);
-
 
 --
 -- Name: fs_object fs_object_pkey; Type: CONSTRAINT; Schema: public; Owner: i9

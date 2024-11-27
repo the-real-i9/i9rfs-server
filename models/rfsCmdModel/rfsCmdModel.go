@@ -11,7 +11,7 @@ import (
 )
 
 func PathExists(path string) (bool, error) {
-	exists, err := helpers.QueryRowField[bool]("SELECT EXISTS(SELECT 1 FROM fs_object WHERE path = $1)", path)
+	exists, err := helpers.QueryRowField[bool]("SELECT EXISTS(SELECT 1 FROM fs_object_view WHERE path = $1)", path)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		errors.As(err, &pgErr)
