@@ -2,31 +2,6 @@
 
 ## File System Management
 
-> Mark when implemented
-
-### Create directory
-
-Command: `mkdir`
-
-Flag: `-p`
-
-Arg: `folderName`
-
-#### Implementation
-
-- Take the `dirName` of the directory
-- Create a new directory with the `dirName` in the database
-- If the `workPath` is "/" then the parent_directory_id is empty, else parent directory is the id of the directory with the `path` of `workPath`.
-- The path attribute of the new directory is `workPath` + `/dirName` (or `workPath` + `dirName`, if `workPath` is `/`)
-
-### Remove directory
-
-Command: `rmdir`
-
-Flag: `-r`
-
-Arg: `folderName`
-
 ### Copy
 
 Command: `cp`
@@ -37,7 +12,18 @@ Arg: `fileOrFolderName`
 
 Command: `mv`
 
-Arg: `fileOrFolderName`
+Arg: `SOURCE DEST`
+
+#### Implememtation
+
+- If: `SOURCE` path exists,
+  - Get the `id` of `SOURCE`
+- Else: throw an error
+- If: `DEST` path, "excluding the last segment", exists
+  - If the last segment exists as a directory
+    - Set the `id` of `DEST` as the `parent_directory_id` of `SOURCE`
+  - Else: Set the `id` of `DEST` "excluding the last segment" as the `parent_directory_id` of `SOURCE`, then rename the first segment of `SOURCE` path to the name of the last segment of `DEST` path.
+- Else: throw an error
 
 ### List directory contents
 
@@ -64,4 +50,3 @@ Arg: `pathToFile`
 Command: `upload`
 
 Arg: `pathToFile`
-
