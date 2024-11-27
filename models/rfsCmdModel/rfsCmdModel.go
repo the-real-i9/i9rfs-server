@@ -22,8 +22,13 @@ func PathExists(path string) (bool, error) {
 	return *exists, nil
 }
 
+type cmdDBRes struct {
+	Status bool
+	ErrMsg string `db:"err_msg"`
+}
+
 func Mkdir(parentDirPath string, newDirTree []string, userId string) (bool, error) {
-	_, err := helpers.QueryRowField[bool]("SELECT mkdir($1, $2, $3)", parentDirPath, newDirTree, userId)
+	res, err := helpers.QueryRowType[cmdDBRes]("SELECT status, err_msg mkdir($1, $2, $3)", parentDirPath, newDirTree, userId)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		errors.As(err, &pgErr)
@@ -31,12 +36,11 @@ func Mkdir(parentDirPath string, newDirTree []string, userId string) (bool, erro
 		return false, appGlobals.ErrInternalServerError
 	}
 
-	return true, nil
-}
+	if !res.Status {
+		return false, fmt.Errorf(res.ErrMsg)
+	}
 
-type cmdDBRes struct {
-	Status bool
-	ErrMsg string `db:"err_msg"`
+	return true, nil
 }
 
 func Rmdir(dirPath string) (bool, error) {
@@ -61,6 +65,22 @@ func Rm(fsObjectPath string, recursive bool) (bool, error) {
 		var pgErr *pgconn.PgError
 		errors.As(err, &pgErr)
 		log.Println(fmt.Errorf("rfsCmdModel.go: Rm: %s: %s", pgErr.Message, pgErr.Detail))
+		return false, appGlobals.ErrInternalServerError
+	}
+
+	if !res.Status {
+		return false, fmt.Errorf(res.ErrMsg)
+	}
+
+	return true, nil
+}
+
+func Mv(sourcePath, destPath string) (bool, error) {
+	res, err := helpers.QueryRowType[cmdDBRes]("SELECT status, err_msg FROM mv($1, $2)", sourcePath, destPath)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		errors.As(err, &pgErr)
+		log.Println(fmt.Errorf("rfsCmdModel.go: Mv: %s: %s", pgErr.Message, pgErr.Detail))
 		return false, appGlobals.ErrInternalServerError
 	}
 

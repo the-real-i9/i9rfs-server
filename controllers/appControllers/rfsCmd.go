@@ -48,6 +48,8 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 			resp, app_err = rfsCmdService.RemoveDirectory(body.WorkPath, body.CmdArgs)
 		case "rm":
 			resp, app_err = rfsCmdService.Remove(body.WorkPath, body.CmdArgs)
+		case "mv":
+			resp, app_err = rfsCmdService.Move(body.WorkPath, body.CmdArgs)
 		case "upload", "up":
 			resp, app_err = rfsCmdService.UploadFile(body.WorkPath, body.CmdArgs)
 		case "download", "down":

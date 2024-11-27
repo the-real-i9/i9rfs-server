@@ -82,6 +82,13 @@ func Remove(workPath string, cmdArgs []string) (bool, error) {
 	return rfsCmdModel.Rm(fsObjectPath, true)
 }
 
+func Move(workPath string, cmdArgs []string) (bool, error) {
+	sourcePath := resolveToTarget(workPath, cmdArgs[0])
+	destPath := resolveToTarget(workPath, cmdArgs[1])
+
+	return rfsCmdModel.Mv(sourcePath, destPath)
+}
+
 func UploadFile(workPath string, cmdArgs []string) (string, error) {
 	// fileData := []byte(cmdArgs[0])
 	// filename := cmdArgs[1]
