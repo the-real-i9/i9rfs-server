@@ -18,6 +18,18 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: cmd_res_t; Type: TYPE; Schema: public; Owner: i9
+--
+
+CREATE TYPE public.cmd_res_t AS (
+	status boolean,
+	err_msg text
+);
+
+
+ALTER TYPE public.cmd_res_t OWNER TO i9;
+
+--
 -- Name: i9rfs_user_t; Type: TYPE; Schema: public; Owner: i9
 --
 
@@ -111,7 +123,7 @@ ALTER FUNCTION public.fs_object_path(fs_obj_id uuid) OWNER TO i9;
 -- Name: mkdir(text, text[], uuid); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.mkdir(in_parent_dir_path text, new_dir_tree text[], user_id uuid) RETURNS boolean
+CREATE FUNCTION public.mkdir(in_parent_dir_path text, new_dir_tree text[], user_id uuid) RETURNS public.cmd_res_t
     LANGUAGE plpgsql
     AS $$
 DECLARE
@@ -119,6 +131,8 @@ DECLARE
   parent_dir_path text;
 
   new_dir_node text;
+
+  cmd_res cmd_res_t;
 BEGIN
   -- retrieve the parent directory's id and path from the database
   -- the parent directory is one whose path is in_parent_dir_path
@@ -169,12 +183,117 @@ BEGIN
 	
   END LOOP;
 
-  RETURN true;
+  cmd_res.status := true;
+  cmd_res.err_msg := '';
+  
+  RETURN cmd_res;
 END;
 $$;
 
 
 ALTER FUNCTION public.mkdir(in_parent_dir_path text, new_dir_tree text[], user_id uuid) OWNER TO i9;
+
+--
+-- Name: mv(text, text); Type: FUNCTION; Schema: public; Owner: i9
+--
+
+CREATE FUNCTION public.mv(source_path text, dest_path text) RETURNS public.cmd_res_t
+    LANGUAGE plpgsql
+    AS $_$
+DECLARE
+  source_path_id uuid;
+
+  dest_path_last_seg text;
+  dest_path_prec_last_seg text;
+
+  dest_path_prec_last_seg_id uuid;
+
+  dest_path_id uuid;
+
+  cmd_res cmd_res_t;
+BEGIN
+  -- first try to get source_path's id
+  SELECT id INTO source_path_id FROM fs_object_view WHERE path = source_path;
+
+  -- if source doesn't exist, return error
+  IF source_path_id IS NULL THEN
+    cmd_res.status := false;
+	cmd_res.err_msg := 'cannot stat $source: No such file or directory';
+
+	RETURN cmd_res;
+  END IF;
+
+  -- separate the last segment and the path preceeding it from dest_path
+  -- last segment
+  dest_path_last_seg := split_part(dest_path, '/', -1);
+  -- path preceeding last segment
+  dest_path_prec_last_seg := substring(dest_path for (char_length(dest_path) - char_length(dest_path_last_seg)) - 1);
+
+  -- try to get the id of dest_path_prec_last_seg
+  SELECT id INTO dest_path_prec_last_seg_id FROM fs_object_view WHERE path = dest_path_prec_last_seg;
+
+  -- if this path does not exist, and it is not the case that only one segment in the dest_path, throw error
+  IF dest_path_prec_last_seg_id IS NULL AND dest_path_prec_last_seg != '' THEN
+    cmd_res.status := false;
+	cmd_res.err_msg := 'cannot move $source to $dest: No such file or directory';
+
+	RETURN cmd_res;
+  END IF;
+
+  -- since this path exists, let's check if the last segment is an existing directory in this path:
+  -- by checking if the full dest_path (a combination of what we previously separated) itself exists:
+  -- by trying to get the id of the dest_path
+  SELECT id INTO dest_path_id FROM fs_object_view WHERE path = dest_path;
+
+  -- if this path exists, then the last segment is indeed a directory
+  -- and we want to move source to this destination:
+  -- by setting source's parent_directory_id to dest_path_id
+  IF dest_path_id IS NOT NULL THEN
+    IF starts_with(dest_path, source_path) THEN
+	  cmd_res.status := false;
+	  cmd_res.err_msg := 'cannot move $source to a subdirectory of itself $dest/$source_last_seg';
+
+	  RETURN cmd_res;
+	END IF;
+    UPDATE fs_object SET parent_directory_id = dest_path_id WHERE id = source_path_id;
+	
+  -- if this path does not exist, then the last segment is the new name for the source
+  -- and we want to move source to the destination specified before this last segment
+  -- by setting source's parent_directory_id to dest_path_prec_last_seg_id
+  -- and rename the directory we just moved to this new name
+  ELSE
+    IF starts_with(dest_path, source_path) THEN
+	  cmd_res.status := false;
+	  cmd_res.err_msg := 'cannot move $source to a subdirectory of itself $dest';
+
+	  RETURN cmd_res;
+	END IF;
+
+    -- meanwhile if only supposed last segment and new name is the only segment
+	-- then a renaming is done without a moving
+	IF dest_path_prec_last_seg = '' THEN
+	  UPDATE fs_object 
+	  SET properties['name'] = dest_path_last_seg
+	  WHERE id = source_path_id;
+
+	-- else do what we'll normally do in this situation:
+	-- perform a move and rename
+	ELSE
+	  UPDATE fs_object 
+	  SET parent_directory_id = dest_path_prec_last_seg_id, properties['name'] = dest_path_last_seg
+	  WHERE id = source_path_id;
+	END IF;
+  END IF;
+  
+  cmd_res.status := true;
+  cmd_res.err_msg := '';
+
+  RETURN cmd_res;
+END;
+$_$;
+
+
+ALTER FUNCTION public.mv(source_path text, dest_path text) OWNER TO i9;
 
 --
 -- Name: new_user(character varying, character varying, character varying); Type: FUNCTION; Schema: public; Owner: i9
@@ -199,31 +318,33 @@ ALTER FUNCTION public.new_user(in_email character varying, in_username character
 -- Name: rm(text, boolean); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.rm(fs_object_path text, rflag boolean, OUT status boolean, OUT err_msg text) RETURNS record
+CREATE FUNCTION public.rm(fs_object_path text, rflag boolean) RETURNS public.cmd_res_t
     LANGUAGE plpgsql
     AS $$
 DECLARE
   fs_object_id uuid;
   fs_object_type text;
   fs_object_name text;
+
+  cmd_res cmd_res_t;
 BEGIN
 
   SELECT id, object_type, properties ->> 'name' INTO fs_object_id, fs_object_type, fs_object_name FROM fs_object_view WHERE path = fs_object_path;
   
   -- if fs_object_path doesn't exist at all in fs objects, return error: no such file or directory
   IF fs_object_id IS NULL THEN
-    status := false;
-	err_msg := 'no such file or directory';
+    cmd_res.status := false;
+	cmd_res.err_msg := 'no such file or directory';
 	
-	RETURN;
+	RETURN cmd_res;
   END IF;
 
   -- if fs_object_type is 'directory' AND the recursive flag is not set
   IF fs_object_type = 'directory' AND rflag = false THEN
-    status := false;
-	err_msg := concat('cannot remove ', quote_literal(fs_object_name), ': Is a directory');
+    cmd_res.status := false;
+	cmd_res.err_msg := concat('cannot remove ', quote_literal(fs_object_name), ': Is a directory');
 
-	RETURN;
+	RETURN cmd_res;
   END IF;
 
   -- if (fs_object type is 'directory' AND rflag is set) OR fs_object_type is 'file'
@@ -231,67 +352,69 @@ BEGIN
   -- if fs object is a directory this will remove the entire tree (ON DELETE CASCADE)
   DELETE FROM fs_object WHERE id = fs_object_id;
 
-  status := true;
-  err_msg := '';
+  cmd_res.status := true;
+  cmd_res.err_msg := '';
 
-  RETURN;
+  RETURN cmd_res;
 END;
 $$;
 
 
-ALTER FUNCTION public.rm(fs_object_path text, rflag boolean, OUT status boolean, OUT err_msg text) OWNER TO i9;
+ALTER FUNCTION public.rm(fs_object_path text, rflag boolean) OWNER TO i9;
 
 --
 -- Name: rmdir(text); Type: FUNCTION; Schema: public; Owner: i9
 --
 
-CREATE FUNCTION public.rmdir(dir_path text, OUT status boolean, OUT err_msg text) RETURNS record
+CREATE FUNCTION public.rmdir(dir_path text) RETURNS public.cmd_res_t
     LANGUAGE plpgsql
     AS $$
 DECLARE
   fs_object_id uuid;
   fs_object_type text;
   fs_object_name text;
+
+  cmd_res cmd_res_t;
 BEGIN
 
   SELECT id, object_type, properties ->> 'name' INTO fs_object_id, fs_object_type, fs_object_name FROM fs_object_view WHERE path = dir_path;
   
   -- if dir_path path doesn't exist at all in fs object, return error: no such file or directory
   IF fs_object_id IS NULL THEN
-    status := false;
-	err_msg := 'no such file or directory';
+    cmd_res.status := false;
+	cmd_res.err_msg := 'no such file or directory';
 	
-	RETURN;
+	RETURN cmd_res;
   END IF;
 
   -- if fs object type is not a directory, return error: failed to remove '{object name}': Not a directory
   IF fs_object_type <> 'directory' THEN
-    status := false;
-	err_msg := concat('failed to remove ', quote_literal(fs_object_name), ': Not a directory');
+    cmd_res.status := false;
+	cmd_res.err_msg := concat('failed to remove ', quote_literal(fs_object_name), ': Not a directory');
 
-	RETURN;
+	RETURN cmd_res;
   END IF;
 
   -- if directory is the parent of any other fs object, return error: failed to remove '{object name}': Directory not empty
   IF EXISTS(SELECT 1 FROM fs_object WHERE parent_directory_id = fs_object_id) THEN
-    status := false;
-	err_msg := concat('failed to remove ', quote_literal(fs_object_name), ': Directory not empty');
+    cmd_res.status := false;
+	cmd_res.err_msg := concat('failed to remove ', quote_literal(fs_object_name), ': Directory not empty');
 
-	RETURN;
+	RETURN cmd_res;
   END IF;
 
   -- remove directory
   DELETE FROM fs_object WHERE id = fs_object_id;
 
-  status := true;
-  err_msg := '';
+  cmd_res.status := true;
+  cmd_res.err_msg := '';
 
-  RETURN;
+  RETURN cmd_res;
 END;
 $$;
 
 
-ALTER FUNCTION public.rmdir(dir_path text, OUT status boolean, OUT err_msg text) OWNER TO i9;
+ALTER FUNCTION public.rmdir(dir_path text) OWNER TO i9;
 
 SET default_tablespace = '';
 
