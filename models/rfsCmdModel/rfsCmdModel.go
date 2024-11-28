@@ -28,7 +28,7 @@ type cmdDBRes struct {
 }
 
 func Mkdir(parentDirPath string, newDirTree []string, userId string) (bool, error) {
-	res, err := helpers.QueryRowType[cmdDBRes]("SELECT status, err_msg mkdir($1, $2, $3)", parentDirPath, newDirTree, userId)
+	res, err := helpers.QueryRowType[cmdDBRes]("SELECT status, err_msg FROM mkdir($1, $2, $3)", parentDirPath, newDirTree, userId)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		errors.As(err, &pgErr)
