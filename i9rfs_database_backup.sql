@@ -220,11 +220,23 @@ BEGIN
   -- if source doesn't exist, return error
   IF source_path_id IS NULL THEN
     cmd_res.status := false;
-	cmd_res.err_msg := 'cannot stat $source: No such file or directory';
+	cmd_res.err_msg := 'cannot stat ''$source'': No such file or directory';
 
 	RETURN cmd_res;
   END IF;
 
+  -- if dest_path is root, our journey isn't far,
+  -- move source to root by setting its parent_directory_id to null
+  IF dest_path = '/' THEN
+    UPDATE fs_object SET parent_directory_id = null WHERE id = source_path_id;
+
+	cmd_res.status := true;
+	cmd_res.err_msg := '';
+
+	RETURN cmd_res;
+  END IF;
+
+  
   -- separate the last segment and the path preceeding it from dest_path
   -- last segment
   dest_path_last_seg := split_part(dest_path, '/', -1);
@@ -237,7 +249,7 @@ BEGIN
   -- if this path does not exist, and it is not the case that only one segment in the dest_path, throw error
   IF dest_path_prec_last_seg_id IS NULL AND dest_path_prec_last_seg != '' THEN
     cmd_res.status := false;
-	cmd_res.err_msg := 'cannot move $source to $dest: No such file or directory';
+	cmd_res.err_msg := 'cannot move ''$source'' to ''$dest'': No such file or directory';
 
 	RETURN cmd_res;
   END IF;
@@ -253,7 +265,7 @@ BEGIN
     -- taboo check
     IF starts_with(dest_path, source_path) THEN
 	  cmd_res.status := false;
-	  cmd_res.err_msg := 'cannot move $source to a subdirectory of itself $dest/$source_last_seg';
+	  cmd_res.err_msg := 'cannot move ''$source'' to a subdirectory of itself ''$dest/$source_last_seg''';
 
 	  RETURN cmd_res;
 	END IF;
@@ -268,7 +280,7 @@ BEGIN
 	  -- let's check for this taboo first
 	  IF source_path_object_type = 'directory' THEN
 	    cmd_res.status := false;
-	    cmd_res.err_msg := 'cannot overwrite non-directory $dest with directory $source';
+	    cmd_res.err_msg := 'cannot overwrite non-directory ''$dest'' with directory ''$source''';
 
 	    RETURN cmd_res;
 	  END IF;
@@ -302,7 +314,7 @@ BEGIN
     -- taboo check
     IF starts_with(dest_path, source_path) THEN
 	  cmd_res.status := false;
-	  cmd_res.err_msg := 'cannot move $source to a subdirectory of itself $dest';
+	  cmd_res.err_msg := 'cannot move ''$source'' to a subdirectory of itself ''$dest''';
 
 	  RETURN cmd_res;
 	END IF;

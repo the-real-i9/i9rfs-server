@@ -86,6 +86,10 @@ func Move(workPath string, cmdArgs []string) (bool, error) {
 	sourcePath := resolveToTarget(workPath, cmdArgs[0])
 	destPath := resolveToTarget(workPath, cmdArgs[1])
 
+	if sourcePath == "/" {
+		return false, fmt.Errorf("cannot move '$source' to '$dest/$source': Device or resource busy")
+	}
+
 	return rfsCmdModel.Mv(sourcePath, destPath)
 }
 
