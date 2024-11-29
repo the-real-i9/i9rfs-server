@@ -202,6 +202,7 @@ CREATE FUNCTION public.mv(source_path text, dest_path text) RETURNS public.cmd_r
     AS $_$
 DECLARE
   source_path_id uuid;
+  source_path_object_type text;
 
   dest_path_last_seg text;
   dest_path_prec_last_seg text;
@@ -209,11 +210,12 @@ DECLARE
   dest_path_prec_last_seg_id uuid;
 
   dest_path_id uuid;
+  dest_path_object_type text;
 
   cmd_res cmd_res_t;
 BEGIN
   -- first try to get source_path's id
-  SELECT id INTO source_path_id FROM fs_object_view WHERE path = source_path;
+  SELECT id, object_type INTO source_path_id, source_path_object_type FROM fs_object_view WHERE path = source_path;
 
   -- if source doesn't exist, return error
   IF source_path_id IS NULL THEN
@@ -240,28 +242,64 @@ BEGIN
 	RETURN cmd_res;
   END IF;
 
-  -- since this path exists, let's check if the last segment is an existing directory in this path:
-  -- by checking if the full dest_path (a combination of what we previously separated) itself exists:
-  -- by trying to get the id of the dest_path
-  SELECT id INTO dest_path_id FROM fs_object_view WHERE path = dest_path;
+  -- since this path exists, let's check if the last segment is an existing object in this path:
+  -- by checking if the full dest_path itself exists (as they technically refer to the same thing):
+  -- to do this we try to get the id of the dest_path
+  SELECT id, object_type INTO dest_path_id, dest_path_object_type 
+  FROM fs_object_view WHERE path = dest_path;
 
-  -- if this path exists, then the last segment is indeed a directory
-  -- and we want to move source to this destination:
-  -- by setting source's parent_directory_id to dest_path_id
+  -- if dest_path itself exists, then its last segment is an existing object
   IF dest_path_id IS NOT NULL THEN
+    -- taboo check
     IF starts_with(dest_path, source_path) THEN
 	  cmd_res.status := false;
 	  cmd_res.err_msg := 'cannot move $source to a subdirectory of itself $dest/$source_last_seg';
 
 	  RETURN cmd_res;
 	END IF;
-    UPDATE fs_object SET parent_directory_id = dest_path_id WHERE id = source_path_id;
 	
-  -- if this path does not exist, then the last segment is the new name for the source
-  -- and we want to move source to the destination specified before this last segment
-  -- by setting source's parent_directory_id to dest_path_prec_last_seg_id
-  -- and rename the directory we just moved to this new name
+	-- if this dest_path (last segment) is a directory, then we want to move source to this destination:
+    -- by setting source's parent_directory_id to dest_path_id
+	IF dest_path_object_type = 'directory' THEN
+	  UPDATE fs_object SET parent_directory_id = dest_path_id WHERE id = source_path_id;
+
+	ELSE
+	  -- since this dest_path (last segment) is a file, then source_path (last segment) must not be a directory
+	  -- let's check for this taboo first
+	  IF source_path_object_type = 'directory' THEN
+	    cmd_res.status := false;
+	    cmd_res.err_msg := 'cannot overwrite non-directory $dest with directory $source';
+
+	    RETURN cmd_res;
+	  END IF;
+
+	  -- since that is not the case, and both source_path and dest_path (last segments) are existing files,
+	  -- we want to move source to the destination specified before this last segment, 
+	  -- and overwrite dest file with source file's content, practically by 
+	  
+	  -- deleting the current dest (file)
+	  DELETE FROM fs_object WHERE id = dest_path_id;
+
+	  -- setting source's parent_directory_id to dest_path_prec_last_seg_id,
+	  -- and renaming the file we just moved to the name of dest file (last segment) just deleted.
+	  UPDATE fs_object 
+	  SET parent_directory_id = dest_path_prec_last_seg_id, properties['name'] = to_jsonb(dest_path_last_seg)
+	  WHERE id = source_path_id;
+
+	  -- meanwhile if the supposed  dest_path last segment is the only segment (i.e. dest_path_prec_last_seg is null)
+	  -- then we need to move to root, by seting parent_directory_id to null and then rename
+	  -- but, luckily for us, dest_path_prec_last_seg_id will itself be null if this is the case,
+	  -- and we don't need to do anything else
+	END IF;
+	
+  
   ELSE
+    -- since dest_path itself does not exist, then the last segment is the specified new name for the source
+    -- and we want to move source to the destination specified before this last segment
+    -- by setting source's parent_directory_id to dest_path_prec_last_seg_id
+    -- and rename the object we just moved to this new name
+  
+    -- taboo check
     IF starts_with(dest_path, source_path) THEN
 	  cmd_res.status := false;
 	  cmd_res.err_msg := 'cannot move $source to a subdirectory of itself $dest';
@@ -269,20 +307,14 @@ BEGIN
 	  RETURN cmd_res;
 	END IF;
 
-    -- meanwhile if only supposed last segment and new name is the only segment
-	-- then a renaming is done without a moving
-	IF dest_path_prec_last_seg = '' THEN
-	  UPDATE fs_object 
-	  SET properties['name'] = dest_path_last_seg
-	  WHERE id = source_path_id;
+	UPDATE fs_object 
+	SET parent_directory_id = dest_path_prec_last_seg_id, properties['name'] = to_jsonb(dest_path_last_seg)
+	WHERE id = source_path_id;
 
-	-- else do what we'll normally do in this situation:
-	-- perform a move and rename
-	ELSE
-	  UPDATE fs_object 
-	  SET parent_directory_id = dest_path_prec_last_seg_id, properties['name'] = dest_path_last_seg
-	  WHERE id = source_path_id;
-	END IF;
+	-- meanwhile if the supposed last segment (new name) is the only segment (i.e. dest_path_prec_last_seg is null)
+	-- then we need to move to root, by seting parent_directory_id to null and then rename
+	-- but, luckily for us, dest_path_prec_last_seg_id will itself be null if this is the case,
+	-- and we don't need to do anything else
   END IF;
   
   cmd_res.status := true;
