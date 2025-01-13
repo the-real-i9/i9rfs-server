@@ -91,6 +91,10 @@ func Move(workPath string, cmdArgs []string) (bool, error) {
 	}
 
 	return rfsCmdModel.Mv(sourcePath, destPath)
+
+	// the .Mv model must tell you if you need to do a renaming on the GCS cloud
+	// if sourcePath and destPath are both files, it must return the id of both
+	// so you can find the source (by its id) on GCS and rename it to dest's id
 }
 
 func UploadFile(workPath string, cmdArgs []string) (string, error) {

@@ -23,7 +23,8 @@ SET row_security = off;
 
 CREATE TYPE public.cmd_res_t AS (
 	status boolean,
-	err_msg text
+	err_msg text,
+	file_ids uuid[]
 );
 
 
@@ -246,7 +247,8 @@ BEGIN
   -- try to get the id of dest_path_prec_last_seg
   SELECT id INTO dest_path_prec_last_seg_id FROM fs_object_view WHERE path = dest_path_prec_last_seg;
 
-  -- if this path does not exist, and it is not the case that only one segment in the dest_path, throw error
+  -- if this path does not exist, and it is not the case that only one segment in the dest_path,
+  -- (which will be the case if dest_path_prec_last_seg is empty string in the above splitting)throw error
   IF dest_path_prec_last_seg_id IS NULL AND dest_path_prec_last_seg != '' THEN
     cmd_res.status := false;
 	cmd_res.err_msg := 'cannot move ''$source'' to ''$dest'': No such file or directory';
@@ -371,6 +373,8 @@ DECLARE
   fs_object_name text;
 
   cmd_res cmd_res_t;
+
+  file_ids uuid[];
 BEGIN
 
   SELECT id, object_type, properties ->> 'name' INTO fs_object_id, fs_object_type, fs_object_name FROM fs_object_view WHERE path = fs_object_path;
@@ -393,11 +397,16 @@ BEGIN
 
   -- if (fs_object type is 'directory' AND rflag is set) OR fs_object_type is 'file'
   -- actually, this is the only possible condition at this point so there's no need to check
-  -- if fs object is a directory this will remove the entire tree (ON DELETE CASCADE)
+  -- if fs_object is a directory this will remove the entire tree that descends from it (ON DELETE CASCADE)
+  -- but first, we need to traverse all the descendants of this directory 
+  -- and retrieve the id of "file" fs_object types, so that we can delete them in cloud storage.
+  SELECT array_agg(id) INTO file_ids FROM fs_object_view WHERE starts_with(path, fs_object_path) AND object_type = 'file';
+  
   DELETE FROM fs_object WHERE id = fs_object_id;
 
   cmd_res.status := true;
   cmd_res.err_msg := '';
+  cmd_res.file_ids := file_ids;
 
   RETURN cmd_res;
 END;
@@ -423,7 +432,7 @@ BEGIN
 
   SELECT id, object_type, properties ->> 'name' INTO fs_object_id, fs_object_type, fs_object_name FROM fs_object_view WHERE path = dir_path;
   
-  -- if dir_path path doesn't exist at all in fs object, return error: no such file or directory
+  -- if dir_path path doesn't exist at all as an fs_object, return error: no such file or directory
   IF fs_object_id IS NULL THEN
     cmd_res.status := false;
 	cmd_res.err_msg := 'no such file or directory';
@@ -439,7 +448,7 @@ BEGIN
 	RETURN cmd_res;
   END IF;
 
-  -- if directory is the parent of any other fs object, return error: failed to remove '{object name}': Directory not empty
+  -- if directory is the parent of any other fs_object, return error: failed to remove '{object name}': Directory not empty
   IF EXISTS(SELECT 1 FROM fs_object WHERE parent_directory_id = fs_object_id) THEN
     cmd_res.status := false;
 	cmd_res.err_msg := concat('failed to remove ', quote_literal(fs_object_name), ': Directory not empty');

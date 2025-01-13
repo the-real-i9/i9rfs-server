@@ -1,6 +1,7 @@
 package signupService
 
 import (
+	"context"
 	"fmt"
 	"i9rfs/server/appGlobals"
 	"i9rfs/server/appTypes"
@@ -14,7 +15,7 @@ import (
 	"time"
 )
 
-func RequestNewAccount(email string) (string, error) {
+func RequestNewAccount(ctx context.Context, email string) (string, error) {
 	accExists, err := appModel.AccountExists(email)
 	if err != nil {
 		return "", err
@@ -32,7 +33,7 @@ func RequestNewAccount(email string) (string, error) {
 		VerfCode: verfCode,
 	}
 
-	sessionId, err := appServices.NewSession("ongoing_signup", sessionData)
+	sessionId, err := appServices.NewSession(ctx, "ongoing_signup", sessionData)
 	if err != nil {
 		return "", err
 	}
@@ -44,7 +45,7 @@ func RequestNewAccount(email string) (string, error) {
 	return signupSessionJwt, nil
 }
 
-func VerifyEmail(sessionId string, verfCode, inputVerfCode int, email string) (string, error) {
+func VerifyEmail(ctx context.Context, sessionId string, verfCode, inputVerfCode int, email string) (string, error) {
 	if verfCode != inputVerfCode {
 		return "", fmt.Errorf("email verification error: incorrect verification code")
 	}
@@ -55,7 +56,7 @@ func VerifyEmail(sessionId string, verfCode, inputVerfCode int, email string) (s
 		VerfCode: 0,
 	}
 
-	err := appServices.UpdateSession("ongoing_signup", sessionId, sessionData)
+	err := appServices.UpdateSession(ctx, "ongoing_signup", sessionId, sessionData)
 	if err != nil {
 		return "", err
 	}
@@ -67,7 +68,7 @@ func VerifyEmail(sessionId string, verfCode, inputVerfCode int, email string) (s
 	return signupSessionJwt, nil
 }
 
-func RegisterUser(sessionId, email, username, password string) (any, error) {
+func RegisterUser(ctx context.Context, sessionId, email, username, password string) (any, error) {
 	accExists, err := appModel.AccountExists(username)
 	if err != nil {
 		return nil, err
@@ -83,7 +84,7 @@ func RegisterUser(sessionId, email, username, password string) (any, error) {
 		return nil, appGlobals.ErrInternalServerError
 	}
 
-	user, err := user.New(email, username, hashedPassword)
+	user, err := user.New(ctx, email, username, hashedPassword)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +96,7 @@ func RegisterUser(sessionId, email, username, password string) (any, error) {
 
 	authJwt := securityServices.JwtSign(userData, os.Getenv("AUTH_JWT_SECRET"), time.Now().UTC().Add(365*24*time.Hour)) // 1 year
 
-	appServices.EndSession("ongoing_signup", sessionId)
+	appServices.EndSession(ctx, "ongoing_signup", sessionId)
 
 	respData := map[string]any{
 		"msg":     "Signup success!",

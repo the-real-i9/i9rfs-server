@@ -17,6 +17,8 @@ func init() {
 }
 
 func main() {
+	defer initializers.CleanUp()
+
 	app := fiber.New(fiber.Config{DisableStartupMessage: true})
 
 	app.Use(func(c *fiber.Ctx) error {

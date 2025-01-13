@@ -37,7 +37,7 @@ func Mkdir(parentDirPath string, newDirTree []string, userId string) (bool, erro
 	}
 
 	if !res.Status {
-		return false, fmt.Errorf(res.ErrMsg)
+		return false, fmt.Errorf("%s", res.ErrMsg)
 	}
 
 	return true, nil
@@ -53,7 +53,7 @@ func Rmdir(dirPath string) (bool, error) {
 	}
 
 	if !res.Status {
-		return false, fmt.Errorf(res.ErrMsg)
+		return false, fmt.Errorf("%s", res.ErrMsg)
 	}
 
 	return true, nil
@@ -69,7 +69,7 @@ func Rm(fsObjectPath string, recursive bool) (bool, error) {
 	}
 
 	if !res.Status {
-		return false, fmt.Errorf(res.ErrMsg)
+		return false, fmt.Errorf("%s", res.ErrMsg)
 	}
 
 	return true, nil
@@ -85,7 +85,7 @@ func Mv(sourcePath, destPath string) (bool, error) {
 	}
 
 	if !res.Status {
-		return false, fmt.Errorf(res.ErrMsg)
+		return false, fmt.Errorf("%s", res.ErrMsg)
 	}
 
 	return true, nil

@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"fmt"
 	"i9rfs/server/appGlobals"
 	"i9rfs/server/helpers"
@@ -13,7 +14,7 @@ type user struct {
 	Password string
 }
 
-func New(email, username, password string) (*user, error) {
+func New(ctx context.Context, email, username, password string) (*user, error) {
 	newUser, err := helpers.QueryRowType[user]("SELECT * FROM new_user($1, $2, $3)", email, username, password)
 	if err != nil {
 		log.Println(fmt.Errorf("userModel.go: New: %s", err))
