@@ -16,7 +16,7 @@ import (
 )
 
 func RequestNewAccount(ctx context.Context, email string) (string, error) {
-	accExists, err := appModel.AccountExists(email)
+	accExists, err := appModel.AccountExists(ctx, email)
 	if err != nil {
 		return "", err
 	}
@@ -69,7 +69,7 @@ func VerifyEmail(ctx context.Context, sessionId string, verfCode, inputVerfCode 
 }
 
 func RegisterUser(ctx context.Context, sessionId, email, username, password string) (any, error) {
-	accExists, err := appModel.AccountExists(username)
+	accExists, err := appModel.AccountExists(ctx, username)
 	if err != nil {
 		return nil, err
 	}

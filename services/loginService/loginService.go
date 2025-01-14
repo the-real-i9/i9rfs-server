@@ -1,6 +1,7 @@
 package loginService
 
 import (
+	"context"
 	"fmt"
 	"i9rfs/server/appGlobals"
 	"i9rfs/server/appTypes"
@@ -11,8 +12,8 @@ import (
 	"time"
 )
 
-func Login(emailOrUsername, password string) (any, error) {
-	user, err := user.FindByEmailOrUsername(emailOrUsername)
+func Login(ctx context.Context, emailOrUsername, password string) (any, error) {
+	user, err := user.FindByEmailOrUsername(ctx, emailOrUsername)
 	if err != nil {
 		return nil, err
 	}

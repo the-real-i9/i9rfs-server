@@ -7,16 +7,22 @@ import (
 	"i9rfs/server/appTypes"
 )
 
-func MapToStruct(val map[string]any, structData any) {
+func MapToStruct(val map[string]any, yourStruct any) {
 	bt, _ := json.Marshal(val)
 
-	json.Unmarshal(bt, structData)
+	json.Unmarshal(bt, yourStruct)
 }
 
-func ToStruct(val any, structData any) {
+func StructToMap(val any, yourMap *map[string]any) {
 	bt, _ := json.Marshal(val)
 
-	json.Unmarshal(bt, structData)
+	json.Unmarshal(bt, yourMap)
+}
+
+func ToStruct(val any, yourStruct any) {
+	bt, _ := json.Marshal(val)
+
+	json.Unmarshal(bt, yourStruct)
 }
 
 func ErrResp(code int, err error) appTypes.WSResp {

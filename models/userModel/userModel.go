@@ -6,40 +6,102 @@ import (
 	"i9rfs/server/appGlobals"
 	"i9rfs/server/helpers"
 	"log"
+
+	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
 type user struct {
-	Id       string
-	Username string
-	Password string
+	Id       string `json:"id"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 func New(ctx context.Context, email, username, password string) (*user, error) {
-	newUser, err := helpers.QueryRowType[user]("SELECT * FROM new_user($1, $2, $3)", email, username, password)
+	res, err := neo4j.ExecuteQuery(ctx, appGlobals.Neo4jDriver,
+		`
+		CREATE (u:User { id: randomUUID(), email: $email, username: $username, password: $password })
+		RETURN u { .id, .username, .password } AS new_user
+		`,
+		map[string]any{
+			"email":    email,
+			"username": username,
+			"password": password,
+		},
+		neo4j.EagerResultTransformer,
+	)
 	if err != nil {
 		log.Println(fmt.Errorf("userModel.go: New: %s", err))
 		return nil, appGlobals.ErrInternalServerError
 	}
 
-	return newUser, nil
+	recVal, _, err := neo4j.GetRecordValue[map[string]any](res.Records[0], "new_user")
+	if err != nil {
+		log.Println(fmt.Errorf("userModel.go: New: %s", err))
+		return nil, appGlobals.ErrInternalServerError
+	}
+
+	var newUser user
+
+	helpers.MapToStruct(recVal, &newUser)
+
+	return &newUser, nil
 }
 
-func FindById(userId string) (*user, error) {
-	resUser, err := helpers.QueryRowType[user]("SELECT * FROM find_user_by_id($1)", userId)
+func FindById(ctx context.Context, userId string) (*user, error) {
+	res, err := neo4j.ExecuteQuery(ctx, appGlobals.Neo4jDriver,
+		`
+		MATCH (u:User { id: $userId })
+		RETURN u { .id, .username, .password } AS found_user
+		`,
+		map[string]any{
+			"userId": userId,
+		},
+		neo4j.EagerResultTransformer,
+	)
 	if err != nil {
 		log.Println(fmt.Errorf("userModel.go: FindById: %s", err))
 		return nil, appGlobals.ErrInternalServerError
 	}
 
-	return resUser, nil
+	recVal, _, err := neo4j.GetRecordValue[map[string]any](res.Records[0], "found_user")
+	if err != nil {
+		log.Println(fmt.Errorf("userModel.go: FindById: %s", err))
+		return nil, appGlobals.ErrInternalServerError
+	}
+
+	var foundUser user
+
+	helpers.MapToStruct(recVal, &foundUser)
+
+	return &foundUser, nil
 }
 
-func FindByEmailOrUsername(emailOrUsername string) (*user, error) {
-	resUser, err := helpers.QueryRowType[user]("SELECT * FROM find_user_by_email_or_username($1)", emailOrUsername)
+func FindByEmailOrUsername(ctx context.Context, emailOrUsername string) (*user, error) {
+	res, err := neo4j.ExecuteQuery(ctx, appGlobals.Neo4jDriver,
+		`
+		MATCH (u:User)
+		WHERE u.email = $emailOrUsername OR u.username = emailOrUsername
+		RETURN u { .id, .username, .password } AS found_user
+		`,
+		map[string]any{
+			"emailOrUsername": emailOrUsername,
+		},
+		neo4j.EagerResultTransformer,
+	)
 	if err != nil {
 		log.Println(fmt.Errorf("userModel.go: FindByEmailOrUsername: %s", err))
 		return nil, appGlobals.ErrInternalServerError
 	}
 
-	return resUser, nil
+	recVal, _, err := neo4j.GetRecordValue[map[string]any](res.Records[0], "found_user")
+	if err != nil {
+		log.Println(fmt.Errorf("userModel.go: FindByEmailOrUsername: %s", err))
+		return nil, appGlobals.ErrInternalServerError
+	}
+
+	var foundUser user
+
+	helpers.MapToStruct(recVal, &foundUser)
+
+	return &foundUser, nil
 }

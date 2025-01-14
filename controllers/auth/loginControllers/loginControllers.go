@@ -1,10 +1,12 @@
 package loginControllers
 
 import (
+	"context"
 	"i9rfs/server/appTypes"
 	"i9rfs/server/helpers"
 	"i9rfs/server/services/loginService"
 	"log"
+	"time"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber"
@@ -15,6 +17,9 @@ var Login = websocket.New(func(c *websocket.Conn) {
 	var w_err error
 
 	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
 		var body loginInBody
 
 		if w_err != nil {
@@ -33,7 +38,7 @@ var Login = websocket.New(func(c *websocket.Conn) {
 			continue
 		}
 
-		respData, app_err := loginService.Login(body.EmailOrUsername, body.Password)
+		respData, app_err := loginService.Login(ctx, body.EmailOrUsername, body.Password)
 
 		if app_err != nil {
 			w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err))
