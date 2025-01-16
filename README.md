@@ -18,6 +18,18 @@ If you need a feature this API server does not currently support, feel free to s
 
 ## Technologies
 
+<div style="display: flex;">
+<img style="margin-right: 5px" alt="go" width="50" src="./z_attachments/tech-icons/go-original-wordmark.svg" />
+
+<img style="margin-right: 5px" alt="neo4j" width="50" src="./z_attachments/tech-icons/neo4j-original.svg" />
+</div>
+
+### More
+
+- WebSockets
+- Gofiber
+- JWT
+
 ## Table of Contents
 
 - [Intro](#intro)
@@ -31,12 +43,14 @@ If you need a feature this API server does not currently support, feel free to s
 
 ## Features
 
+The following is a summary of the features supported by this API. Visit the API documentation to see the full features and their implementation details.
+
 ### File system operations
 
 - List the contents of a directory
 - Copy, Move files and directories
-- Create, Delete directories
-- Delete files
+- Create, Remove directories
+- Remove files
 
 ### Storage
 
