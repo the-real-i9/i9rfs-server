@@ -14,7 +14,7 @@ The API documentation provides a detailed usage guide. It doesn't follow the Ope
 
 ### Open to suggestions
 
-If your needs require more features than this API server currently supports, feel free to suggest them, and it will be added as soon as possible.
+If you need a feature this API server does not currently support, feel free to suggest them, and it will be added as soon as possible.
 
 ## Technologies
 
@@ -30,6 +30,17 @@ If your needs require more features than this API server currently supports, fee
 - [Deploying the Application](#deploying-the-application)
 
 ## Features
+
+### File system operations
+
+- List the contents of a directory
+- Copy, Move files and directories
+- Create, Delete directories
+- Delete files
+
+### Storage
+
+- Upload and Download Files
 
 ## API Documentation
 

@@ -37,6 +37,37 @@ func initNeo4jDriver() error {
 		return err
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sess := driver.NewSession(ctx, neo4j.SessionConfig{})
+
+	_, err2 := sess.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		_, err := tx.Run(ctx, `CREATE CONSTRAINT unique_username IF NOT EXISTS FOR (u:User) REQUIRE u.username IS UNIQUE`, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err2 := tx.Run(ctx, `CREATE CONSTRAINT unique_email IF NOT EXISTS FOR (u:User) REQUIRE u.email IS UNIQUE`, nil)
+		if err2 != nil {
+			return nil, err
+		}
+		_, err3 := tx.Run(ctx, `CREATE CONSTRAINT unique_user_id IF NOT EXISTS FOR (u:User) REQUIRE u.id IS UNIQUE`, nil)
+		if err3 != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	})
+
+	if err2 != nil {
+		return err2
+	}
+
+	if err := sess.Close(ctx); err != nil {
+		return err
+	}
+
 	appGlobals.Neo4jDriver = driver
 
 	return nil
