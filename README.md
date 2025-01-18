@@ -20,14 +20,11 @@ If you need a feature this API server does not currently support, feel free to s
 
 <div style="display: flex;">
 <img style="margin-right: 10px" alt="go" width="50" src="./z_attachments/tech-icons/go-original-wordmark.svg" />
+<img style="margin-right: 10px" alt="go" width="50" src="./z_attachments/tech-icons/gofiber.svg" />
+<img style="margin-right: 10px" alt="go" width="50" src="./z_attachments/tech-icons/websocket.svg" />
+<img style="margin-right: 10px" alt="go" width="50" src="./z_attachments/tech-icons/jwt.svg" />
 <img style="margin-right: 10px" alt="neo4j" width="50" src="./z_attachments/tech-icons/neo4j-original.svg" />
 </div>
-
-### More
-
-- WebSockets
-- Gofiber
-- JWT
 
 ## Table of Contents
 
