@@ -1,11 +1,13 @@
 package appControllers
 
 import (
+	"context"
 	"fmt"
 	"i9rfs/server/appTypes"
 	"i9rfs/server/helpers"
 	"i9rfs/server/services/rfsCmdService"
 	"log"
+	"time"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
@@ -39,9 +41,12 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 			app_err error
 		)
 
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
 		switch body.Command {
 		case "cd":
-			resp, app_err = rfsCmdService.ChangeDirectory(body.WorkPath, body.CmdArgs)
+			resp, app_err = rfsCmdService.ChangeDirectory(ctx, body.WorkPath, body.CmdArgs)
 		case "mkdir":
 			resp, app_err = rfsCmdService.MakeDirectory(body.WorkPath, body.CmdArgs, user.Id)
 		case "rmdir":

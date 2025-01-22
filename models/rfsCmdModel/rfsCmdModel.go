@@ -1,25 +1,58 @@
 package rfsCmdModel
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"i9rfs/server/appGlobals"
 	"i9rfs/server/helpers"
 	"log"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
-func PathExists(path string) (bool, error) {
-	exists, err := helpers.QueryRowField[bool]("SELECT EXISTS(SELECT 1 FROM fs_object_view WHERE path = $1)", path)
+func PathExists(ctx context.Context, path string) (bool, error) {
+	pathTree := strings.Split(path, "/")[1:]
+
+	graphPath := ""
+	paramMap := make(map[string]any)
+
+	for i, object_name := range pathTree {
+		if graphPath != "" {
+			graphPath += "-[:HAS_CHILD]->"
+		}
+
+		nameKey := fmt.Sprintf("obj_%d", i)
+
+		graphPath += fmt.Sprintf("(:Object{ name: %s })", nameKey)
+
+		paramMap[nameKey] = object_name
+	}
+
+	res, err := neo4j.ExecuteQuery(ctx, appGlobals.Neo4jDriver,
+		fmt.Sprintf(`
+			RETURN EXISTS {
+				MATCH %s
+			} AS path_exists
+		`, graphPath),
+		paramMap,
+		neo4j.EagerResultTransformer,
+		neo4j.ExecuteQueryWithReadersRouting(),
+	)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		errors.As(err, &pgErr)
-		log.Println(fmt.Errorf("rfsCmdModel.go: PathExists: %s: %s", pgErr.Message, pgErr.Detail))
+		log.Println(fmt.Errorf("rfsCmdModel.go: PathExists: %s", err))
 		return false, appGlobals.ErrInternalServerError
 	}
 
-	return *exists, nil
+	exists, _, err := neo4j.GetRecordValue[bool](res.Records[0], "path_exists")
+	if err != nil {
+		log.Println(fmt.Errorf("rfsCmdModel.go: PathExists: %s", err))
+		return false, appGlobals.ErrInternalServerError
+	}
+
+	return exists, nil
 }
 
 type cmdDBRes struct {

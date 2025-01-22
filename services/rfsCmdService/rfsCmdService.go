@@ -1,6 +1,7 @@
 package rfsCmdService
 
 import (
+	"context"
 	"fmt"
 	"i9rfs/server/models/rfsCmdModel"
 	"strings"
@@ -42,14 +43,14 @@ func resolveToTarget(currentWorkPath, target string) string {
 	return newWorkPath
 }
 
-func ChangeDirectory(workPath string, cmdArgs []string) (string, error) {
+func ChangeDirectory(ctx context.Context, workPath string, cmdArgs []string) (string, error) {
 	resolvedPath := resolveToTarget(workPath, cmdArgs[0])
 
 	if resolvedPath == "/" {
 		return resolvedPath, nil
 	}
 
-	exists, err := rfsCmdModel.PathExists(resolvedPath)
+	exists, err := rfsCmdModel.PathExists(ctx, resolvedPath)
 	if err != nil {
 		return "", err
 	}
