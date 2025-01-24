@@ -19,7 +19,7 @@ func init() {
 func main() {
 	defer initializers.CleanUp()
 
-	app := fiber.New(fiber.Config{DisableStartupMessage: true})
+	app := fiber.New()
 
 	app.Use(func(c *fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
