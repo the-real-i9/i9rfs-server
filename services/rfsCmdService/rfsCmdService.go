@@ -62,9 +62,9 @@ func ChangeDirectory(ctx context.Context, workPath string, cmdArgs []string) (st
 	return resolvedPath, nil
 }
 
-func MakeDirectory(workPath string, cmdArgs []string, userId string) (bool, error) {
+func MakeDirectory(ctx context.Context, workPath string, cmdArgs []string, username string) (bool, error) {
 
-	return rfsCmdModel.Mkdir(workPath, strings.Split(cmdArgs[0], "/"), userId)
+	return rfsCmdModel.Mkdir(ctx, workPath, strings.Split(cmdArgs[0], "/"), username)
 }
 
 func RemoveDirectory(workPath string, cmdArgs []string) (bool, error) {
