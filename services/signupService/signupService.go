@@ -90,7 +90,6 @@ func RegisterUser(ctx context.Context, sessionId, email, username, password stri
 	}
 
 	userData := &appTypes.ClientUser{
-		Id:       user.Id,
 		Username: user.Username,
 	}
 

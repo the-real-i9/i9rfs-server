@@ -33,7 +33,6 @@ func Login(ctx context.Context, emailOrUsername, password string) (any, error) {
 	}
 
 	userData := &appTypes.ClientUser{
-		Id:       user.Id,
 		Username: user.Username,
 	}
 
