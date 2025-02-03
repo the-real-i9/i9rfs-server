@@ -67,11 +67,6 @@ type execResult struct {
 	ErrMsg string
 }
 
-type cmdDBRes struct {
-	Status bool
-	ErrMsg string `db:"err_msg"`
-}
-
 func Mkdir(ctx context.Context, workPath string, newDirTree []string, clientUsername string) (bool, error) {
 	sess := appGlobals.Neo4jDriver.NewSession(ctx, neo4j.SessionConfig{})
 
