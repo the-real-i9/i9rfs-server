@@ -2,14 +2,12 @@ package rfsCmdModel
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"i9rfs/server/appGlobals"
 	"i9rfs/server/helpers"
 	"log"
 	"strings"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
@@ -287,8 +285,8 @@ func Rm(ctx context.Context, objectPath string, recursive bool, objectPathCmdArg
 			}, nil
 		}
 
-		// recursive removal: remove node and all its children
-		// meanwhile, return all file ids
+		// recursive remove: removes node, and all its children (if object_type = "directory")
+		// returns all file (object_type) ids
 		res2, err := tx.Run(ctx,
 			`
 				MATCH (obj:Object{ id: $obj_id })(()-[:HAS_CHILD]->(childObj))*
@@ -327,17 +325,6 @@ func Rm(ctx context.Context, objectPath string, recursive bool, objectPathCmdArg
 }
 
 func Mv(sourcePath, destPath string) (bool, error) {
-	res, err := helpers.QueryRowType[cmdDBRes]("SELECT status, err_msg FROM mv($1, $2)", sourcePath, destPath)
-	if err != nil {
-		var pgErr *pgconn.PgError
-		errors.As(err, &pgErr)
-		log.Println(fmt.Errorf("rfsCmdModel.go: Mv: %s: %s", pgErr.Message, pgErr.Detail))
-		return false, appGlobals.ErrInternalServerError
-	}
-
-	if !res.Status {
-		return false, fmt.Errorf("%s", res.ErrMsg)
-	}
 
 	return true, nil
 }
