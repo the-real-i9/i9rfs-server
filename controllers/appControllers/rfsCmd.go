@@ -50,9 +50,9 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 		case "mkdir":
 			resp, app_err = rfsCmdService.MakeDirectory(ctx, body.WorkPath, body.CmdArgs, user.Username)
 		case "rmdir":
-			resp, app_err = rfsCmdService.RemoveDirectory(body.WorkPath, body.CmdArgs)
+			resp, app_err = rfsCmdService.RemoveDirectory(ctx, body.WorkPath, body.CmdArgs, user.Username)
 		case "rm":
-			resp, app_err = rfsCmdService.Remove(body.WorkPath, body.CmdArgs)
+			resp, app_err = rfsCmdService.Remove(ctx, body.WorkPath, body.CmdArgs, user.Username)
 		case "mv":
 			resp, app_err = rfsCmdService.Move(body.WorkPath, body.CmdArgs)
 		case "upload", "up":

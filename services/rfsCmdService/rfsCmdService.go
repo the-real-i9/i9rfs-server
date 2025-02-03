@@ -67,20 +67,36 @@ func MakeDirectory(ctx context.Context, workPath string, cmdArgs []string, usern
 	return rfsCmdModel.Mkdir(ctx, workPath, strings.Split(cmdArgs[0], "/"), username)
 }
 
-func RemoveDirectory(workPath string, cmdArgs []string) (bool, error) {
-	targetDirPath := resolveToTarget(workPath, cmdArgs[0])
+func RemoveDirectory(ctx context.Context, workPath string, cmdArgs []string, clientUsername string) (bool, error) {
+	resolvedDirPath := resolveToTarget(workPath, cmdArgs[0])
 
-	return rfsCmdModel.Rmdir(targetDirPath)
+	return rfsCmdModel.Rmdir(ctx, resolvedDirPath, cmdArgs[0], clientUsername)
 }
 
-func Remove(workPath string, cmdArgs []string) (bool, error) {
+func deleteFilesInCS(fileIds []string) {
+
+}
+
+func Remove(ctx context.Context, workPath string, cmdArgs []string, clientUsername string) (bool, error) {
+	var (
+		recursive        bool
+		objectPathCmdArg string
+	)
+
 	if cmdArgs[0] != "-r" {
-		fsObjectPath := resolveToTarget(workPath, cmdArgs[0])
-		return rfsCmdModel.Rm(fsObjectPath, false)
+		recursive = false
+		objectPathCmdArg = cmdArgs[0]
+	} else {
+		recursive = true
+		objectPathCmdArg = cmdArgs[1]
 	}
 
-	fsObjectPath := resolveToTarget(workPath, cmdArgs[1])
-	return rfsCmdModel.Rm(fsObjectPath, true)
+	objectPath := resolveToTarget(workPath, cmdArgs[0])
+	status, fileIds, err := rfsCmdModel.Rm(ctx, objectPath, recursive, objectPathCmdArg, clientUsername)
+
+	go deleteFilesInCS(fileIds)
+
+	return status, err
 }
 
 func Move(workPath string, cmdArgs []string) (bool, error) {
