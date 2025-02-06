@@ -105,3 +105,31 @@ func FindByEmailOrUsername(ctx context.Context, emailOrUsername string) (*user, 
 
 	return &foundUser, nil
 }
+
+func Exists(ctx context.Context, emailOrUsername string) (bool, error) {
+	res, err := neo4j.ExecuteQuery(ctx, appGlobals.Neo4jDriver,
+		`
+		RETURN EXISTS {
+			MATCH (u:User)
+			WHERE email = $emailOrUsername OR username = $emailOrUsername
+		} AS user_exists
+		`,
+		map[string]any{
+			"emailOrUsername": emailOrUsername,
+		},
+		neo4j.EagerResultTransformer,
+		neo4j.ExecuteQueryWithReadersRouting(),
+	)
+	if err != nil {
+		log.Println("appModel.go: AccountExists:", err)
+		return false, appGlobals.ErrInternalServerError
+	}
+
+	exists, _, err := neo4j.GetRecordValue[bool](res.Records[0], "user_exists")
+	if err != nil {
+		log.Println("appModel.go: AccountExists:", err)
+		return false, appGlobals.ErrInternalServerError
+	}
+
+	return exists, nil
+}

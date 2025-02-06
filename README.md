@@ -33,7 +33,7 @@ If you need a feature this API server does not currently support, feel free to s
 - [Technologies](#technologies)
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
-- [API Documentation](#api-documentation)
+- [API Documentation](API%20doc.md)
 - [Notable Features and their Algorithms](#notable-features-and-their-algorithms)
 - [Building & Running the Application (Locally)](#building--running-the-application-locally)
 - [Deploying the Application](#deploying-the-application)
@@ -53,7 +53,11 @@ The following is a summary of the features supported by this API. Visit the API 
 
 - Upload and Download Files
 
-## API Documentation
+### CLI Client Support
+
+The API endpoint generally accepts command-line-based data parameters. GUI clients, however, will need supply values into these parameters accordingly.
+
+This provides the advantages of CLI over GUI in file manipulation.
 
 ## Notable Features and their Algorithms
 

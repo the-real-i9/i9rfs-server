@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"i9rfs/server/appGlobals"
 	"i9rfs/server/appTypes"
-	"i9rfs/server/models/appModel"
 	user "i9rfs/server/models/userModel"
 	"i9rfs/server/services/appServices"
 	"i9rfs/server/services/mailService"
@@ -16,7 +15,7 @@ import (
 )
 
 func RequestNewAccount(ctx context.Context, email string) (string, error) {
-	accExists, err := appModel.AccountExists(ctx, email)
+	accExists, err := user.Exists(ctx, email)
 	if err != nil {
 		return "", err
 	}
@@ -69,7 +68,7 @@ func VerifyEmail(ctx context.Context, sessionId string, verfCode, inputVerfCode 
 }
 
 func RegisterUser(ctx context.Context, sessionId, email, username, password string) (any, error) {
-	accExists, err := appModel.AccountExists(ctx, username)
+	accExists, err := user.Exists(ctx, username)
 	if err != nil {
 		return nil, err
 	}
