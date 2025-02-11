@@ -3,10 +3,10 @@ package signupService
 import (
 	"context"
 	"fmt"
-	"i9rfs/server/appTypes"
-	user "i9rfs/server/models/userModel"
-	"i9rfs/server/services/mailService"
-	"i9rfs/server/services/securityServices"
+	"i9rfs/appTypes"
+	user "i9rfs/models/userModel"
+	"i9rfs/services/mailService"
+	"i9rfs/services/securityServices"
 	"os"
 	"time"
 

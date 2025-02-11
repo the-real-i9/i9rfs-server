@@ -3,8 +3,8 @@ package user
 import (
 	"context"
 	"fmt"
-	"i9rfs/server/appGlobals"
-	"i9rfs/server/models/db"
+	"i9rfs/appGlobals"
+	"i9rfs/models/db"
 	"log"
 	"time"
 
@@ -19,12 +19,12 @@ func New(ctx context.Context, email, username, password string) (map[string]any,
 		CREATE (u:User { id: randomUUID(), email: $email, username: $username, password: $password })
 		
 		CREATE (root:UserRoot{ user: $username }),
-			(root)-[:HAS_CHILD]->(:Folder { id: randomUUID(), name: "Documents", date_created: $now, date_modified: $now, native: true, starred: false }),
-			(root)-[:HAS_CHILD]->(:Folder { id: randomUUID(), name: "Downloads", date_created: $now, date_modified: $now, native: true, starred: false }),
-			(root)-[:HAS_CHILD]->(:Folder { id: randomUUID(), name: "Music", date_created: $now, date_modified: $now, native: true, starred: false }),
-			(root)-[:HAS_CHILD]->(:Folder { id: randomUUID(), name: "Pictures", date_created: $now, date_modified: $now, native: true, starred: false }),
-			(root)-[:HAS_CHILD]->(:Folder { id: randomUUID(), name: "Videos", date_created: $now, date_modified: $now, native: true, starred: false }),
-			(root)-[:HAS_CHILD]->(:Folder { id: randomUUID(), name: "Trash", date_created: $now, date_modified: $now, native: true, starred: false })
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory" name: "Documents", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory" name: "Downloads", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory" name: "Music", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory" name: "Pictures", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory" name: "Videos", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory" name: "Trash", date_created: $now, date_modified: $now, native: true, starred: false })
 			
 		RETURN u { .id, .username } AS new_user
 		`,

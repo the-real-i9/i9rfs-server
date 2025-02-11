@@ -2,7 +2,7 @@ package helpers
 
 import (
 	"encoding/json"
-	"i9rfs/server/appTypes"
+	"i9rfs/appTypes"
 	"log"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"

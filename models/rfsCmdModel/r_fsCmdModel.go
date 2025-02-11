@@ -3,8 +3,8 @@ package rfsCmdModel
 import (
 	"context"
 	"fmt"
-	"i9rfs/server/appGlobals"
-	"i9rfs/server/helpers"
+	"i9rfs/appGlobals"
+	"i9rfs/helpers"
 	"log"
 	"strings"
 

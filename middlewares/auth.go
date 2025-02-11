@@ -1,9 +1,9 @@
 package middlewares
 
 import (
-	"i9rfs/server/appGlobals"
-	"i9rfs/server/appTypes"
-	"i9rfs/server/services/securityServices"
+	"i9rfs/appGlobals"
+	"i9rfs/appTypes"
+	"i9rfs/services/securityServices"
 	"log"
 	"os"
 

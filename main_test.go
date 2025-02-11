@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"i9rfs/server/appGlobals"
+	"i9rfs/appGlobals"
 	"testing"
 
 	"github.com/fasthttp/websocket"

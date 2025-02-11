@@ -2,7 +2,7 @@ package initializers
 
 import (
 	"context"
-	"i9rfs/server/appGlobals"
+	"i9rfs/appGlobals"
 	"log"
 	"os"
 	"time"

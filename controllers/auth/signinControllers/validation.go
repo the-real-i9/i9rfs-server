@@ -1,7 +1,7 @@
 package signinControllers
 
 import (
-	"i9rfs/server/helpers"
+	"i9rfs/helpers"
 	"strings"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"

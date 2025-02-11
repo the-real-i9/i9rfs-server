@@ -1,9 +1,9 @@
 package authRoutes
 
 import (
-	"i9rfs/server/controllers/auth/signinControllers"
-	"i9rfs/server/controllers/auth/signupControllers"
-	"i9rfs/server/middlewares/ssm"
+	"i9rfs/controllers/auth/signinControllers"
+	"i9rfs/controllers/auth/signupControllers"
+	"i9rfs/middlewares/ssm"
 
 	"github.com/gofiber/fiber/v2"
 )

@@ -3,7 +3,7 @@ package rfsCmdService
 import (
 	"context"
 	"fmt"
-	"i9rfs/server/models/rfsCmdModel"
+	"i9rfs/models/rfsCmdModel"
 	"strings"
 )
 

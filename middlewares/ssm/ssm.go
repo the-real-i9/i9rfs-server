@@ -2,8 +2,8 @@ package ssm
 
 import (
 	"encoding/json"
-	"i9rfs/server/appGlobals"
-	"i9rfs/server/appTypes"
+	"i9rfs/appGlobals"
+	"i9rfs/appTypes"
 	"log"
 
 	"github.com/gofiber/fiber/v2"

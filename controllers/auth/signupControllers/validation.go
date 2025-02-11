@@ -2,7 +2,7 @@ package signupControllers
 
 import (
 	"fmt"
-	"i9rfs/server/helpers"
+	"i9rfs/helpers"
 	"regexp"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"

@@ -2,8 +2,8 @@ package signinControllers
 
 import (
 	"context"
-	"i9rfs/server/appGlobals"
-	"i9rfs/server/services/signinService"
+	"i9rfs/appGlobals"
+	"i9rfs/services/signinService"
 	"log"
 
 	"github.com/gofiber/fiber/v2"

@@ -1,4 +1,4 @@
-module i9rfs/server
+module i9rfs
 
 go 1.23
 

@@ -1,10 +1,10 @@
 package main
 
 import (
-	"i9rfs/server/initializers"
-	"i9rfs/server/middlewares"
-	"i9rfs/server/routes/appRoutes"
-	"i9rfs/server/routes/authRoutes"
+	"i9rfs/initializers"
+	"i9rfs/middlewares"
+	"i9rfs/routes/appRoutes"
+	"i9rfs/routes/authRoutes"
 	"log"
 
 	"github.com/gofiber/fiber/v2"

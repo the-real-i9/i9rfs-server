@@ -3,9 +3,9 @@ package signupControllers
 import (
 	"context"
 	"encoding/json"
-	"i9rfs/server/appGlobals"
-	"i9rfs/server/appTypes"
-	"i9rfs/server/services/signupService"
+	"i9rfs/appGlobals"
+	"i9rfs/appTypes"
+	"i9rfs/services/signupService"
 	"log"
 
 	"github.com/gofiber/fiber/v2"

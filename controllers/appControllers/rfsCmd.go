@@ -3,9 +3,9 @@ package appControllers
 import (
 	"context"
 	"fmt"
-	"i9rfs/server/appTypes"
-	"i9rfs/server/helpers"
-	"i9rfs/server/services/rfsCmdService"
+	"i9rfs/appTypes"
+	"i9rfs/helpers"
+	"i9rfs/services/rfsCmdService"
 	"log"
 	"time"
 
@@ -14,16 +14,12 @@ import (
 )
 
 var RFSCmd = websocket.New(func(c *websocket.Conn) {
-	user := c.Locals("user").(appTypes.ClientUser)
+	clientUser := c.Locals("user").(appTypes.ClientUser)
 
 	var w_err error
 
 	for {
-		var body struct {
-			Command  string
-			WorkPath string
-			CmdArgs  []string
-		}
+		var body rfsCmdBody
 
 		if w_err != nil {
 			log.Println(w_err)
@@ -36,6 +32,11 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 			break
 		}
 
+		if val_err := body.Validate(); val_err != nil {
+			c.WriteJSON(helpers.WSErrResp(val_err))
+			continue
+		}
+
 		var (
 			resp    any
 			app_err error
@@ -45,20 +46,33 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 		defer cancel()
 
 		switch body.Command {
-		case "cd":
-			resp, app_err = rfsCmdService.ChangeDirectory(ctx, body.WorkPath, body.CmdArgs)
-		case "mkdir":
-			resp, app_err = rfsCmdService.MakeDirectory(ctx, body.WorkPath, body.CmdArgs, user.Username)
+		case "list directory contents", "ls":
+			var data lsCmd
+
+			helpers.MapToStruct(body.CmdData, &data)
+
+			if val_err := data.Validate(); val_err != nil {
+				c.WriteJSON(helpers.WSErrResp(val_err))
+				continue
+			}
+
+			resp, app_err = rfsCmdService.Ls(ctx, clientUser.Username, data.DirectoryId)
+		case "create new directory", "mkdir":
+			var data mkdirCmd
+
+			helpers.MapToStruct(body.CmdData, &data)
+
+			if val_err := data.Validate(); val_err != nil {
+				c.WriteJSON(helpers.WSErrResp(val_err))
+				continue
+			}
+
+			resp, app_err = rfsCmdService.Mkdir(ctx, clientUser.Username, data.ParentDirectoryId, data.DirectoryName)
 		case "rmdir":
-			resp, app_err = rfsCmdService.RemoveDirectory(ctx, body.WorkPath, body.CmdArgs, user.Username)
 		case "rm":
-			resp, app_err = rfsCmdService.Remove(ctx, body.WorkPath, body.CmdArgs, user.Username)
 		case "mv":
-			resp, app_err = rfsCmdService.Move(body.WorkPath, body.CmdArgs)
 		case "upload", "up":
-			resp, app_err = rfsCmdService.UploadFile(body.WorkPath, body.CmdArgs)
 		case "download", "down":
-			resp, app_err = rfsCmdService.DownloadFile(body.WorkPath, body.CmdArgs)
 		default:
 			resp, app_err = nil, fmt.Errorf("unknown command: \"%s\"", body.Command)
 		}

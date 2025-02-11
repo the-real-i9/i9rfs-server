@@ -1,7 +1,7 @@
 package appRoutes
 
 import (
-	"i9rfs/server/controllers/appControllers"
+	"i9rfs/controllers/appControllers"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
