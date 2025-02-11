@@ -36,3 +36,7 @@ func Restore(ctx context.Context, clientUsername string, objectIds []string) (bo
 func ShowTrash(ctx context.Context, clientUsername string) ([]any, error) {
 	return rfsCmdModel.ShowTrash(ctx, clientUsername)
 }
+
+func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, newName string) (bool, error) {
+	return rfsCmdModel.Rename(ctx, clientUsername, parentDirectoryId, objectId, newName)
+}

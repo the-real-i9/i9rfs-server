@@ -104,6 +104,16 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 		case "show trash", "view trash":
 			resp, app_err = rfsCmdService.ShowTrash(ctx, clientUser.Username)
 		case "rename":
+			var data renameCmd
+
+			helpers.MapToStruct(body.CmdData, &data)
+
+			if val_err := data.Validate(); val_err != nil {
+				c.WriteJSON(helpers.WSErrResp(val_err))
+				continue
+			}
+
+			resp, app_err = rfsCmdService.Rename(ctx, clientUser.Username, data.ParentDirectoryId, data.ObjectId, data.NewName)
 		case "move":
 		case "copy":
 		case "upload", "up":

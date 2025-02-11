@@ -53,13 +53,13 @@ func Mkdir(ctx context.Context, clientUsername, parentDirectoryId, directoryName
 	if parentDirectoryId == "/" {
 		cypher = `
 		MATCH (root:UserRoot{ user: $client_username })
-		CREATE (root)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory" name: $dir_name, date_created: $now, date_modified: $now, native: false, starred: false })
+		CREATE (root)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory" name: $dir_name, date_created: $now, date_modified: $now })
 		RETURN obj { .*, date_created, date_modifed } AS new_dir
 		`
 	} else {
 		cypher = `
 		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(parObj:Object{ id: $parent_dir_id })
-		CREATE (parObj)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory" name: $dir_name, date_created: $now, date_modified: $now, native: false, starred: false })
+		CREATE (parObj)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory" name: $dir_name, date_created: $now, date_modified: $now })
 		RETURN obj { .*, date_created, date_modifed } AS new_dir
 		`
 	}
@@ -89,7 +89,7 @@ func Del(ctx context.Context, clientUsername, parentDirectoryId string, objectId
 
 	if parentDirectoryId == "/" {
 		cypher = `
-		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj:Object WHERE obj.id IN $object_ids)(()-[:HAS_CHILD]->(childObj))*
+		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj:Object WHERE obj.id IN $object_ids AND obj.native <> true)(()-[:HAS_CHILD]->(childObj))*
 
 		WITH obj, childObj, [o IN obj WHERE o.obj_type = "file" | o.id] AS objFileIds, [co IN childObj WHERE co.obj_type = "file" | co.id] AS childObjFileIds
 
@@ -133,7 +133,7 @@ func Trash(ctx context.Context, clientUsername, parentDirectoryId string, object
 
 	if parentDirectoryId == "/" {
 		cypher = `
-		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj:Object WHERE obj.id IN $object_ids)
+		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj:Object WHERE obj.id IN $object_ids AND obj.native <> true)
 
 		SET obj.trashed = true, obj.trashed_on = $now
 		`
@@ -206,4 +206,39 @@ func ShowTrash(ctx context.Context, clientUsername string) ([]any, error) {
 	trashCont, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "trash_cont")
 
 	return trashCont, nil
+}
+
+func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, newName string) (bool, error) {
+	var cypher string
+
+	if parentDirectoryId == "/" {
+		cypher = `
+		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj:Object{ id: $object_id } WHERE obj.native <> true)
+
+		SET obj.name = $new_name, obj.date_modified = $now
+		`
+	} else {
+		cypher = `
+		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj:Object{ id: $object_id })
+			
+		SET obj.name = $new_name, obj.date_modified = $now
+		`
+	}
+
+	_, err := db.Query(
+		ctx,
+		cypher,
+		map[string]any{
+			"client_username": clientUsername,
+			"parent_dir_id":   parentDirectoryId,
+			"object_id":       objectId,
+			"now":             time.Now(),
+		},
+	)
+	if err != nil {
+		log.Println("rfsCmdModel.go: Rename:", err)
+		return false, fiber.ErrInternalServerError
+	}
+
+	return true, nil
 }
