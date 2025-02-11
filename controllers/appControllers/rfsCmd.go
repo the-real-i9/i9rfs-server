@@ -68,9 +68,44 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 			}
 
 			resp, app_err = rfsCmdService.Mkdir(ctx, clientUser.Username, data.ParentDirectoryId, data.DirectoryName)
-		case "rmdir":
-		case "rm":
-		case "mv":
+		case "delete", "del":
+			var data delCmd
+
+			helpers.MapToStruct(body.CmdData, &data)
+
+			if val_err := data.Validate(); val_err != nil {
+				c.WriteJSON(helpers.WSErrResp(val_err))
+				continue
+			}
+
+			resp, app_err = rfsCmdService.Del(ctx, clientUser.Username, data.ParentDirectoryId, data.ObjectIds)
+		case "trash":
+			var data trashCmd
+
+			helpers.MapToStruct(body.CmdData, &data)
+
+			if val_err := data.Validate(); val_err != nil {
+				c.WriteJSON(helpers.WSErrResp(val_err))
+				continue
+			}
+
+			resp, app_err = rfsCmdService.Trash(ctx, clientUser.Username, data.ParentDirectoryId, data.ObjectIds)
+		case "restore":
+			var data restoreCmd
+
+			helpers.MapToStruct(body.CmdData, &data)
+
+			if val_err := data.Validate(); val_err != nil {
+				c.WriteJSON(helpers.WSErrResp(val_err))
+				continue
+			}
+
+			resp, app_err = rfsCmdService.Restore(ctx, clientUser.Username, data.ObjectIds)
+		case "show trash", "view trash":
+			resp, app_err = rfsCmdService.ShowTrash(ctx, clientUser.Username)
+		case "rename":
+		case "move":
+		case "copy":
 		case "upload", "up":
 		case "download", "down":
 		default:

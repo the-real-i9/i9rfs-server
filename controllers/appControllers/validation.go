@@ -46,3 +46,43 @@ func (d mkdirCmd) Validate() error {
 
 	return helpers.ValidationError(err, "appControllers_validation.go", "mkdirCmd")
 }
+
+type delCmd struct {
+	ParentDirectoryId string   `json:"parentDirectoryId"`
+	ObjectIds         []string `json:"objectIds"`
+}
+
+func (d delCmd) Validate() error {
+	err := validation.ValidateStruct(&d,
+		validation.Field(&d.ParentDirectoryId, validation.Required, validation.When(d.ParentDirectoryId != "/", is.UUID)),
+		validation.Field(&d.ObjectIds, validation.Required, validation.Each(is.UUID)),
+	)
+
+	return helpers.ValidationError(err, "appControllers_validation.go", "delCmd")
+}
+
+type trashCmd struct {
+	ParentDirectoryId string   `json:"parentDirectoryId"`
+	ObjectIds         []string `json:"objectIds"`
+}
+
+func (d trashCmd) Validate() error {
+	err := validation.ValidateStruct(&d,
+		validation.Field(&d.ParentDirectoryId, validation.Required, validation.When(d.ParentDirectoryId != "/", is.UUID)),
+		validation.Field(&d.ObjectIds, validation.Required, validation.Each(is.UUID)),
+	)
+
+	return helpers.ValidationError(err, "appControllers_validation.go", "trashCmd")
+}
+
+type restoreCmd struct {
+	ObjectIds []string `json:"objectIds"`
+}
+
+func (d restoreCmd) Validate() error {
+	err := validation.ValidateStruct(&d,
+		validation.Field(&d.ObjectIds, validation.Required, validation.Each(is.UUID)),
+	)
+
+	return helpers.ValidationError(err, "appControllers_validation.go", "restoreCmd")
+}

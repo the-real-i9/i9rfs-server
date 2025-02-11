@@ -24,7 +24,6 @@ func New(ctx context.Context, email, username, password string) (map[string]any,
 			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory" name: "Music", date_created: $now, date_modified: $now, native: true, starred: false }),
 			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory" name: "Pictures", date_created: $now, date_modified: $now, native: true, starred: false }),
 			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory" name: "Videos", date_created: $now, date_modified: $now, native: true, starred: false }),
-			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory" name: "Trash", date_created: $now, date_modified: $now, native: true, starred: false })
 			
 		RETURN u { .id, .username } AS new_user
 		`,
