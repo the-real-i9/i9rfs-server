@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"i9rfs/server/helpers"
+	"log"
 	"math/rand"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -21,7 +23,7 @@ func HashPassword(password string) (string, error) {
 	return string(hash), nil
 }
 
-func HashAndPasswordMatches(hash, plainPassword string) (bool, error) {
+func PasswordMatchesHash(hash, plainPassword string) (bool, error) {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(plainPassword))
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
@@ -38,7 +40,7 @@ func GetTokenAndExpiration() (int, time.Time) {
 	return rand.Intn(899999) + 100000, time.Now().UTC().Add(1 * time.Hour)
 }
 
-func JwtSign(data any, secret string, expires time.Time) string {
+func JwtSign(data any, secret string, expires time.Time) (string, error) {
 	// create token -> (header.payload)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"data": data,
@@ -47,11 +49,13 @@ func JwtSign(data any, secret string, expires time.Time) string {
 
 	// sign token with secret -> (header.payload.signature)
 	jwt, err := token.SignedString([]byte(secret))
+
 	if err != nil {
-		panic(err)
+		log.Println("securityServices.go: JwtSign:", err)
+		return "", fiber.ErrInternalServerError
 	}
 
-	return jwt
+	return jwt, err
 }
 
 func JwtVerify[T any](tokenString, secret string) (*T, error) {

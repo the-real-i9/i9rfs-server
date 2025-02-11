@@ -5,8 +5,11 @@ import (
 	"i9rfs/server/appGlobals"
 	"log"
 	"os"
+	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/gofiber/fiber/v2/middleware/session"
+	neo4jstore "github.com/gofiber/storage/neo4j"
 	"github.com/joho/godotenv"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
@@ -63,6 +66,30 @@ func initNeo4jDriver() error {
 	return nil
 }
 
+func initSessionStore() {
+	getStorage := func(nodeName string) *neo4jstore.Storage {
+		return neo4jstore.New(neo4jstore.Config{
+			DB:   appGlobals.Neo4jDriver,
+			Node: nodeName,
+		})
+	}
+
+	appGlobals.SignupSessionStore = session.New(session.Config{
+		Storage:        getStorage("ongoing_signup"),
+		CookiePath:     "/api/auth/signup",
+		CookieDomain:   os.Getenv("APP_DOMAIN"),
+		CookieHTTPOnly: true,
+	})
+
+	appGlobals.UserSessionStore = session.New(session.Config{
+		Storage:        getStorage("user_session"),
+		CookiePath:     "/api/app",
+		CookieDomain:   os.Getenv("APP_DOMAIN"),
+		CookieHTTPOnly: true,
+		Expiration:     (10 * 24) * time.Hour,
+	})
+}
+
 func InitApp() error {
 
 	if err := godotenv.Load(".env"); err != nil {
@@ -76,6 +103,8 @@ func InitApp() error {
 	if err := initNeo4jDriver(); err != nil {
 		return err
 	}
+
+	initSessionStore()
 
 	return nil
 }

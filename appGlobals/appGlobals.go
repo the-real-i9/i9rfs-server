@@ -14,4 +14,6 @@ var GCSClient *storage.Client
 
 var SignupSessionStore *session.Store
 
+var UserSessionStore *session.Store
+
 var Neo4jDriver neo4j.DriverWithContext

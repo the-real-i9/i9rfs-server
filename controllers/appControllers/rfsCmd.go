@@ -14,7 +14,7 @@ import (
 )
 
 var RFSCmd = websocket.New(func(c *websocket.Conn) {
-	user := c.Locals("user").(*appTypes.ClientUser)
+	user := c.Locals("user").(appTypes.ClientUser)
 
 	var w_err error
 

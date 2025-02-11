@@ -8,6 +8,10 @@ import (
 )
 
 func resolveToTarget(currentWorkPath, target string) string {
+	if strings.HasPrefix(target, "/") {
+		return target
+	}
+
 	dirs := strings.Split(target, "/")
 
 	newWorkPath := currentWorkPath
@@ -63,6 +67,11 @@ func ChangeDirectory(ctx context.Context, workPath string, cmdArgs []string) (st
 }
 
 func MakeDirectory(ctx context.Context, workPath string, cmdArgs []string, username string) (bool, error) {
+	newDir := cmdArgs[0]
+
+	if newDir == "/" {
+		return false, fmt.Errorf("cannot create directory '/': File exists")
+	}
 
 	return rfsCmdModel.Mkdir(ctx, workPath, strings.Split(cmdArgs[0], "/"), username)
 }

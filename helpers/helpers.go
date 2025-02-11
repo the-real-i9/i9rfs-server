@@ -5,6 +5,10 @@ import (
 	"errors"
 	"i9rfs/server/appGlobals"
 	"i9rfs/server/appTypes"
+	"log"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/gofiber/fiber/v2"
 )
 
 func MapToStruct(val map[string]any, yourStruct any) {
@@ -31,4 +35,17 @@ func ErrResp(code int, err error) appTypes.WSResp {
 	}
 
 	return appTypes.WSResp{StatusCode: code, Error: err.Error()}
+}
+
+func ValidationError(err error, filename, structname string) error {
+	if err != nil {
+		if e, ok := err.(validation.InternalError); ok {
+			log.Printf("%s: %s: %v", filename, structname, e.InternalError())
+			return fiber.ErrInternalServerError
+		}
+
+		return fiber.NewError(fiber.StatusBadRequest, "validation error:", err.Error())
+	}
+
+	return nil
 }

@@ -2,44 +2,26 @@ package signupControllers
 
 import (
 	"fmt"
+	"i9rfs/server/helpers"
 	"regexp"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
-type signupBody struct {
-	Step         string         `json:"step"`
-	SessionToken string         `json:"sessionToken"`
-	Data         map[string]any `json:"data"`
-}
-
-func (b signupBody) Validate() error {
-	return validation.ValidateStruct(&b,
-		validation.Field(&b.Step,
-			validation.Required,
-			validation.In("one", "two", "three").Error("invalid step"),
-		),
-		validation.Field(&b.SessionToken,
-			validation.When(b.Step != "one", validation.Required),
-		),
-		validation.Field(&b.Data,
-			validation.Required,
-		),
-	)
-}
-
 type requestNewAccountBody struct {
 	Email string `json:"email"`
 }
 
 func (b requestNewAccountBody) Validate() error {
-	return validation.ValidateStruct(&b,
+	err := validation.ValidateStruct(&b,
 		validation.Field(&b.Email,
 			validation.Required,
 			is.Email,
 		),
 	)
+
+	return helpers.ValidationError(err, "signupControllers_validation.go", "requestNewAccountBody")
 }
 
 type verifyEmailBody struct {
@@ -54,7 +36,7 @@ func (b verifyEmailBody) Validate() error {
 	return validation.ValidateStruct(&mb,
 		validation.Field(&mb.Code,
 			validation.Required,
-			validation.Length(6, 6).Error("invalid code value"),
+			validation.Length(6, 6).Error("invalid non-6-digit code value"),
 		),
 	)
 }
@@ -66,7 +48,7 @@ type registerUserBody struct {
 
 func (b registerUserBody) Validate() error {
 
-	return validation.ValidateStruct(&b,
+	err := validation.ValidateStruct(&b,
 		validation.Field(&b.Username,
 			validation.Required,
 			validation.Length(3, 0).Error("username too short"),
@@ -77,4 +59,6 @@ func (b registerUserBody) Validate() error {
 			validation.Length(8, 0).Error("minimum of 8 characters"),
 		),
 	)
+
+	return helpers.ValidationError(err, "signupControllers_validation.go", "registerUserBody")
 }

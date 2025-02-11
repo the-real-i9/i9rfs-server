@@ -3,104 +3,101 @@ package signupService
 import (
 	"context"
 	"fmt"
-	"i9rfs/server/appGlobals"
 	"i9rfs/server/appTypes"
 	user "i9rfs/server/models/userModel"
-	"i9rfs/server/services/appServices"
 	"i9rfs/server/services/mailService"
 	"i9rfs/server/services/securityServices"
-	"log"
 	"os"
 	"time"
+
+	"github.com/gofiber/fiber/v2"
 )
 
-func RequestNewAccount(ctx context.Context, email string) (string, error) {
+func RequestNewAccount(ctx context.Context, email string) (map[string]any, appTypes.SignupSession, error) {
+	var session appTypes.SignupSession
+
 	accExists, err := user.Exists(ctx, email)
 	if err != nil {
-		return "", err
+		return nil, session, err
 	}
 
 	if accExists {
-		return "", fmt.Errorf("signup error: an account with '%s' already exists", email)
+		return nil, session, fiber.NewError(400, fmt.Sprintf("signup error: an account with '%s' already exists", email))
 	}
 
 	verfCode, expires := securityServices.GetTokenAndExpiration()
 
-	sessionData := appTypes.SignupSessionData{
-		Step:     "verify email",
-		Email:    email,
-		VerfCode: verfCode,
-	}
-
-	sessionId, err := appServices.NewSession(ctx, "ongoing_signup", sessionData)
-	if err != nil {
-		return "", err
-	}
-
 	go mailService.SendMail(email, "Email Verification", fmt.Sprintf("Your email verification code is: <b>%d</b>", verfCode))
 
-	signupSessionJwt := securityServices.JwtSign(sessionId, os.Getenv("SIGNUP_SESSION_JWT_SECRET"), expires)
+	session = appTypes.SignupSession{
+		Step: "verify email",
+		Data: appTypes.SignupSessionData{Email: email, VerificationCode: verfCode, VerificationCodeExpires: expires},
+	}
 
-	return signupSessionJwt, nil
+	respData := map[string]any{
+		"msg": "A 6-digit verification code has been sent to " + email,
+	}
+
+	return respData, session, nil
 }
 
-func VerifyEmail(ctx context.Context, sessionId string, verfCode, inputVerfCode int, email string) (string, error) {
-	if verfCode != inputVerfCode {
-		return "", fmt.Errorf("email verification error: incorrect verification code")
+func VerifyEmail(ctx context.Context, sessionData appTypes.SignupSessionData, inputVerfCode int) (map[string]any, appTypes.SignupSession, error) {
+	var updatedSession appTypes.SignupSession
+
+	if sessionData.VerificationCode != inputVerfCode {
+		return nil, updatedSession, fiber.NewError(fiber.StatusBadRequest, "email verification error: incorrect verification code")
 	}
 
-	sessionData := appTypes.SignupSessionData{
-		Step:     "register user",
-		Email:    email,
-		VerfCode: 0,
+	if sessionData.VerificationCodeExpires.Before(time.Now()) {
+		return nil, updatedSession, fiber.NewError(fiber.StatusBadRequest, "email verification error: verification code expired")
 	}
 
-	err := appServices.UpdateSession(ctx, "ongoing_signup", sessionId, sessionData)
-	if err != nil {
-		return "", err
+	go mailService.SendMail(sessionData.Email, "Email Verification Success", fmt.Sprintf("Your email %s has been verified!", sessionData.Email))
+
+	updatedSession = appTypes.SignupSession{
+		Step: "register user",
+		Data: appTypes.SignupSessionData{Email: sessionData.Email},
 	}
 
-	go mailService.SendMail(email, "Email Verification Success", fmt.Sprintf("Your email %s has been verified!", email))
+	respData := map[string]any{
+		"msg": fmt.Sprintf("Your email '%s' has been verified!", sessionData.Email),
+	}
 
-	signupSessionJwt := securityServices.JwtSign(sessionId, os.Getenv("SIGNUP_SESSION_JWT_SECRET"), time.Now().UTC().Add(1*time.Hour))
-
-	return signupSessionJwt, nil
+	return respData, updatedSession, nil
 }
 
-func RegisterUser(ctx context.Context, sessionId, email, username, password string) (any, error) {
-	accExists, err := user.Exists(ctx, username)
+func RegisterUser(ctx context.Context, sessionData appTypes.SignupSessionData, username, password string) (any, string, error) {
+	userExists, err := user.Exists(ctx, username)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	if accExists {
-		return nil, fmt.Errorf("username error: username '%s' is unavailable", username)
+	if userExists {
+		return nil, "", fiber.NewError(fiber.StatusBadRequest, "signup error: username", username, "is unavailable")
 	}
 
 	hashedPassword, err := securityServices.HashPassword(password)
 	if err != nil {
-		log.Println(fmt.Errorf("authServices.go: RegisterUser: %s", err))
-		return nil, appGlobals.ErrInternalServerError
+		return nil, "", err
 	}
 
-	user, err := user.New(ctx, email, username, hashedPassword)
+	newUser, err := user.New(ctx, sessionData.Email, username, hashedPassword)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	userData := &appTypes.ClientUser{
-		Username: user.Username,
+	authJwt, err := securityServices.JwtSign(appTypes.ClientUser{
+		Username: newUser["username"].(string),
+	}, os.Getenv("AUTH_JWT_SECRET"), time.Now().UTC().Add(10*24*time.Hour)) // 1 year
+
+	if err != nil {
+		return nil, "", err
 	}
-
-	authJwt := securityServices.JwtSign(userData, os.Getenv("AUTH_JWT_SECRET"), time.Now().UTC().Add(365*24*time.Hour)) // 1 year
-
-	appServices.EndSession(ctx, "ongoing_signup", sessionId)
 
 	respData := map[string]any{
-		"msg":     "Signup success!",
-		"user":    userData,
-		"authJwt": authJwt,
+		"msg":  "Signup success!",
+		"user": newUser,
 	}
 
-	return respData, nil
+	return respData, authJwt, nil
 }

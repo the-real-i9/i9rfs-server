@@ -1,20 +1,20 @@
-package loginControllers
+package signinControllers
 
 import (
+	"i9rfs/server/helpers"
 	"strings"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
-type loginInBody struct {
+type signinBody struct {
 	EmailOrUsername string `json:"emailOrUsername"`
 	Password        string `json:"password"`
 }
 
-func (b loginInBody) Validate() error {
-
-	return validation.ValidateStruct(&b,
+func (b signinBody) Validate() error {
+	err := validation.ValidateStruct(&b,
 		validation.Field(&b.EmailOrUsername,
 			validation.Required,
 			validation.When(strings.ContainsAny(b.EmailOrUsername, "@"),
@@ -27,4 +27,6 @@ func (b loginInBody) Validate() error {
 			validation.Required,
 		),
 	)
+
+	return helpers.ValidationError(err, "signinControllers_validation.go", "signinBody")
 }

@@ -6,6 +6,7 @@ import (
 	"i9rfs/server/appGlobals"
 	"i9rfs/server/helpers"
 	"log"
+	"regexp"
 	"strings"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -320,6 +321,10 @@ func Rm(ctx context.Context, objectPath string, recursive bool, objectPathCmdArg
 }
 
 func Mv(sourcePath, destPath string) (bool, error) {
+	re := regexp.MustCompile("[^/]+$")
+
+	destPathLastSeg := re.FindString(destPath)
+	destPathPrecLastSeg := strings.TrimSuffix(destPath, "/"+destPathLastSeg)
 
 	return true, nil
 }
