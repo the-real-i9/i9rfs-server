@@ -4,24 +4,36 @@ import (
 	"context"
 	"fmt"
 	"i9rfs/server/appGlobals"
+	"i9rfs/server/models/db"
 	"log"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
 func New(ctx context.Context, email, username, password string) (map[string]any, error) {
-	res, err := neo4j.ExecuteQuery(ctx, appGlobals.Neo4jDriver,
+	res, err := db.Query(
+		ctx,
 		`
 		CREATE (u:User { id: randomUUID(), email: $email, username: $username, password: $password })
-		RETURN u { .id, .username, .password } AS new_user
+		
+		CREATE (root:UserRoot{ user: $username }),
+			(root)-[:HAS_CHILD]->(:Folder { id: randomUUID(), name: "Documents", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Folder { id: randomUUID(), name: "Downloads", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Folder { id: randomUUID(), name: "Music", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Folder { id: randomUUID(), name: "Pictures", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Folder { id: randomUUID(), name: "Videos", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Folder { id: randomUUID(), name: "Trash", date_created: $now, date_modified: $now, native: true, starred: false })
+			
+		RETURN u { .id, .username } AS new_user
 		`,
 		map[string]any{
 			"email":    email,
 			"username": username,
 			"password": password,
+			"now":      time.Now(),
 		},
-		neo4j.EagerResultTransformer,
 	)
 	if err != nil {
 		log.Println(fmt.Errorf("userModel.go: New: %s", err))
