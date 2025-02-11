@@ -2,8 +2,6 @@ package helpers
 
 import (
 	"encoding/json"
-	"errors"
-	"i9rfs/server/appGlobals"
 	"i9rfs/server/appTypes"
 	"log"
 
@@ -29,12 +27,18 @@ func ToStruct(val any, yourStruct any) {
 	json.Unmarshal(bt, yourStruct)
 }
 
-func ErrResp(code int, err error) appTypes.WSResp {
-	if errors.Is(err, appGlobals.ErrInternalServerError) {
-		return appTypes.WSResp{StatusCode: 500, Error: appGlobals.ErrInternalServerError.Error()}
+func WSErrResp(err error) appTypes.WSResp {
+
+	errCode := fiber.StatusInternalServerError
+
+	if ferr, ok := err.(*fiber.Error); ok {
+		errCode = ferr.Code
 	}
 
-	return appTypes.WSResp{StatusCode: code, Error: err.Error()}
+	return appTypes.WSResp{
+		StatusCode: errCode,
+		ErrorMsg:   err.Error(),
+	}
 }
 
 func ValidationError(err error, filename, structname string) error {

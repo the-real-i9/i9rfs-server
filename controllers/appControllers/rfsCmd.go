@@ -20,8 +20,8 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 
 	for {
 		var body struct {
-			WorkPath string
 			Command  string
+			WorkPath string
 			CmdArgs  []string
 		}
 
@@ -64,7 +64,7 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 		}
 
 		if app_err != nil {
-			w_err = c.WriteJSON(helpers.ErrResp(fiber.StatusUnprocessableEntity, app_err))
+			w_err = c.WriteJSON(helpers.WSErrResp(app_err))
 			continue
 		}
 
