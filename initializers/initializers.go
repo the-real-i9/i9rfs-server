@@ -43,11 +43,17 @@ func initNeo4jDriver() error {
 
 		_, err2 := tx.Run(ctx, `CREATE CONSTRAINT unique_email IF NOT EXISTS FOR (u:User) REQUIRE u.email IS UNIQUE`, nil)
 		if err2 != nil {
-			return nil, err
+			return nil, err2
 		}
-		_, err3 := tx.Run(ctx, `CREATE CONSTRAINT unique_user_id IF NOT EXISTS FOR (u:User) REQUIRE u.id IS UNIQUE`, nil)
+
+		_, err3 := tx.Run(ctx, `CREATE CONSTRAINT unique_object IF NOT EXISTS FOR (o:Object) REQUIRE o.id IS UNIQUE`, nil)
 		if err3 != nil {
-			return nil, err
+			return nil, err3
+		}
+
+		_, err4 := tx.Run(ctx, `CREATE CONSTRAINT unique_object_copy IF NOT EXISTS FOR (oc:Object) REQUIRE oc.copied_id IS UNIQUE`, nil)
+		if err4 != nil {
+			return nil, err4
 		}
 
 		return nil, nil
