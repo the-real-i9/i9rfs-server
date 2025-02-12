@@ -40,3 +40,7 @@ func ShowTrash(ctx context.Context, clientUsername string) ([]any, error) {
 func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, newName string) (bool, error) {
 	return rfsCmdModel.Rename(ctx, clientUsername, parentDirectoryId, objectId, newName)
 }
+
+func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDirectoryId string, objectIds []string) (bool, error) {
+	return rfsCmdModel.Move(ctx, clientUsername, fromParentDirectoryId, toParentDirectoryId, objectIds)
+}

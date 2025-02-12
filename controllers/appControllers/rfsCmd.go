@@ -115,6 +115,16 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 
 			resp, app_err = rfsCmdService.Rename(ctx, clientUser.Username, data.ParentDirectoryId, data.ObjectId, data.NewName)
 		case "move":
+			var data moveCmd
+
+			helpers.MapToStruct(body.CmdData, &data)
+
+			if val_err := data.Validate(); val_err != nil {
+				c.WriteJSON(helpers.WSErrResp(val_err))
+				continue
+			}
+
+			resp, app_err = rfsCmdService.Move(ctx, clientUser.Username, data.FromParentDirectoryId, data.ToParentDirectoryId, data.ObjectIds)
 		case "copy":
 		case "upload", "up":
 		case "download", "down":

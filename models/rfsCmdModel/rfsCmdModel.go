@@ -242,3 +242,65 @@ func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, ne
 
 	return true, nil
 }
+
+func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDirectoryId string, objectIds []string) (bool, error) {
+	var cypher string
+
+	if fromParentDirectoryId == "/" && toParentDirectoryId != "/" {
+		cypher = `
+		MATCH (root:UserRoot{ user: $client_username }),
+		(root)-[old:HAS_CHILD]->(obj:Object WHERE obj.id IN $object_ids AND obj.native <> true)
+
+		DELETE old
+
+		MATCH (root)-[:HAS_CHILD]->+(toParDir:Object{ id: $to_parent_dir_id })
+
+		SET toParDir.date_modified = $now
+
+		CREATE (toParDir)-[:HAS_CHILD]->(obj)
+		`
+	} else if fromParentDirectoryId != "/" && toParentDirectoryId == "/" {
+		cypher = `
+		MATCH (root:UserRoot{ user: $client_username }),
+			(root)-[:HAS_CHILD]->+(fromParDir:Object{ id: $from_parent_dir_id })-[old:HAS_CHILD]->(obj:Object WHERE obj.id IN $object_ids)
+
+		SET fromParDir.date_modified = $now
+
+		DELETE old
+
+		CREATE (root)-[:HAS_CHILD]->(obj)
+		`
+	} else if fromParentDirectoryId == toParentDirectoryId {
+		return false, fiber.NewError(fiber.StatusBadRequest, "you're trying to move to the same directory")
+	} else {
+		cypher = `
+		MATCH (root:UserRoot{ user: $client_username }),
+			(root)-[:HAS_CHILD]->+(toParDir:Object{ id: $to_parent_dir_id }),
+			(root)-[:HAS_CHILD]->+(fromParDir:Object{ id: $from_parent_dir_id })-[old:HAS_CHILD]->(obj:Object WHERE obj.id IN $object_ids)
+
+		SET fromParDir.date_modified = $now, toParDir.date_modified = $now
+
+		DELETE old
+
+		CREATE (toObj)-[:HAS_CHILD]->(obj)
+		`
+	}
+
+	_, err := db.Query(
+		ctx,
+		cypher,
+		map[string]any{
+			"client_username":    clientUsername,
+			"from_parent_dir_id": fromParentDirectoryId,
+			"to_parent_dir_id":   toParentDirectoryId,
+			"object_ids":         objectIds,
+			"now":                time.Now(),
+		},
+	)
+	if err != nil {
+		log.Println("rfsCmdModel.go: Move:", err)
+		return false, fiber.ErrInternalServerError
+	}
+
+	return true, nil
+}

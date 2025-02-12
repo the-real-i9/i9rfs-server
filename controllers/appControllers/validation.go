@@ -102,3 +102,19 @@ func (d renameCmd) Validate() error {
 
 	return helpers.ValidationError(err, "appControllers_validation.go", "renameCmd")
 }
+
+type moveCmd struct {
+	FromParentDirectoryId string   `json:"fromParentDirectoryId"`
+	ToParentDirectoryId   string   `json:"toParentDirectoryId"`
+	ObjectIds             []string `json:"objectIds"`
+}
+
+func (d moveCmd) Validate() error {
+	err := validation.ValidateStruct(&d,
+		validation.Field(&d.FromParentDirectoryId, validation.Required, validation.When(d.FromParentDirectoryId != "/", is.UUID)),
+		validation.Field(&d.ToParentDirectoryId, validation.Required, validation.When(d.ToParentDirectoryId != "/", is.UUID)),
+		validation.Field(&d.ObjectIds, validation.Required, validation.Each(is.UUID)),
+	)
+
+	return helpers.ValidationError(err, "appControllers_validation.go", "moveCmd")
+}
