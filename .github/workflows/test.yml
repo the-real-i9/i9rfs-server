@@ -37,5 +37,3 @@ jobs:
           MAILING_PASSWORD: ${{ secrets.MAILING_PASSWORD }}
           GCS_API_KEY: ${{ secrets.GCS_API_KEY }}
           SERVER_HOST: ${{ vars.SERVER_HOST }}
-      - name: Shutdown server
-        run: pkill i9rfs_server
