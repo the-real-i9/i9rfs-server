@@ -1,0 +1,41 @@
+on:
+  push:
+    branches:
+      - main
+name: "Test i9chat"
+jobs:
+  Tests:
+    runs-on: ubuntu-latest
+    services:
+      neo4j:
+        image: 'neo4j:5.26'
+        ports:
+          - '7678:7678'
+        env:
+          NEO4J_AUTH: "neo4j/pass#w%rd"
+    strategy:
+      matrix:
+        go-version:
+          - 1.23.x
+    steps:
+      - name: Fetch Repository
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '${{ matrix.go-version }}'
+      - name: Build server
+        run: go build -o i9rfs_server && ./i9rfs_server &
+      - name: Run Test
+        run: cd ./tests && go test ./... -v -race
+        env:
+          NEO4J_URL: "neo4j://localhost"
+          NEO4J_USER: neo4j
+          NEO4J_PASSWORD: "pass#w%rd"
+          AUTH_JWT_SECRET: ${{ secrets.AUTH_JWT_SECRET }}
+          MAILING_EMAIL: ${{ secrets.MAILING_EMAIL }}
+          MAILING_PASSWORD: ${{ secrets.MAILING_PASSWORD }}
+          GCS_API_KEY: ${{ secrets.GCS_API_KEY }}
+          SERVER_HOST: ${{ vars.SERVER_HOST }}
+      - name: Shutdown server
+        run: pkill i9rfs_server
