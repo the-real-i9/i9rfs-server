@@ -44,3 +44,15 @@ func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, ne
 func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDirectoryId string, objectIds []string) (bool, error) {
 	return rfsCmdModel.Move(ctx, clientUsername, fromParentDirectoryId, toParentDirectoryId, objectIds)
 }
+
+func copyFilesInCS(fileCopyIdMaps []any) {
+
+}
+
+func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDirectoryId string, objectIds []string) (bool, error) {
+	done, fileCopyIdMaps, err := rfsCmdModel.Copy(ctx, clientUsername, fromParentDirectoryId, toParentDirectoryId, objectIds)
+
+	go copyFilesInCS(fileCopyIdMaps)
+
+	return done, err
+}

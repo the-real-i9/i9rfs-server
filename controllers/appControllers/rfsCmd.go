@@ -126,8 +126,17 @@ var RFSCmd = websocket.New(func(c *websocket.Conn) {
 
 			resp, app_err = rfsCmdService.Move(ctx, clientUser.Username, data.FromParentDirectoryId, data.ToParentDirectoryId, data.ObjectIds)
 		case "copy":
+			var data copyCmd
+
+			helpers.MapToStruct(body.CmdData, &data)
+
+			if val_err := data.Validate(); val_err != nil {
+				c.WriteJSON(helpers.WSErrResp(val_err))
+				continue
+			}
+
+			resp, app_err = rfsCmdService.Copy(ctx, clientUser.Username, data.FromParentDirectoryId, data.ToParentDirectoryId, data.ObjectIds)
 		case "upload", "up":
-		case "download", "down":
 		default:
 			resp, app_err = nil, fmt.Errorf("unknown command: \"%s\"", body.Command)
 		}
