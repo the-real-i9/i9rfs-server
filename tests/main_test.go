@@ -50,7 +50,7 @@ func ResBody(body io.ReadCloser) ([]byte, error) {
 	return io.ReadAll(body)
 }
 
-func jsonData(d any) string {
+func JsonData(d any) string {
 	bt, _ := json.MarshalIndent(d, "", "  ")
 
 	return string(bt)

@@ -97,11 +97,9 @@ func TestCmds_CaseOne(t *testing.T) {
 
 		assert.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		if assert.Equal(t, http.StatusOK, wsResp.StatusCode) {
-			t.Log(jsonData(wsResp.Body))
-		} else {
-			t.Log(wsResp.ErrorMsg)
-		}
+		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
+		assert.NotEmpty(t, wsResp.Body)
+		assert.Empty(t, wsResp.ErrorMsg)
 	})
 
 	assert.NoError(t, wsConn.CloseHandler()(websocket.CloseNormalClosure, "done"))

@@ -13,7 +13,7 @@ import (
 const signupPath = HOST_URL + "/api/auth/signup"
 const signinPath = HOST_URL + "/api/auth/signin"
 
-func _TestUserAuth(t *testing.T) {
+func TestUserAuth(t *testing.T) {
 
 	t.Run("User-A Scenario", func(t *testing.T) {
 
@@ -118,8 +118,7 @@ func _TestUserAuth(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 		})
-
-		cleanUpDB()
 	})
 
+	cleanUpDB()
 }
