@@ -10,7 +10,7 @@ jobs:
       neo4j:
         image: 'neo4j:5.26'
         ports:
-          - '7678:7678'
+          - '7687:7687'
         env:
           NEO4J_AUTH: "neo4j/pass#w%rd"
     strategy:
