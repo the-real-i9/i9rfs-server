@@ -12,10 +12,11 @@ import (
 	neo4jstore "github.com/gofiber/storage/neo4j"
 	"github.com/joho/godotenv"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"google.golang.org/api/option"
 )
 
 func initGCSClient() error {
-	stClient, err := storage.NewClient(context.Background())
+	stClient, err := storage.NewClient(context.Background(), option.WithAPIKey(os.Getenv("GCS_API_KEY")))
 	if err != nil {
 		return err
 	}
