@@ -22,7 +22,7 @@ func RequestNewAccount(ctx context.Context, email string) (map[string]any, appTy
 	}
 
 	if accExists {
-		return nil, session, fiber.NewError(400, fmt.Sprintf("signup error: an account with '%s' already exists", email))
+		return nil, session, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("signup error: an account with '%s' already exists", email))
 	}
 
 	verfCode, expires := securityServices.GetTokenAndExpiration()

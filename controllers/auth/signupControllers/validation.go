@@ -1,7 +1,6 @@
 package signupControllers
 
 import (
-	"fmt"
 	"i9rfs/helpers"
 	"regexp"
 
@@ -29,15 +28,8 @@ type verifyEmailBody struct {
 }
 
 func (b verifyEmailBody) Validate() error {
-	mb := struct {
-		Code string `json:"code"`
-	}{Code: fmt.Sprint(b.Code)}
-
-	err := validation.ValidateStruct(&mb,
-		validation.Field(&mb.Code,
-			validation.Required,
-			validation.Length(6, 6).Error(fmt.Sprintf("invalid non-6-digit code value %s", mb.Code)),
-		),
+	err := validation.ValidateStruct(&b,
+		validation.Field(&b.Code, validation.Required),
 	)
 
 	return helpers.ValidationError(err, "signupControllers_validation.go", "verifyEmailBody")
