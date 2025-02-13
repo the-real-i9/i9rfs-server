@@ -27,7 +27,7 @@ jobs:
       - name: Build server
         run: go build -o i9rfs_server
       - name: Start server
-        run: ./i9rfs_server
+        run: ./i9rfs_server &
         env:
           NEO4J_URL: "neo4j://localhost"
           NEO4J_USER: neo4j
@@ -40,7 +40,7 @@ jobs:
           DUMMY_VERF_TOKEN: ${{ secrets.DUMMY_VERF_TOKEN }}
           GO_ENV: test
       - name: Run Test
-        run: cd ./tests && go test ./... -v -race
+        run: sleep 5; cd ./tests && go test ./... -v -race
         env:
           NEO4J_URL: "neo4j://localhost"
           NEO4J_USER: neo4j
