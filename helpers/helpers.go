@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"encoding/json"
+	"fmt"
 	"i9rfs/appTypes"
 	"log"
 
@@ -43,12 +44,13 @@ func WSErrResp(err error) appTypes.WSResp {
 
 func ValidationError(err error, filename, structname string) error {
 	if err != nil {
+		log.Println(err)
 		if e, ok := err.(validation.InternalError); ok {
 			log.Printf("%s: %s: %v", filename, structname, e.InternalError())
 			return fiber.ErrInternalServerError
 		}
 
-		return fiber.NewError(fiber.StatusBadRequest, "validation error:", err.Error())
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("validation error: %s", err))
 	}
 
 	return nil

@@ -48,7 +48,7 @@ func VerifyEmail(ctx context.Context, sessionData appTypes.SignupSessionData, in
 		return nil, updatedSession, fiber.NewError(fiber.StatusBadRequest, "email verification error: incorrect verification code")
 	}
 
-	if sessionData.VerificationCodeExpires.Before(time.Now()) {
+	if sessionData.VerificationCodeExpires.Before(time.Now().UTC()) {
 		return nil, updatedSession, fiber.NewError(fiber.StatusBadRequest, "email verification error: verification code expired")
 	}
 

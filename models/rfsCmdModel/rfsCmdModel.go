@@ -55,13 +55,13 @@ func Mkdir(ctx context.Context, clientUsername, parentDirectoryId, directoryName
 	if parentDirectoryId == "/" {
 		cypher = `
 		MATCH (root:UserRoot{ user: $client_username })
-		CREATE (root)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory" name: $dir_name, date_created: $now, date_modified: $now })
+		CREATE (root)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory" name: $dir_name, date_created: datetime($now), date_modified: datetime($now) })
 		RETURN obj { .*, date_created, date_modifed } AS new_dir
 		`
 	} else {
 		cypher = `
 		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(parObj:Object{ id: $parent_dir_id })
-		CREATE (parObj)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory" name: $dir_name, date_created: $now, date_modified: $now })
+		CREATE (parObj)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory" name: $dir_name, date_created: datetime($now), date_modified: datetime($now) })
 		RETURN obj { .*, date_created, date_modifed } AS new_dir
 		`
 	}
@@ -73,7 +73,7 @@ func Mkdir(ctx context.Context, clientUsername, parentDirectoryId, directoryName
 			"client_username": clientUsername,
 			"parent_dir_id":   parentDirectoryId,
 			"dir_name":        directoryName,
-			"now":             time.Now(),
+			"now":             time.Now().UTC(),
 		},
 	)
 	if err != nil {
@@ -137,7 +137,7 @@ func Trash(ctx context.Context, clientUsername, parentDirectoryId string, object
 		cypher = `
 		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native <> true)
 
-		SET obj.trashed = true, obj.trashed_on = $now
+		SET obj.trashed = true, obj.trashed_on = datetime($now)
 
 		MATCH (trash:UserTrash{ user: $client_username })
 		CREATE (trash)-[:HAS_CHILD]->(obj)
@@ -146,7 +146,7 @@ func Trash(ctx context.Context, clientUsername, parentDirectoryId string, object
 		cypher = `
 		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)
 			
-		SET obj.trashed = true, obj.trashed_on = $now
+		SET obj.trashed = true, obj.trashed_on = datetime($now)
 
 		MATCH (trash:UserTrash{ user: $client_username })
 		CREATE (trash)-[:HAS_CHILD]->(obj)
@@ -160,7 +160,7 @@ func Trash(ctx context.Context, clientUsername, parentDirectoryId string, object
 			"client_username": clientUsername,
 			"parent_dir_id":   parentDirectoryId,
 			"object_ids":      objectIds,
-			"now":             time.Now(),
+			"now":             time.Now().UTC(),
 		},
 	)
 	if err != nil {
@@ -225,13 +225,13 @@ func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, ne
 		cypher = `
 		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj:Object{ id: $object_id } WHERE obj.native <> true)
 
-		SET obj.name = $new_name, obj.date_modified = $now
+		SET obj.name = $new_name, obj.date_modified = datetime($now)
 		`
 	} else {
 		cypher = `
 		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj:Object{ id: $object_id })
 			
-		SET obj.name = $new_name, obj.date_modified = $now
+		SET obj.name = $new_name, obj.date_modified = datetime($now)
 		`
 	}
 
@@ -242,7 +242,7 @@ func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, ne
 			"client_username": clientUsername,
 			"parent_dir_id":   parentDirectoryId,
 			"object_id":       objectId,
-			"now":             time.Now(),
+			"now":             time.Now().UTC(),
 		},
 	)
 	if err != nil {
@@ -269,7 +269,7 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 
 		MATCH (root)-[:HAS_CHILD]->+(toParDir:Object{ id: $to_parent_dir_id })
 
-		SET toParDir.date_modified = $now
+		SET toParDir.date_modified = datetime($now)
 
 		CREATE (toParDir)-[:HAS_CHILD]->(obj)
 		`
@@ -278,7 +278,7 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		MATCH (root:UserRoot{ user: $client_username }),
 			(root)-[:HAS_CHILD]->+(fromParDir:Object{ id: $from_parent_dir_id })-[old:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)
 
-		SET fromParDir.date_modified = $now
+		SET fromParDir.date_modified = datetime($now)
 
 		DELETE old
 
@@ -290,7 +290,7 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 			(root)-[:HAS_CHILD]->+(toParDir:Object{ id: $to_parent_dir_id }),
 			(root)-[:HAS_CHILD]->+(fromParDir:Object{ id: $from_parent_dir_id })-[old:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)
 
-		SET fromParDir.date_modified = $now, toParDir.date_modified = $now
+		SET fromParDir.date_modified = datetime($now), toParDir.date_modified = datetime($now)
 
 		DELETE old
 
@@ -306,7 +306,7 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 			"from_parent_dir_id": fromParentDirectoryId,
 			"to_parent_dir_id":   toParentDirectoryId,
 			"object_ids":         objectIds,
-			"now":                time.Now(),
+			"now":                time.Now().UTC(),
 		},
 	)
 	if err != nil {

@@ -33,12 +33,14 @@ func (b verifyEmailBody) Validate() error {
 		Code string `json:"code"`
 	}{Code: fmt.Sprint(b.Code)}
 
-	return validation.ValidateStruct(&mb,
+	err := validation.ValidateStruct(&mb,
 		validation.Field(&mb.Code,
 			validation.Required,
-			validation.Length(6, 6).Error("invalid non-6-digit code value"),
+			validation.Length(6, 6).Error(fmt.Sprintf("invalid non-6-digit code value %s", mb.Code)),
 		),
 	)
+
+	return helpers.ValidationError(err, "signupControllers_validation.go", "verifyEmailBody")
 }
 
 type registerUserBody struct {

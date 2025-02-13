@@ -22,7 +22,7 @@ func RequestNewAccount(c *fiber.Ctx) error {
 	}
 
 	if val_err := body.Validate(); val_err != nil {
-		return fiber.NewError(400, val_err.Error())
+		return val_err
 	}
 
 	respData, session, app_err := signupService.RequestNewAccount(ctx, body.Email)
@@ -65,7 +65,7 @@ func VerifyEmail(c *fiber.Ctx) error {
 	}
 
 	if val_err := body.Validate(); val_err != nil {
-		return fiber.NewError(400, val_err.Error())
+		return val_err
 	}
 
 	respData, updatedSession, app_err := signupService.VerifyEmail(ctx, sessionData, body.Code)
@@ -109,7 +109,7 @@ func RegisterUser(c *fiber.Ctx) error {
 	}
 
 	if val_err := body.Validate(); val_err != nil {
-		return fiber.NewError(400, val_err.Error())
+		return val_err
 	}
 
 	respData, authJwt, app_err := signupService.RegisterUser(ctx, sessionData, body.Username, body.Password)

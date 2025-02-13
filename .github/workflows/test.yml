@@ -25,9 +25,9 @@ jobs:
         with:
           go-version: '${{ matrix.go-version }}'
       - name: Build server
-        run: go build -o i9rfs_server && ./i9rfs_server &
-      - name: Run Test
-        run: cd ./tests && go test ./... -v -race
+        run: go build -o i9rfs_server
+      - name: Start server
+        run: ./i9rfs_server &
         env:
           NEO4J_URL: "neo4j://localhost"
           NEO4J_USER: neo4j
@@ -37,3 +37,12 @@ jobs:
           MAILING_PASSWORD: ${{ secrets.MAILING_PASSWORD }}
           GCS_API_KEY: ${{ secrets.GCS_API_KEY }}
           SERVER_HOST: ${{ vars.SERVER_HOST }}
+          DUMMY_VERF_TOKEN: ${{ secrets.DUMMY_VERF_TOKEN }}
+          GO_ENV: test
+      - name: Run Test
+        run: cd ./tests && go test ./... -v -race
+        env:
+          NEO4J_URL: "neo4j://localhost"
+          NEO4J_USER: neo4j
+          NEO4J_PASSWORD: "pass#w%rd"
+          DUMMY_VERF_TOKEN: ${{ secrets.DUMMY_VERF_TOKEN }}

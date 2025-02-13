@@ -9,9 +9,9 @@ import (
 )
 
 func Init(router fiber.Router) {
-	router.Get("/signup/request_new_account", signupControllers.RequestNewAccount)
-	router.Get("/signup/verify_email", ssm.VerifyEmail, signupControllers.VerifyEmail)
-	router.Get("/signup/register_user", ssm.RegisterUser, signupControllers.RegisterUser)
+	router.Post("/signup/request_new_account", signupControllers.RequestNewAccount)
+	router.Post("/signup/verify_email", ssm.VerifyEmail, signupControllers.VerifyEmail)
+	router.Post("/signup/register_user", ssm.RegisterUser, signupControllers.RegisterUser)
 
-	router.Get("/signin", signinControllers.Signin)
+	router.Post("/signin", signinControllers.Signin)
 }
