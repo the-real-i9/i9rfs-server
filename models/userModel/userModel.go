@@ -47,7 +47,7 @@ func FindOne(ctx context.Context, emailOrUsername string) (map[string]any, error
 	res, err := neo4j.ExecuteQuery(ctx, appGlobals.Neo4jDriver,
 		`
 		OPTIONAL MATCH (u:User)
-		WHERE u.email = $emailOrUsername OR u.username = emailOrUsername
+		WHERE u.email = $emailOrUsername OR u.username = $emailOrUsername
 		RETURN u { .username, .password } AS found_user
 		`,
 		map[string]any{
@@ -56,7 +56,7 @@ func FindOne(ctx context.Context, emailOrUsername string) (map[string]any, error
 		neo4j.EagerResultTransformer,
 	)
 	if err != nil {
-		log.Println(fmt.Errorf("userModel.go: FindByEmailOrUsername: %s", err))
+		log.Println(fmt.Errorf("userModel.go: FindOne: %s", err))
 		return nil, appGlobals.ErrInternalServerError
 	}
 
@@ -80,7 +80,7 @@ func Exists(ctx context.Context, emailOrUsername string) (bool, error) {
 		neo4j.ExecuteQueryWithReadersRouting(),
 	)
 	if err != nil {
-		log.Println("appModel.go: AccountExists:", err)
+		log.Println("userModel.go: Exists:", err)
 		return false, fiber.ErrInternalServerError
 	}
 
