@@ -82,6 +82,8 @@ func TestCmds_CaseOne(t *testing.T) {
 		assert.Equal(t, http.StatusSwitchingProtocols, res.StatusCode)
 	})
 
+	sampleParentDirId := ""
+
 	t.Run("exec command: ls", func(t *testing.T) {
 
 		sendData := map[string]any{
@@ -100,6 +102,53 @@ func TestCmds_CaseOne(t *testing.T) {
 		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
 		assert.NotEmpty(t, wsResp.Body)
 		assert.Empty(t, wsResp.ErrorMsg)
+
+		sampleParentDirId = wsResp.Body.([]any)[0].(map[string]any)["id"].(string)
+		assert.NotEmpty(t, sampleParentDirId)
+	})
+
+	t.Run("exec command: mkdir", func(t *testing.T) {
+
+		sendData := map[string]any{
+			"command": "mkdir",
+			"data": map[string]any{
+				"parentDirectoryId": sampleParentDirId,
+				"directoryName":     "folderA",
+			},
+		}
+
+		assert.NoError(t, wsConn.WriteJSON(sendData))
+
+		var wsResp appTypes.WSResp
+
+		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+
+		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
+		assert.NotEmpty(t, wsResp.Body)
+		assert.Empty(t, wsResp.ErrorMsg)
+	})
+
+	t.Run("for sample parent directory above: exec command: ls", func(t *testing.T) {
+
+		sendData := map[string]any{
+			"command": "ls",
+			"data": map[string]any{
+				"directoryId": sampleParentDirId,
+			},
+		}
+
+		assert.NoError(t, wsConn.WriteJSON(sendData))
+
+		var wsResp appTypes.WSResp
+
+		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+
+		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
+		assert.NotEmpty(t, wsResp.Body)
+		assert.Empty(t, wsResp.ErrorMsg)
+
+		dirItemName := wsResp.Body.([]any)[0].(map[string]any)["name"].(string)
+		assert.Contains(t, []string{"folderA"}, dirItemName)
 	})
 
 	assert.NoError(t, wsConn.CloseHandler()(websocket.CloseNormalClosure, "done"))

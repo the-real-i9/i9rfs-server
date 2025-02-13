@@ -55,14 +55,18 @@ func Mkdir(ctx context.Context, clientUsername, parentDirectoryId, directoryName
 	if parentDirectoryId == "/" {
 		cypher = `
 		MATCH (root:UserRoot{ user: $client_username })
-		CREATE (root)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory" name: $dir_name, date_created: $now, date_modified: $now })
-		RETURN obj { .*, date_created, date_modifed } AS new_dir
+		CREATE (root)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory", name: $dir_name, date_created: $now, date_modified: $now })
+		
+		WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified
+		RETURN obj { .*, date_created, date_modified } AS new_dir
 		`
 	} else {
 		cypher = `
 		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(parObj:Object{ id: $parent_dir_id })
-		CREATE (parObj)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory" name: $dir_name, date_created: $now, date_modified: $now })
-		RETURN obj { .*, date_created, date_modifed } AS new_dir
+		CREATE (parObj)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory", name: $dir_name, date_created: $now, date_modified: $now })
+
+		WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified
+		RETURN obj { .*, date_created, date_modified } AS new_dir
 		`
 	}
 
