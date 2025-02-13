@@ -13,7 +13,7 @@ import (
 func Auth(c *fiber.Ctx) error {
 	sess, err := appGlobals.UserSessionStore.Get(c)
 	if err != nil {
-		log.Println("auth.go: Auth: UserSignupSession.Get:", err)
+		log.Println("auth.go: Auth: appGlobals.UserSessionStore.Get:", err)
 		return fiber.ErrInternalServerError
 	}
 

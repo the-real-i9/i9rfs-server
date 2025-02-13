@@ -16,13 +16,16 @@ func New(ctx context.Context, email, username, password string) (map[string]any,
 	res, err := db.Query(
 		ctx,
 		`
-		CREATE (u:User { email: $email, username: $username, password: $password }),
-			(root:UserRoot{ user: $username }), (:UserTrash{ user: $username }),
-			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Documents", date_created: datetime($now), date_modified: datetime($now), native: true, starred: false }),
-			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Downloads", date_created: datetime($now), date_modified: datetime($now), native: true, starred: false }),
-			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Music", date_created: datetime($now), date_modified: datetime($now), native: true, starred: false }),
-			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Pictures", date_created: datetime($now), date_modified: datetime($now), native: true, starred: false }),
-			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Videos", date_created: datetime($now), date_modified: datetime($now), native: true, starred: false })
+		CREATE (u:User { email: $email, username: $username, password: $password })
+		
+		CREATE (root:UserRoot{ user: $username }),
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Documents", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Downloads", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Music", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Pictures", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Videos", date_created: $now, date_modified: $now, native: true, starred: false })
+		
+		CREATE (:UserTrash{ user: $username })
 			
 		RETURN u { .username } AS new_user
 		`,

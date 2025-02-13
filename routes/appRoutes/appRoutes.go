@@ -2,6 +2,7 @@ package appRoutes
 
 import (
 	"i9rfs/controllers/appControllers"
+	"i9rfs/middlewares"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
@@ -16,5 +17,5 @@ func Init(router fiber.Router) {
 		return fiber.ErrUpgradeRequired
 	})
 
-	router.Get("/rfs", appControllers.RFSCmd)
+	router.Get("/rfs", middlewares.Auth, appControllers.RFSCmd)
 }

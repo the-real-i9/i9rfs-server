@@ -17,14 +17,14 @@ func Ls(ctx context.Context, clientUsername, directoryId string) ([]any, error) 
 
 	if directoryId == "/" {
 		cypher = `
-		OPTIONAL MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.trashed <> true)
+		OPTIONAL MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.trashed IS NULL)
 		WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified
 		ORDER BY obj.obj_type DESC, obj.name ASC
 		RETURN collect(obj { .*, date_created, date_modified }) AS dir_cont
 		`
 	} else {
 		cypher = `
-		OPTIONAL MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $directory_id })-[:HAS_CHILD]->(obj WHERE obj.trashed <> true)
+		OPTIONAL MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $directory_id })-[:HAS_CHILD]->(obj WHERE obj.trashed IS NULL)
 		WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified
 		ORDER BY obj.obj_type DESC, obj.name ASC
 		RETURN collect(obj { .*, date_created, date_modified }) AS dir_cont
@@ -55,13 +55,13 @@ func Mkdir(ctx context.Context, clientUsername, parentDirectoryId, directoryName
 	if parentDirectoryId == "/" {
 		cypher = `
 		MATCH (root:UserRoot{ user: $client_username })
-		CREATE (root)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory" name: $dir_name, date_created: datetime($now), date_modified: datetime($now) })
+		CREATE (root)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory" name: $dir_name, date_created: $now, date_modified: $now })
 		RETURN obj { .*, date_created, date_modifed } AS new_dir
 		`
 	} else {
 		cypher = `
 		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(parObj:Object{ id: $parent_dir_id })
-		CREATE (parObj)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory" name: $dir_name, date_created: datetime($now), date_modified: datetime($now) })
+		CREATE (parObj)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory" name: $dir_name, date_created: $now, date_modified: $now })
 		RETURN obj { .*, date_created, date_modifed } AS new_dir
 		`
 	}
@@ -91,7 +91,7 @@ func Del(ctx context.Context, clientUsername, parentDirectoryId string, objectId
 
 	if parentDirectoryId == "/" {
 		cypher = `
-		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native <> true)(()-[:HAS_CHILD]->(childObj))*
+		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL)(()-[:HAS_CHILD]->(childObj))*
 
 		WITH obj, childObj, [o IN obj WHERE o.obj_type = "file" | o.id] AS objFileIds, [co IN childObj WHERE co.obj_type = "file" | co.id] AS childObjFileIds
 
@@ -135,9 +135,9 @@ func Trash(ctx context.Context, clientUsername, parentDirectoryId string, object
 
 	if parentDirectoryId == "/" {
 		cypher = `
-		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native <> true)
+		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL)
 
-		SET obj.trashed = true, obj.trashed_on = datetime($now)
+		SET obj.trashed = true, obj.trashed_on = $now
 
 		MATCH (trash:UserTrash{ user: $client_username })
 		CREATE (trash)-[:HAS_CHILD]->(obj)
@@ -146,7 +146,7 @@ func Trash(ctx context.Context, clientUsername, parentDirectoryId string, object
 		cypher = `
 		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)
 			
-		SET obj.trashed = true, obj.trashed_on = datetime($now)
+		SET obj.trashed = true, obj.trashed_on = $now
 
 		MATCH (trash:UserTrash{ user: $client_username })
 		CREATE (trash)-[:HAS_CHILD]->(obj)
@@ -223,15 +223,15 @@ func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, ne
 
 	if parentDirectoryId == "/" {
 		cypher = `
-		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj:Object{ id: $object_id } WHERE obj.native <> true)
+		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj:Object{ id: $object_id } WHERE obj.native IS NULL)
 
-		SET obj.name = $new_name, obj.date_modified = datetime($now)
+		SET obj.name = $new_name, obj.date_modified = $now
 		`
 	} else {
 		cypher = `
 		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj:Object{ id: $object_id })
 			
-		SET obj.name = $new_name, obj.date_modified = datetime($now)
+		SET obj.name = $new_name, obj.date_modified = $now
 		`
 	}
 
@@ -263,13 +263,13 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 	if fromParentDirectoryId == "/" && toParentDirectoryId != "/" {
 		cypher = `
 		MATCH (root:UserRoot{ user: $client_username }),
-			(root)-[old:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native <> true)
+			(root)-[old:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL)
 
 		DELETE old
 
 		MATCH (root)-[:HAS_CHILD]->+(toParDir:Object{ id: $to_parent_dir_id })
 
-		SET toParDir.date_modified = datetime($now)
+		SET toParDir.date_modified = $now
 
 		CREATE (toParDir)-[:HAS_CHILD]->(obj)
 		`
@@ -278,7 +278,7 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		MATCH (root:UserRoot{ user: $client_username }),
 			(root)-[:HAS_CHILD]->+(fromParDir:Object{ id: $from_parent_dir_id })-[old:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)
 
-		SET fromParDir.date_modified = datetime($now)
+		SET fromParDir.date_modified = $now
 
 		DELETE old
 
@@ -290,7 +290,7 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 			(root)-[:HAS_CHILD]->+(toParDir:Object{ id: $to_parent_dir_id }),
 			(root)-[:HAS_CHILD]->+(fromParDir:Object{ id: $from_parent_dir_id })-[old:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)
 
-		SET fromParDir.date_modified = datetime($now), toParDir.date_modified = datetime($now)
+		SET fromParDir.date_modified = $now, toParDir.date_modified = $now
 
 		DELETE old
 
@@ -346,7 +346,7 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 			ctx,
 			fmt.Sprintf(`
 			MATCH %s
-			MATCH (%s)-[HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native <> true)
+			MATCH (%s)-[HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL)
 				((p)-[:HAS_CHILD]->(c))*
 
 			MERGE (cp:Object{ copied_id: p.id })

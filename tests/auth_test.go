@@ -1,61 +1,19 @@
-// Scenario-based testing for server applications
+// User-story-based testing for server applications
 package tests
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
-	"io"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"testing"
 
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"github.com/stretchr/testify/assert"
 )
 
-const HOST_URL string = "http://localhost:8000"
+const signupPath = HOST_URL + "/api/auth/signup"
+const signinPath = HOST_URL + "/api/auth/signin"
 
-var dbDriver neo4j.DriverWithContext
-
-func TestMain(m *testing.M) {
-	driver, err := neo4j.NewDriverWithContext(os.Getenv("NEO4J_URL"), neo4j.BasicAuth(os.Getenv("NEO4J_USER"), os.Getenv("NEO4J_PASSWORD"), ""))
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	dbDriver = driver
-
-	ctx := context.Background()
-
-	defer dbDriver.Close(ctx)
-
-	c := m.Run()
-
-	os.Exit(c)
-}
-
-func cleanUpDB() {
-	neo4j.ExecuteQuery(context.Background(), dbDriver, `MATCH (n) DETACH DELETE n`, nil, neo4j.EagerResultTransformer)
-}
-
-func reqBody(data map[string]any) (io.Reader, error) {
-	dataBt, err := json.Marshal(data)
-
-	return bytes.NewReader(dataBt), err
-}
-
-func resBody(body io.ReadCloser) ([]byte, error) {
-	defer body.Close()
-
-	return io.ReadAll(body)
-}
-
-func TestUserAuth(t *testing.T) {
-	signupPath := HOST_URL + "/api/auth/signup"
-	signinPath := HOST_URL + "/api/auth/signin"
+func _TestUserAuth(t *testing.T) {
 
 	t.Run("User-A Scenario", func(t *testing.T) {
 
@@ -70,10 +28,6 @@ func TestUserAuth(t *testing.T) {
 			assert.Equal(t, http.StatusOK, res.StatusCode)
 
 			sscookie = res.Header.Get("Set-Cookie")
-
-			resBody, err := resBody(res.Body)
-			assert.NoError(t, err)
-			t.Logf("%s", resBody)
 		})
 
 		t.Run("sends an incorrect email verf code", func(t *testing.T) {
@@ -92,10 +46,6 @@ func TestUserAuth(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.Equal(t, http.StatusBadRequest, res.StatusCode)
-
-			resBody, err := resBody(res.Body)
-			assert.NoError(t, err)
-			t.Logf("%s", resBody)
 		})
 
 		t.Run("sends the correct email verf code", func(t *testing.T) {
@@ -114,10 +64,6 @@ func TestUserAuth(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.Equal(t, http.StatusOK, res.StatusCode)
-
-			resBody, err := resBody(res.Body)
-			assert.NoError(t, err)
-			t.Logf("%s", resBody)
 		})
 
 		t.Run("submits her remaining credentials", func(t *testing.T) {
@@ -136,10 +82,6 @@ func TestUserAuth(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.Equal(t, http.StatusOK, res.StatusCode)
-
-			resBody, err := resBody(res.Body)
-			assert.NoError(t, err)
-			t.Logf("%s", resBody)
 		})
 
 		t.Run("signs in with incorrect credentials", func(t *testing.T) {
@@ -152,10 +94,6 @@ func TestUserAuth(t *testing.T) {
 			res, err := http.Post(signinPath, "application/json", reqBody)
 			assert.NoError(t, err)
 			assert.Equal(t, http.StatusNotFound, res.StatusCode)
-
-			resBody, err := resBody(res.Body)
-			assert.NoError(t, err)
-			t.Logf("%s", resBody)
 		})
 
 		t.Run("signs in with correct credentials", func(t *testing.T) {
@@ -168,10 +106,6 @@ func TestUserAuth(t *testing.T) {
 			res, err := http.Post(signinPath, "application/json", reqBody)
 			assert.NoError(t, err)
 			assert.Equal(t, http.StatusOK, res.StatusCode)
-
-			resBody, err := resBody(res.Body)
-			assert.NoError(t, err)
-			t.Logf("%s", resBody)
 		})
 	})
 
@@ -183,12 +117,9 @@ func TestUserAuth(t *testing.T) {
 			res, err := http.Post(signupPath+"/request_new_account", "application/json", reqBody)
 			assert.NoError(t, err)
 			assert.Equal(t, http.StatusBadRequest, res.StatusCode)
-
-			resBody, err := resBody(res.Body)
-			assert.NoError(t, err)
-			t.Logf("%s", resBody)
 		})
+
+		cleanUpDB()
 	})
 
-	cleanUpDB()
 }

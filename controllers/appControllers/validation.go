@@ -14,7 +14,18 @@ type rfsCmdBody struct {
 
 func (b rfsCmdBody) Validate() error {
 	err := validation.ValidateStruct(&b,
-		validation.Field(&b.Command, validation.Required, validation.In().Error("unrecognized command")),
+		validation.Field(&b.Command, validation.Required, validation.In(
+			"list directory contents", "ls",
+			"create new directory", "mkdir",
+			"delete", "del",
+			"trash",
+			"restore",
+			"show trash", "view trash",
+			"rename",
+			"move",
+			"copy",
+			"upload", "up",
+		).Error("unrecognized command")),
 		validation.Field(&b.CmdData, validation.Required),
 	)
 

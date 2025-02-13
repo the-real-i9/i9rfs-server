@@ -2,7 +2,6 @@ package main
 
 import (
 	"i9rfs/initializers"
-	"i9rfs/middlewares"
 	"i9rfs/routes/appRoutes"
 	"i9rfs/routes/authRoutes"
 	"log"
@@ -22,8 +21,6 @@ func main() {
 	app := fiber.New()
 
 	app.Route("/api/auth", authRoutes.Init)
-
-	app.Use("/api/app", middlewares.Auth)
 
 	app.Route("/api/app", appRoutes.Init)
 

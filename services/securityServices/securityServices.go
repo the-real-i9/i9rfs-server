@@ -69,7 +69,9 @@ func JwtSign(data any, secret string, expires time.Time) (string, error) {
 	return jwt, err
 }
 
-func JwtVerify[T any](tokenString, secret string) (*T, error) {
+func JwtVerify[T any](tokenString, secret string) (T, error) {
+	var data T
+
 	parser := jwt.NewParser()
 	token, err := parser.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 
@@ -79,14 +81,11 @@ func JwtVerify[T any](tokenString, secret string) (*T, error) {
 
 		return []byte(secret), nil
 	})
-
 	if err != nil {
-		return nil, err
+		return data, err
 	}
-
-	var data T
 
 	helpers.MapToStruct(token.Claims.(jwt.MapClaims)["data"].(map[string]any), &data)
 
-	return &data, nil
+	return data, nil
 }
