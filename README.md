@@ -2,21 +2,21 @@
 
 [![Test i9rfs](https://github.com/the-real-i9/i9rfs-server/actions/workflows/test.yml/badge.svg)](https://github.com/the-real-i9/i9rfs-server/actions/workflows/test.yml)
 
-Build a Cloud Storage and Online File System Application, like Google Drive and One Drive
+Build a Cloud Storage and Online File System application like Google Drive and One Drive
 
 ## Intro
 
-i9lyfe-server is an API server for a Remote File System Application, built with entirely with WebSocket in Go. It supports major file system operations that can be used to implement Cloud Storage applications, such Google Drive and One Drive.
+i9rfs is an API server for a Remote File System application, built with entirely with WebSocket in Go. It supports major file system operations that can be used to implement Cloud Storage applications such as Google Drive and One Drive.
 
 ### Who is this project for?
 
-If you're a frontend developer looking to build an App similar to Google Drive or One Drive, not just to have it static, but to also make it function.
+If you're a frontend developer looking to build an app similar to Google Drive and One Drive, not just to have it static, but also to make it function.
 
-The API documentation provides a detailed usage guide. It doesn't follow the Open API specification, rather it follows Google's API documentation style sturcured in a simple markdown table, which I consider easier to work with.
+The API documentation provides a detailed usage guide. It doesn't follow the Open API specification, rather, it follows Google's API documentation style, well-sturcured in a markdown table&#x2014;which I consider easier to work with.
 
 ### Open to suggestions
 
-If you need a feature this API server does not currently support, feel free to suggest them, and it will be added as soon as possible.
+If you need a feature not currently supported, feel free to suggest them. It will be added as soon as possible.
 
 ## Technologies
 
