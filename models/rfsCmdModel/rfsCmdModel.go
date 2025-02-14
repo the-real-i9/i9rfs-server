@@ -99,7 +99,7 @@ func Del(ctx context.Context, clientUsername, parentDirectoryId string, objectId
 			
 		WITH obj, childObjs,
 			[o IN collect(obj) WHERE o.obj_type = "file" | o.id] AS objFileIds,
-			[co IN collect(cObj) WHERE co.obj_type = "file" | co.id] AS childObjFileIds
+			[co IN childObjs WHERE co.obj_type = "file" | co.id] AS childObjFileIds
 
 		DETACH DELETE obj
 
@@ -117,7 +117,7 @@ func Del(ctx context.Context, clientUsername, parentDirectoryId string, objectId
 			
 		WITH obj, childObjs,
 			[o IN collect(obj) WHERE o.obj_type = "file" | o.id] AS objFileIds,
-			[co IN collect(cObj) WHERE co.obj_type = "file" | co.id] AS childObjFileIds
+			[co IN childObjs WHERE co.obj_type = "file" | co.id] AS childObjFileIds
 
 		DETACH DELETE obj
 
@@ -287,6 +287,8 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 
 		DELETE old
 
+		WITH root, obj
+
 		MATCH (root)-[:HAS_CHILD]->+(toParDir:Object{ id: $to_parent_dir_id })
 
 		SET toParDir.date_modified = $now
@@ -302,6 +304,8 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 
 		DELETE old
 
+		WITH root, obj
+
 		CREATE (root)-[:HAS_CHILD]->(obj)
 		`
 	} else {
@@ -313,6 +317,8 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		SET fromParDir.date_modified = $now, toParDir.date_modified = $now
 
 		DELETE old
+
+		WITH toParDir, obj
 
 		CREATE (toParDir)-[:HAS_CHILD]->(obj)
 		`
@@ -428,6 +434,7 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 				"par_child_list":     parChildList,
 				"client_username":    clientUsername,
 				"from_parent_dir_id": fromParentDirectoryId,
+				"$now":               time.Now().UTC(),
 			},
 		)
 		if err2 != nil {
@@ -455,7 +462,9 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 			WITH %[1]s, obj
 
 			CREATE (%[1]s)->[:HAS_CHILD]->(obj)
-
+			
+			SET %[1]s.date_modified = $now
+			
 			WITH obj
 			MATCH (obj)-[:HAS_CHILD]->*(cobjs)
 
@@ -476,6 +485,7 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 				"client_username":  clientUsername,
 				"to_parent_dir_id": toParentDirectoryId,
 				"object_ids":       objectIds,
+				"now":              time.Now().UTC(),
 			},
 		)
 		if err3 != nil {

@@ -200,5 +200,5 @@ func TestCmds_CaseOne(t *testing.T) {
 
 	require.NoError(t, wsConn.CloseHandler()(websocket.CloseNormalClosure, "done"))
 
-	// cleanUpDB()
+	cleanUpDB()
 }
