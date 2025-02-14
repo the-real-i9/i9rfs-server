@@ -98,15 +98,16 @@ func Del(ctx context.Context, clientUsername, parentDirectoryId string, objectId
 		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)(()-[:HAS_CHILD]->(childObjs))*
 			
 		WITH obj, childObjs,
-			[o IN collect(obj) WHERE o.obj_type = "file" | o.id] AS objFileIds 
+			[o IN collect(obj) WHERE o.obj_type = "file" | o.id] AS objFileIds,
+			[co IN collect(cObj) WHERE co.obj_type = "file" | co.id] AS childObjFileIds
 
 		DETACH DELETE obj
 
-		WITH objFileIds, childObjs
+		WITH objFileIds, childObjFileIds, childObjs
 
 		UNWIND (childObjs + [null]) AS cObj
 		DETACH DELETE cObj
-		WITH objFileIds, [co IN collect(cObj) WHERE co.obj_type = "file" | co.id] AS childObjFileIds
+		WITH objFileIds, childObjFileIds
 
 		RETURN objFileIds + childObjFileIds AS file_ids
 		`
@@ -115,15 +116,16 @@ func Del(ctx context.Context, clientUsername, parentDirectoryId string, objectId
 		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)(()-[:HAS_CHILD]->(childObjs))*
 			
 		WITH obj, childObjs,
-			[o IN collect(obj) WHERE o.obj_type = "file" | o.id] AS objFileIds 
+			[o IN collect(obj) WHERE o.obj_type = "file" | o.id] AS objFileIds,
+			[co IN collect(cObj) WHERE co.obj_type = "file" | co.id] AS childObjFileIds
 
 		DETACH DELETE obj
 
-		WITH objFileIds, childObjs
+		WITH objFileIds, childObjFileIds, childObjs
 
 		UNWIND (childObjs + [null]) AS cObj
 		DETACH DELETE cObj
-		WITH objFileIds, [co IN collect(cObj) WHERE co.obj_type = "file" | co.id] AS childObjFileIds
+		WITH objFileIds, childObjFileIds
 
 		RETURN objFileIds + childObjFileIds AS file_ids
 		`
@@ -360,27 +362,15 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 			matchIdent = "fromParDir"
 		}
 
-		_, err := tx.Run(
+		res, err := tx.Run(
 			ctx,
 			fmt.Sprintf(`
 			MATCH %s
-			MATCH (%s)-[HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL)
-				((p)-[:HAS_CHILD]->(c))*
+			MATCH (%s)-[HAS_CHILD]->(obj WHERE obj.id IN $object_ids)
+				((parents)-[:HAS_CHILD]->(children))*
 
-			MERGE (cp:Object{ copied_id: p.id })
-			ON CREATE
-				SET cp += p { .*, id: randomUUID() }
-			
-			CREATE (cp)-[:HAS_CHILD]->(cc:Object{ copied_id: c.id })
-			SET cc += c { .*, id: randomUUID() }
-			`,
-				// If `p` happens to be a file or an empty folder, `c` will be null
-				// But we always have to create child copies`cc`, therefore,
-				// the child copies, `cc`, in these cases are considered "bad copies" (with incomplete or no properties),
-				// because they have no corresponding copy source,
-				// and they will be deleted in the next query
-				matchPath, matchIdent,
-			),
+			RETURN [p IN parents | p.id] AS parent_ids, [c IN children | c.id] AS children_ids
+			`, matchPath, matchIdent),
 			map[string]any{
 				"client_username":    clientUsername,
 				"from_parent_dir_id": fromParentDirectoryId,
@@ -389,6 +379,59 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		)
 		if err != nil {
 			return nil, err
+		}
+
+		parentIds, _, _ := neo4j.GetRecordValue[[]any](res.Record(), "parent_ids")
+		childrenIds, _, _ := neo4j.GetRecordValue[[]any](res.Record(), "children_ids")
+
+		parentIdsLen := len(parentIds)
+		childrenIdsLen := len(childrenIds)
+		if parentIdsLen == 0 || childrenIdsLen == 0 {
+			return fiber.NewError(fiber.StatusBadRequest, "nothing to copy/paste"), nil
+		}
+
+		if parentIdsLen != childrenIdsLen {
+			return nil, fmt.Errorf("you have a problem here: parLen and chiLen not equal")
+		}
+
+		parChildList := make([][]any, parentIdsLen)
+
+		for i := 0; i < parentIdsLen; i++ {
+			parChildList[i] = []any{parentIds[i], childrenIds[i]}
+		}
+
+		_, err2 := tx.Run(
+			ctx,
+			fmt.Sprintf(`
+			MATCH %s
+			UNWIND $par_child_list AS par_child
+			CALL (%[1]s, par_child) {
+				MATCH (%[1]s)-[:HAS_CHILD]->(par:Object{ id: par_child[0] })
+
+				MERGE (pc:Object{ copied_id: par.id })
+				ON CREATE
+					SET pc += par { .*, id: randomUUID(), native: null, date_created: $now, date_modified: $now }
+	
+				OPTIONAL MATCH (%[1]s)-[:HAS_CHILD]->(chi:Object{ id: par_child[1] })
+
+				CREATE (pc)-[:HAS_CHILD]->(cc:Object{ copied_id: chi.id })
+				SET cc += chi { .*, id: randomUUID(), date_created: $now, date_modified: $now }
+			}
+			`, matchPath, matchIdent,
+			// If `par` happens to be a file or an empty folder, `chi` will be null
+			// But we always have to create child copies`cc`, therefore,
+			// the child copies, `cc`, in these cases are considered "bad copies" (with incomplete or no properties),
+			// because they have no corresponding copy source,
+			// and they will be deleted in the next query
+			),
+			map[string]any{
+				"par_child_list":     parChildList,
+				"client_username":    clientUsername,
+				"from_parent_dir_id": fromParentDirectoryId,
+			},
+		)
+		if err2 != nil {
+			return nil, err2
 		}
 
 		if toParentDirectoryId == "/" {
@@ -400,7 +443,7 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		}
 
 		// the `badObj` are bad copies that will be deleted
-		res, err2 := tx.Run(
+		res, err3 := tx.Run(
 			ctx,
 			fmt.Sprintf(`
 			MATCH %s
@@ -409,13 +452,23 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 
 			DETACH DELETE badObj
 
-			CREATE (%s)->[:HAS_CHILD]->(obj)
+			WITH %[1]s, obj
+
+			CREATE (%[1]s)->[:HAS_CHILD]->(obj)
 
 			WITH obj
-			MATCH (obj)-[:HAS_CHILD]->*(cobj)
+			MATCH (obj)-[:HAS_CHILD]->*(cobjs)
 
-			WITH [o IN obj WHERE o.obj_type = "file" | o { .copied_id, .id }] AS objFileCopyIdMaps, 
-				[co IN cobj WHERE co IS NOT NULL AND co.obj_type = "file" | co { .copied_id, .id }] AS cobjFileCopyIdMaps
+			WITH obj, cobjs, 
+				[o IN collect(obj) WHERE o.obj_type = "file" | o { .copied_id, copy_id: o.id }] AS objFileCopyIdMaps,
+				[co IN cobjs WHERE co.obj_type = "file" | co { .copied_id, copy_id: co.id }] AS cobjFileCopyIdMaps
+
+			SET obj.copied_id = null
+
+			UNWIND (cobjs + [null]) AS cobj
+			SET cobj.copied_id = null
+
+			WITH objFileCopyIdMaps, cobjFileCopyIdMaps
 
 			RETURN objFileCopyIdMaps + cobjFileCopyIdMaps AS file_copy_id_maps
 			`, matchPath, matchIdent),
@@ -425,8 +478,8 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 				"object_ids":       objectIds,
 			},
 		)
-		if err2 != nil {
-			return nil, err2
+		if err3 != nil {
+			return nil, err3
 		}
 
 		fileCopyIdMaps, _, _ := neo4j.GetRecordValue[[]any](res.Record(), "file_copy_id_maps")
@@ -436,6 +489,10 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 	if err != nil {
 		log.Println("rfsCmdModel.go: Copy:", err)
 		return false, nil, fiber.ErrInternalServerError
+	}
+
+	if fiberErr, ok := res.(*fiber.Error); ok {
+		return false, nil, fiberErr
 	}
 
 	return true, res.([]any), nil
