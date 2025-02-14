@@ -1,5 +1,7 @@
 # i9rfs (API Server)
 
+[![Test i9rfs](https://github.com/the-real-i9/i9rfs-server/actions/workflows/test.yml/badge.svg)](https://github.com/the-real-i9/i9rfs-server/actions/workflows/test.yml)
+
 Build a Cloud Storage and Online File System Application, like Google Drive and One Drive
 
 ## Intro
