@@ -95,22 +95,36 @@ func Del(ctx context.Context, clientUsername, parentDirectoryId string, objectId
 
 	if parentDirectoryId == "/" {
 		cypher = `
-		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL)(()-[:HAS_CHILD]->(childObj))*
+		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)(()-[:HAS_CHILD]->(childObjs))*
+			
+		WITH obj, childObjs,
+			[o IN collect(obj) WHERE o.obj_type = "file" | o.id] AS objFileIds 
 
-		WITH obj, childObj, [o IN obj WHERE o.obj_type = "file" | o.id] AS objFileIds, [co IN childObj WHERE co.obj_type = "file" | co.id] AS childObjFileIds
+		DETACH DELETE obj
 
-		DETACH DELETE obj, childObj
-	
+		WITH objFileIds, childObjs
+
+		UNWIND (childObjs + [null]) AS cObj
+		DETACH DELETE cObj
+		WITH objFileIds, [co IN collect(cObj) WHERE co.obj_type = "file" | co.id] AS childObjFileIds
+
 		RETURN objFileIds + childObjFileIds AS file_ids
 		`
 	} else {
 		cypher = `
-		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)(()-[:HAS_CHILD]->(childObj))*
+		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)(()-[:HAS_CHILD]->(childObjs))*
 			
-		WITH obj, childObj, [o IN obj WHERE o.obj_type = "file" | o.id] AS objFileIds, [co IN childObj WHERE co.obj_type = "file" | co.id] AS childObjFileIds
+		WITH obj, childObjs,
+			[o IN collect(obj) WHERE o.obj_type = "file" | o.id] AS objFileIds 
 
-		DETACH DELETE obj, childObj
-	
+		DETACH DELETE obj
+
+		WITH objFileIds, childObjs
+
+		UNWIND (childObjs + [null]) AS cObj
+		DETACH DELETE cObj
+		WITH objFileIds, [co IN collect(cObj) WHERE co.obj_type = "file" | co.id] AS childObjFileIds
+
 		RETURN objFileIds + childObjFileIds AS file_ids
 		`
 	}
