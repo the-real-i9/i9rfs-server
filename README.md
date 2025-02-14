@@ -24,7 +24,7 @@ If you need a feature not currently supported, feel free to suggest them. It wil
 <img style="margin-right: 10px" alt="go" width="50" src="./z_attachments/tech-icons/go-original-wordmark.svg" />
 <img style="margin-right: 10px" alt="go" width="50" src="./z_attachments/tech-icons/gofiber.svg" />
 <img style="margin-right: 10px" alt="go" width="50" src="./z_attachments/tech-icons/websocket.svg" />
-<img style="margin-right: 10px" alt="neo4j" width="60" src="./z_attachments/tech-icons/neo4j-original-wordmark.svg" />
+<img style="margin-right: 10px" alt="neo4j" width="60" src="./z_attachments/tech-icons/neo4j-original.svg" />
 <img style="margin-right: 10px" alt="go" width="50" src="./z_attachments/tech-icons/jwt.svg" />
 <img style="margin-right: 10px" alt="go" width="50" src="./z_attachments/tech-icons/googlecloud-original.svg" />
 </div>
