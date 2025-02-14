@@ -47,13 +47,13 @@ Visit the API documentation for implementation guide.
 - **Create** directories
 - **Upload** files
 - **List** the contents of a directory
-- **Copy** and **Move** files and directories
-- **Delete** files and directories
-- **Rename** files and directories
-- **Trash** files and directories
-- View files and directories in Trash
-- Restore files and directories from Trash
-- **Star** files and directories
+- **Copy** and **Move** files/directories
+- **Delete** files/directories
+- **Rename** files/directories
+- Move files/directories to **Trash**
+- View files/directories in Trash
+- Restore files/directories from Trash
+- **Star** files/directories
 
 ## Notable Features and their Algorithms
 
