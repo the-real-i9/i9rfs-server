@@ -42,24 +42,18 @@ If you need a feature this API server does not currently support, feel free to s
 
 ## Features
 
-The following is a summary of the features supported by this API. Visit the API documentation to see the full features and their implementation details.
+Visit the API documentation for implementation guide.
 
-### File system operations
-
-- List the contents of a directory
-- Copy, Move files and directories
-- Create, Remove directories
-- Remove files
-
-### Storage
-
-- Upload and Download Files
-
-### CLI Client Support
-
-The API endpoint generally accepts command-line-based data parameters. GUI clients, however, will need supply values into these parameters accordingly.
-
-This provides the advantages of CLI over GUI in file manipulation.
+- **Create** directories
+- **Upload** files
+- **List** the contents of a directory
+- **Copy** and **Move** files and directories
+- **Delete** files and directories
+- **Rename** files and directories
+- **Trash** files and directories
+- View files and directories in Trash
+- Restore files and directories from Trash
+- **Star** files and directories
 
 ## Notable Features and their Algorithms
 
