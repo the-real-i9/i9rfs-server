@@ -2,7 +2,7 @@ on:
   push:
     branches:
       - main
-name: "Test i9chat"
+name: "Test i9rfs"
 jobs:
   Tests:
     runs-on: ubuntu-latest
