@@ -38,7 +38,6 @@ func WSErrResp(err error) appTypes.WSResp {
 
 func ValidationError(err error, filename, structname string) error {
 	if err != nil {
-		log.Println(err)
 		if e, ok := err.(validation.InternalError); ok {
 			log.Printf("%s: %s: %v", filename, structname, e.InternalError())
 			return fiber.ErrInternalServerError

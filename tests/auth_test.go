@@ -123,6 +123,4 @@ func TestUserAuth(t *testing.T) {
 			require.Equal(t, http.StatusBadRequest, res.StatusCode)
 		})
 	})
-
-	cleanUpDB()
 }

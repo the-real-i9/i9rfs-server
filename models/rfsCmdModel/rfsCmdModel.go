@@ -127,7 +127,7 @@ func Del(ctx context.Context, clientUsername, parentDirectoryId string, objectId
 	}
 
 	if len(res.Records) == 0 {
-		return false, nil, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids, and that you're not trying to delete a native directory")
+		return false, nil, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids for the command, and that you're not trying to delete a native directory")
 	}
 
 	fileIds, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "file_ids")
@@ -151,6 +151,8 @@ func Trash(ctx context.Context, clientUsername, parentDirectoryId string, object
 
 			SET obj.trashed = true, obj.trashed_on = $now
 
+			WITH obj
+
 			MATCH (trash:UserTrash{ user: $client_username })
 			CREATE (trash)-[:HAS_CHILD]->(obj)
 
@@ -169,7 +171,7 @@ func Trash(ctx context.Context, clientUsername, parentDirectoryId string, object
 	}
 
 	if len(res.Records) == 0 {
-		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids, and that you're not trying to trash a native directory")
+		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids for the command, and that you're not trying to trash a native directory")
 	}
 
 	return true, nil
@@ -198,7 +200,7 @@ func Restore(ctx context.Context, clientUsername string, objectIds []string) (bo
 	}
 
 	if len(res.Records) == 0 {
-		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids")
+		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids for the command")
 	}
 
 	return true, nil
@@ -232,9 +234,9 @@ func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, ne
 	var matchPath string
 
 	if parentDirectoryId == "/" {
-		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj:Object{ id: $object_id } WHERE obj.native IS NULL)"
+		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj:Object{ id: $object_id } WHERE obj.native IS NULL AND obj.trashed IS NULL)"
 	} else {
-		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj:Object{ id: $object_id })"
+		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj:Object{ id: $object_id } WHERE obj.trashed IS NULL)"
 	}
 
 	res, err := db.Query(
@@ -243,11 +245,14 @@ func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, ne
 			MATCH %s
 
 			SET obj.name = $new_name, obj.date_modified = $now
+
+			RETURN true AS workdone
 		`, matchPath),
 		map[string]any{
 			"client_username": clientUsername,
 			"parent_dir_id":   parentDirectoryId,
 			"object_id":       objectId,
+			"new_name":        newName,
 			"now":             time.Now().UTC(),
 		},
 	)
@@ -257,7 +262,7 @@ func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, ne
 	}
 
 	if len(res.Records) == 0 {
-		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids, and that you're not trying to rename a native directory")
+		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids for the command, and that you're not trying to rename a native or trashed directory")
 	}
 
 	return true, nil
@@ -332,7 +337,7 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 	}
 
 	if len(res.Records) == 0 {
-		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids, and that you're not trying to move a native directory")
+		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids for the command, and that you're not trying to move a native directory")
 	}
 
 	return true, nil
@@ -383,7 +388,7 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		}
 
 		if res.Record() == nil {
-			return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids")
+			return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids for the command")
 		}
 
 		parentIds, _, _ := neo4j.GetRecordValue[[]any](res.Record(), "parent_ids")
@@ -488,7 +493,7 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		}
 
 		if res.Record() == nil {
-			return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids")
+			return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids for the command")
 		}
 
 		fileCopyIdMaps, _, _ := neo4j.GetRecordValue[[]any](res.Record(), "file_copy_id_maps")

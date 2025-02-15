@@ -26,7 +26,7 @@ func (b rfsCmdBody) Validate() error {
 			"copy",
 			"upload", "up",
 		).Error("unrecognized command")),
-		validation.Field(&b.CmdData, validation.Required),
+		validation.Field(&b.CmdData, validation.Required.When(b.Command != "show trash" && b.Command != "view trash")),
 	)
 
 	return helpers.ValidationError(err, "appControllers_validation.go", "rfsCmdBody")

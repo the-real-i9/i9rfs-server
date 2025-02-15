@@ -31,6 +31,8 @@ func TestMain(m *testing.M) {
 
 	c := m.Run()
 
+	cleanUpDB()
+
 	os.Exit(c)
 }
 
