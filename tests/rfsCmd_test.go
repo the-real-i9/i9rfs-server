@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/fasthttp/websocket"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const WS_URL string = "ws://localhost:8000/api/app/rfs"
@@ -20,35 +20,35 @@ func TestCmds_CaseOne(t *testing.T) {
 
 		t.Run("request new account", func(t *testing.T) {
 			reqBody, err := reqBody(map[string]any{"email": "mikeross@gmail.com"})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			res, err := http.Post(signupPath+"/request_new_account", "application/json", reqBody)
-			assert.NoError(t, err)
-			assert.Equal(t, http.StatusOK, res.StatusCode)
+			require.NoError(t, err)
+			require.Equal(t, http.StatusOK, res.StatusCode)
 
 			bd, err := resBody(res.Body)
-			assert.NoError(t, err)
-			assert.NotEmpty(t, bd)
+			require.NoError(t, err)
+			require.NotEmpty(t, bd)
 
 			signupSessCookie = res.Header.Get("Set-Cookie")
 		})
 
 		t.Run("sends the correct email verf code", func(t *testing.T) {
 			verfCode, err := strconv.Atoi(os.Getenv("DUMMY_VERF_TOKEN"))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			reqBody, err := reqBody(map[string]any{"code": verfCode})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			req, err := http.NewRequest("POST", signupPath+"/verify_email", reqBody)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			req.Header.Set("Cookie", signupSessCookie)
 			req.Header.Add("Content-Type", "application/json")
 
 			res, err := http.DefaultClient.Do(req)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.Equal(t, http.StatusOK, res.StatusCode)
+			require.Equal(t, http.StatusOK, res.StatusCode)
 		})
 
 		t.Run("submits her remaining credentials", func(t *testing.T) {
@@ -56,17 +56,17 @@ func TestCmds_CaseOne(t *testing.T) {
 				"username": "mikeross",
 				"password": "paralegal_zane",
 			})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			req, err := http.NewRequest("POST", signupPath+"/register_user", reqBody)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/json")
 			req.Header.Set("Cookie", signupSessCookie)
 
 			res, err := http.DefaultClient.Do(req)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.Equal(t, http.StatusOK, res.StatusCode)
+			require.Equal(t, http.StatusOK, res.StatusCode)
 
 			userSessionCookie = res.Header.Get("Set-Cookie")
 		})
@@ -82,8 +82,8 @@ func TestCmds_CaseOne(t *testing.T) {
 		wsHeader := http.Header{}
 		wsHeader.Set("Cookie", userSessionCookie)
 		wsConn, res, err = websocket.DefaultDialer.Dial(WS_URL, wsHeader)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusSwitchingProtocols, res.StatusCode)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusSwitchingProtocols, res.StatusCode)
 	})
 
 	nativeRootDirs := make(map[string]string)
@@ -97,29 +97,29 @@ func TestCmds_CaseOne(t *testing.T) {
 			},
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
-		assert.NotEmpty(t, wsResp.Body)
-		assert.Empty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusOK, wsResp.StatusCode)
+		require.NotEmpty(t, wsResp.Body)
+		require.Empty(t, wsResp.ErrorMsg)
 
 		dirMaps, ok := wsResp.Body.([]any)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		for _, dm := range dirMaps {
 			m := dm.(map[string]any)
 			nativeRootDirs[m["name"].(string)] = m["id"].(string)
 		}
 
-		assert.Contains(t, nativeRootDirs, "Documents")
-		assert.Contains(t, nativeRootDirs, "Downloads")
-		assert.Contains(t, nativeRootDirs, "Videos")
-		assert.Contains(t, nativeRootDirs, "Music")
-		assert.Contains(t, nativeRootDirs, "Pictures")
+		require.Contains(t, nativeRootDirs, "Documents")
+		require.Contains(t, nativeRootDirs, "Downloads")
+		require.Contains(t, nativeRootDirs, "Videos")
+		require.Contains(t, nativeRootDirs, "Music")
+		require.Contains(t, nativeRootDirs, "Pictures")
 	})
 
 	t.Run("bulk create dirs in 'Videos' dir", func(t *testing.T) {
@@ -132,15 +132,15 @@ func TestCmds_CaseOne(t *testing.T) {
 				},
 			}
 
-			assert.NoError(t, wsConn.WriteJSON(sendData))
+			require.NoError(t, wsConn.WriteJSON(sendData))
 
 			var wsResp appTypes.WSResp
 
-			assert.NoError(t, wsConn.ReadJSON(&wsResp))
+			require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-			assert.Equal(t, http.StatusOK, wsResp.StatusCode)
-			assert.NotEmpty(t, wsResp.Body)
-			assert.Empty(t, wsResp.ErrorMsg)
+			require.Equal(t, http.StatusOK, wsResp.StatusCode)
+			require.NotEmpty(t, wsResp.Body)
+			require.Empty(t, wsResp.ErrorMsg)
 		}
 	})
 
@@ -154,30 +154,30 @@ func TestCmds_CaseOne(t *testing.T) {
 			},
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
-		assert.NotEmpty(t, wsResp.Body)
-		assert.Empty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusOK, wsResp.StatusCode)
+		require.NotEmpty(t, wsResp.Body)
+		require.Empty(t, wsResp.ErrorMsg)
 
 		dirMaps, ok := wsResp.Body.([]any)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		for _, dm := range dirMaps {
 			m := dm.(map[string]any)
 			videoDirs[m["name"].(string)] = m["id"].(string)
 		}
-		assert.Contains(t, videoDirs, "Horror")
-		assert.Contains(t, videoDirs, "Comedy")
-		assert.Contains(t, videoDirs, "Legal")
-		assert.Contains(t, videoDirs, "Musical")
-		assert.Contains(t, videoDirs, "Action")
-		assert.Contains(t, videoDirs, "NotAVideo")
-		assert.Contains(t, videoDirs, "DeleteMe")
+		require.Contains(t, videoDirs, "Horror")
+		require.Contains(t, videoDirs, "Comedy")
+		require.Contains(t, videoDirs, "Legal")
+		require.Contains(t, videoDirs, "Musical")
+		require.Contains(t, videoDirs, "Action")
+		require.Contains(t, videoDirs, "NotAVideo")
+		require.Contains(t, videoDirs, "DeleteMe")
 	})
 
 	t.Run("delete 'NotAVideo' and 'DeleteMe' dirs in native root dir 'Videos'", func(t *testing.T) {
@@ -189,15 +189,15 @@ func TestCmds_CaseOne(t *testing.T) {
 			},
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
-		assert.NotEmpty(t, wsResp.Body)
-		assert.Empty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusOK, wsResp.StatusCode)
+		require.NotEmpty(t, wsResp.Body)
+		require.Empty(t, wsResp.ErrorMsg)
 	})
 
 	t.Run("list the dirs now in native dir 'Videos' to confirm deletion", func(t *testing.T) {
@@ -209,18 +209,18 @@ func TestCmds_CaseOne(t *testing.T) {
 			},
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
-		assert.NotEmpty(t, wsResp.Body)
-		assert.Empty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusOK, wsResp.StatusCode)
+		require.NotEmpty(t, wsResp.Body)
+		require.Empty(t, wsResp.ErrorMsg)
 
 		dirMaps, ok := wsResp.Body.([]any)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		clear(videoDirs)
 
@@ -228,10 +228,10 @@ func TestCmds_CaseOne(t *testing.T) {
 			m := dm.(map[string]any)
 			videoDirs[m["name"].(string)] = m["id"].(string)
 		}
-		assert.Contains(t, videoDirs, "Musical")
-		assert.Contains(t, videoDirs, "Action")
-		assert.NotContains(t, videoDirs, "NotAVideo")
-		assert.NotContains(t, videoDirs, "DeleteMe")
+		require.Contains(t, videoDirs, "Musical")
+		require.Contains(t, videoDirs, "Action")
+		require.NotContains(t, videoDirs, "NotAVideo")
+		require.NotContains(t, videoDirs, "DeleteMe")
 	})
 
 	t.Run("attempt to delete a native directory fails", func(t *testing.T) {
@@ -243,18 +243,18 @@ func TestCmds_CaseOne(t *testing.T) {
 			},
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusBadRequest, wsResp.StatusCode)
-		assert.Empty(t, wsResp.Body)
-		assert.NotEmpty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusBadRequest, wsResp.StatusCode)
+		require.Empty(t, wsResp.Body)
+		require.NotEmpty(t, wsResp.ErrorMsg)
 	})
 
-	assert.NoError(t, wsConn.CloseHandler()(websocket.CloseNormalClosure, "done"))
+	require.NoError(t, wsConn.CloseHandler()(websocket.CloseNormalClosure, "done"))
 
 }
 
@@ -265,35 +265,35 @@ func TestCmds_CaseTwo(t *testing.T) {
 
 		t.Run("request new account", func(t *testing.T) {
 			reqBody, err := reqBody(map[string]any{"email": "harveyspecter@gmail.com"})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			res, err := http.Post(signupPath+"/request_new_account", "application/json", reqBody)
-			assert.NoError(t, err)
-			assert.Equal(t, http.StatusOK, res.StatusCode)
+			require.NoError(t, err)
+			require.Equal(t, http.StatusOK, res.StatusCode)
 
 			bd, err := resBody(res.Body)
-			assert.NoError(t, err)
-			assert.NotEmpty(t, bd)
+			require.NoError(t, err)
+			require.NotEmpty(t, bd)
 
 			signupSessCookie = res.Header.Get("Set-Cookie")
 		})
 
 		t.Run("sends the correct email verf code", func(t *testing.T) {
 			verfCode, err := strconv.Atoi(os.Getenv("DUMMY_VERF_TOKEN"))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			reqBody, err := reqBody(map[string]any{"code": verfCode})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			req, err := http.NewRequest("POST", signupPath+"/verify_email", reqBody)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			req.Header.Set("Cookie", signupSessCookie)
 			req.Header.Add("Content-Type", "application/json")
 
 			res, err := http.DefaultClient.Do(req)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.Equal(t, http.StatusOK, res.StatusCode)
+			require.Equal(t, http.StatusOK, res.StatusCode)
 		})
 
 		t.Run("submits her remaining credentials", func(t *testing.T) {
@@ -301,17 +301,17 @@ func TestCmds_CaseTwo(t *testing.T) {
 				"username": "harvey",
 				"password": "scottie_",
 			})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			req, err := http.NewRequest("POST", signupPath+"/register_user", reqBody)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			req.Header.Add("Content-Type", "application/json")
 			req.Header.Set("Cookie", signupSessCookie)
 
 			res, err := http.DefaultClient.Do(req)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.Equal(t, http.StatusOK, res.StatusCode)
+			require.Equal(t, http.StatusOK, res.StatusCode)
 
 			userSessionCookie = res.Header.Get("Set-Cookie")
 		})
@@ -327,8 +327,8 @@ func TestCmds_CaseTwo(t *testing.T) {
 		wsHeader := http.Header{}
 		wsHeader.Set("Cookie", userSessionCookie)
 		wsConn, res, err = websocket.DefaultDialer.Dial(WS_URL, wsHeader)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusSwitchingProtocols, res.StatusCode)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusSwitchingProtocols, res.StatusCode)
 	})
 
 	nativeRootDirs := make(map[string]string)
@@ -342,29 +342,29 @@ func TestCmds_CaseTwo(t *testing.T) {
 			},
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
-		assert.NotEmpty(t, wsResp.Body)
-		assert.Empty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusOK, wsResp.StatusCode)
+		require.NotEmpty(t, wsResp.Body)
+		require.Empty(t, wsResp.ErrorMsg)
 
 		dirMaps, ok := wsResp.Body.([]any)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		for _, dm := range dirMaps {
 			m := dm.(map[string]any)
 			nativeRootDirs[m["name"].(string)] = m["id"].(string)
 		}
 
-		assert.Contains(t, nativeRootDirs, "Documents")
-		assert.Contains(t, nativeRootDirs, "Downloads")
-		assert.Contains(t, nativeRootDirs, "Videos")
-		assert.Contains(t, nativeRootDirs, "Music")
-		assert.Contains(t, nativeRootDirs, "Pictures")
+		require.Contains(t, nativeRootDirs, "Documents")
+		require.Contains(t, nativeRootDirs, "Downloads")
+		require.Contains(t, nativeRootDirs, "Videos")
+		require.Contains(t, nativeRootDirs, "Music")
+		require.Contains(t, nativeRootDirs, "Pictures")
 	})
 
 	t.Run("bulk create dirs in 'Music'", func(t *testing.T) {
@@ -377,15 +377,15 @@ func TestCmds_CaseTwo(t *testing.T) {
 				},
 			}
 
-			assert.NoError(t, wsConn.WriteJSON(sendData))
+			require.NoError(t, wsConn.WriteJSON(sendData))
 
 			var wsResp appTypes.WSResp
 
-			assert.NoError(t, wsConn.ReadJSON(&wsResp))
+			require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-			assert.Equal(t, http.StatusOK, wsResp.StatusCode)
-			assert.NotEmpty(t, wsResp.Body)
-			assert.Empty(t, wsResp.ErrorMsg)
+			require.Equal(t, http.StatusOK, wsResp.StatusCode)
+			require.NotEmpty(t, wsResp.Body)
+			require.Empty(t, wsResp.ErrorMsg)
 		}
 	})
 
@@ -399,28 +399,28 @@ func TestCmds_CaseTwo(t *testing.T) {
 			},
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
-		assert.NotEmpty(t, wsResp.Body)
-		assert.Empty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusOK, wsResp.StatusCode)
+		require.NotEmpty(t, wsResp.Body)
+		require.Empty(t, wsResp.ErrorMsg)
 
 		dirMaps, ok := wsResp.Body.([]any)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		for _, dm := range dirMaps {
 			m := dm.(map[string]any)
 			musicDirs[m["name"].(string)] = m["id"].(string)
 		}
-		assert.Contains(t, musicDirs, "Rock")
-		assert.Contains(t, musicDirs, "Gospel")
-		assert.Contains(t, musicDirs, "Pop")
-		assert.Contains(t, musicDirs, "Folk")
-		assert.Contains(t, musicDirs, "Old Songs")
+		require.Contains(t, musicDirs, "Rock")
+		require.Contains(t, musicDirs, "Gospel")
+		require.Contains(t, musicDirs, "Pop")
+		require.Contains(t, musicDirs, "Folk")
+		require.Contains(t, musicDirs, "Old Songs")
 	})
 
 	t.Run("trash 'Folk' and 'Old Songs' dirs in 'Music'", func(t *testing.T) {
@@ -433,15 +433,15 @@ func TestCmds_CaseTwo(t *testing.T) {
 			},
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
-		assert.NotEmpty(t, wsResp.Body)
-		assert.Empty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusOK, wsResp.StatusCode)
+		require.NotEmpty(t, wsResp.Body)
+		require.Empty(t, wsResp.ErrorMsg)
 	})
 
 	t.Run("list the dirs now in 'Music': confirm trashing", func(t *testing.T) {
@@ -453,18 +453,18 @@ func TestCmds_CaseTwo(t *testing.T) {
 			},
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
-		assert.NotEmpty(t, wsResp.Body)
-		assert.Empty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusOK, wsResp.StatusCode)
+		require.NotEmpty(t, wsResp.Body)
+		require.Empty(t, wsResp.ErrorMsg)
 
 		dirMaps, ok := wsResp.Body.([]any)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		clear(musicDirs)
 
@@ -472,10 +472,10 @@ func TestCmds_CaseTwo(t *testing.T) {
 			m := dm.(map[string]any)
 			musicDirs[m["name"].(string)] = m["id"].(string)
 		}
-		assert.Contains(t, musicDirs, "Pop")
-		assert.Contains(t, musicDirs, "Gospel")
-		assert.NotContains(t, musicDirs, "Folk")
-		assert.NotContains(t, musicDirs, "Old Songs")
+		require.Contains(t, musicDirs, "Pop")
+		require.Contains(t, musicDirs, "Gospel")
+		require.NotContains(t, musicDirs, "Folk")
+		require.NotContains(t, musicDirs, "Old Songs")
 	})
 
 	trashDirs := make(map[string]string)
@@ -486,25 +486,25 @@ func TestCmds_CaseTwo(t *testing.T) {
 			"command": "view trash",
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
-		assert.NotEmpty(t, wsResp.Body)
-		assert.Empty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusOK, wsResp.StatusCode)
+		require.NotEmpty(t, wsResp.Body)
+		require.Empty(t, wsResp.ErrorMsg)
 
 		dirMaps, ok := wsResp.Body.([]any)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		for _, dm := range dirMaps {
 			m := dm.(map[string]any)
 			trashDirs[m["name"].(string)] = m["id"].(string)
 		}
-		assert.Contains(t, trashDirs, "Folk")
-		assert.Contains(t, trashDirs, "Old Songs")
+		require.Contains(t, trashDirs, "Folk")
+		require.Contains(t, trashDirs, "Old Songs")
 	})
 
 	t.Run("restore 'Folk' dir from Trash", func(t *testing.T) {
@@ -516,15 +516,15 @@ func TestCmds_CaseTwo(t *testing.T) {
 			},
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
-		assert.NotEmpty(t, wsResp.Body)
-		assert.Empty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusOK, wsResp.StatusCode)
+		require.NotEmpty(t, wsResp.Body)
+		require.Empty(t, wsResp.ErrorMsg)
 	})
 
 	t.Run("list the dirs now in 'Music': confirm 'Folk' restored", func(t *testing.T) {
@@ -536,18 +536,18 @@ func TestCmds_CaseTwo(t *testing.T) {
 			},
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
-		assert.NotEmpty(t, wsResp.Body)
-		assert.Empty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusOK, wsResp.StatusCode)
+		require.NotEmpty(t, wsResp.Body)
+		require.Empty(t, wsResp.ErrorMsg)
 
 		dirMaps, ok := wsResp.Body.([]any)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		clear(musicDirs)
 
@@ -555,10 +555,10 @@ func TestCmds_CaseTwo(t *testing.T) {
 			m := dm.(map[string]any)
 			musicDirs[m["name"].(string)] = m["id"].(string)
 		}
-		assert.Contains(t, musicDirs, "Pop")
-		assert.Contains(t, musicDirs, "Gospel")
-		assert.Contains(t, musicDirs, "Folk")
-		assert.NotContains(t, musicDirs, "Old Songs")
+		require.Contains(t, musicDirs, "Pop")
+		require.Contains(t, musicDirs, "Gospel")
+		require.Contains(t, musicDirs, "Folk")
+		require.NotContains(t, musicDirs, "Old Songs")
 	})
 
 	t.Run("attempt to trash a native directory fails", func(t *testing.T) {
@@ -570,15 +570,15 @@ func TestCmds_CaseTwo(t *testing.T) {
 			},
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusBadRequest, wsResp.StatusCode)
-		assert.Empty(t, wsResp.Body)
-		assert.NotEmpty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusBadRequest, wsResp.StatusCode)
+		require.Empty(t, wsResp.Body)
+		require.NotEmpty(t, wsResp.ErrorMsg)
 	})
 
 	t.Run("rename 'Gospel' in 'Music': to 'Christian Music'", func(t *testing.T) {
@@ -592,15 +592,15 @@ func TestCmds_CaseTwo(t *testing.T) {
 			},
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
-		assert.NotEmpty(t, wsResp.Body)
-		assert.Empty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusOK, wsResp.StatusCode)
+		require.NotEmpty(t, wsResp.Body)
+		require.Empty(t, wsResp.ErrorMsg)
 	})
 
 	t.Run("list the dirs now in 'Music': confirm renaming", func(t *testing.T) {
@@ -612,18 +612,18 @@ func TestCmds_CaseTwo(t *testing.T) {
 			},
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusOK, wsResp.StatusCode)
-		assert.NotEmpty(t, wsResp.Body)
-		assert.Empty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusOK, wsResp.StatusCode)
+		require.NotEmpty(t, wsResp.Body)
+		require.Empty(t, wsResp.ErrorMsg)
 
 		dirMaps, ok := wsResp.Body.([]any)
-		assert.True(t, ok)
+		require.True(t, ok)
 
 		clear(musicDirs)
 
@@ -631,8 +631,8 @@ func TestCmds_CaseTwo(t *testing.T) {
 			m := dm.(map[string]any)
 			musicDirs[m["name"].(string)] = m["id"].(string)
 		}
-		assert.NotContains(t, musicDirs, "Gospel")
-		assert.Contains(t, musicDirs, "Christian Music")
+		require.NotContains(t, musicDirs, "Gospel")
+		require.Contains(t, musicDirs, "Christian Music")
 	})
 
 	t.Run("attempt to rename a native directory fails", func(t *testing.T) {
@@ -645,16 +645,16 @@ func TestCmds_CaseTwo(t *testing.T) {
 			},
 		}
 
-		assert.NoError(t, wsConn.WriteJSON(sendData))
+		require.NoError(t, wsConn.WriteJSON(sendData))
 
 		var wsResp appTypes.WSResp
 
-		assert.NoError(t, wsConn.ReadJSON(&wsResp))
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
 
-		assert.Equal(t, http.StatusBadRequest, wsResp.StatusCode)
-		assert.Empty(t, wsResp.Body)
-		assert.NotEmpty(t, wsResp.ErrorMsg)
+		require.Equal(t, http.StatusBadRequest, wsResp.StatusCode)
+		require.Empty(t, wsResp.Body)
+		require.NotEmpty(t, wsResp.ErrorMsg)
 	})
 
-	assert.NoError(t, wsConn.CloseHandler()(websocket.CloseNormalClosure, "done"))
+	require.NoError(t, wsConn.CloseHandler()(websocket.CloseNormalClosure, "done"))
 }
