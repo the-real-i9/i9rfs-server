@@ -14,6 +14,8 @@ import (
 const WS_URL string = "ws://localhost:8000/api/app/rfs"
 
 func TestCmds_CaseOne(t *testing.T) {
+	t.Parallel()
+
 	userSessionCookie := ""
 	t.Run("user signup", func(t *testing.T) {
 		signupSessCookie := ""
@@ -259,6 +261,8 @@ func TestCmds_CaseOne(t *testing.T) {
 }
 
 func TestCmds_CaseTwo(t *testing.T) {
+	t.Parallel()
+
 	userSessionCookie := ""
 	t.Run("user signup", func(t *testing.T) {
 		signupSessCookie := ""
