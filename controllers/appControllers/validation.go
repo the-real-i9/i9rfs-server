@@ -1,6 +1,7 @@
 package appControllers
 
 import (
+	"fmt"
 	"i9rfs/helpers"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
@@ -25,7 +26,7 @@ func (b rfsCmdBody) Validate() error {
 			"move",
 			"copy",
 			"upload", "up",
-		).Error("unrecognized command")),
+		).Error(fmt.Sprintf("unrecognized command: %s", b.Command))),
 		validation.Field(&b.CmdData, validation.Required.When(b.Command != "show trash" && b.Command != "view trash")),
 	)
 
