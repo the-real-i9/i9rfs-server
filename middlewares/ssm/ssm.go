@@ -16,7 +16,11 @@ func VerifyEmail(c *fiber.Ctx) error {
 		return fiber.ErrInternalServerError
 	}
 
-	ssbt := sess.Get("signup_session").([]byte)
+	ssbt, ok := sess.Get("signup_session").([]byte)
+	if !ok {
+		log.Println("ssm.go: VeifyEmail: sess.Get: signup_session is missing")
+		return fiber.ErrInternalServerError
+	}
 
 	var signupSession appTypes.SignupSession
 
@@ -41,7 +45,11 @@ func RegisterUser(c *fiber.Ctx) error {
 		return fiber.ErrInternalServerError
 	}
 
-	ssbt := sess.Get("signup_session").([]byte)
+	ssbt, ok := sess.Get("signup_session").([]byte)
+	if !ok {
+		log.Println("ssm.go: VeifyEmail: sess.Get: signup_session is missing")
+		return fiber.ErrInternalServerError
+	}
 
 	var signupSession appTypes.SignupSession
 

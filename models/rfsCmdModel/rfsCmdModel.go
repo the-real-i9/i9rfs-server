@@ -13,27 +13,22 @@ import (
 )
 
 func Ls(ctx context.Context, clientUsername, directoryId string) ([]any, error) {
-	var cypher string
+	var matchPath string
 
 	if directoryId == "/" {
-		cypher = `
-		OPTIONAL MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.trashed IS NULL)
-		WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified
-		ORDER BY obj.obj_type DESC, obj.name ASC
-		RETURN collect(obj { .*, date_created, date_modified }) AS dir_cont
-		`
+		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.trashed IS NULL)"
 	} else {
-		cypher = `
-		OPTIONAL MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $directory_id })-[:HAS_CHILD]->(obj WHERE obj.trashed IS NULL)
-		WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified
-		ORDER BY obj.obj_type DESC, obj.name ASC
-		RETURN collect(obj { .*, date_created, date_modified }) AS dir_cont
-		`
+		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $directory_id })-[:HAS_CHILD]->(obj WHERE obj.trashed IS NULL)"
 	}
 
 	res, err := db.Query(
 		ctx,
-		cypher,
+		fmt.Sprintf(`
+			OPTIONAL MATCH %s
+			WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified
+			ORDER BY obj.obj_type DESC, obj.name ASC
+			RETURN collect(obj { .*, date_created, date_modified }) AS dir_cont
+		`, matchPath),
 		map[string]any{
 			"client_username": clientUsername,
 			"directory_id":    directoryId,
@@ -50,29 +45,26 @@ func Ls(ctx context.Context, clientUsername, directoryId string) ([]any, error) 
 }
 
 func Mkdir(ctx context.Context, clientUsername, parentDirectoryId, directoryName string) (map[string]any, error) {
-	var cypher string
+	var matchPath string
+	var matchIdent string
 
 	if parentDirectoryId == "/" {
-		cypher = `
-		MATCH (root:UserRoot{ user: $client_username })
-		CREATE (root)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory", name: $dir_name, date_created: $now, date_modified: $now })
-		
-		WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified
-		RETURN obj { .*, date_created, date_modified } AS new_dir
-		`
+		matchPath = "(root:UserRoot{ user: $client_username })"
+		matchIdent = "root"
 	} else {
-		cypher = `
-		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(parObj:Object{ id: $parent_dir_id })
-		CREATE (parObj)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory", name: $dir_name, date_created: $now, date_modified: $now })
-
-		WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified
-		RETURN obj { .*, date_created, date_modified } AS new_dir
-		`
+		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(parObj:Object{ id: $parent_dir_id })"
+		matchIdent = "parObj"
 	}
 
 	res, err := db.Query(
 		ctx,
-		cypher,
+		fmt.Sprintf(`
+			MATCH %s
+			CREATE (%s)-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory", name: $dir_name, date_created: $now, date_modified: $now })
+			
+			WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified
+			RETURN obj { .*, date_created, date_modified } AS new_dir
+		`, matchPath, matchIdent),
 		map[string]any{
 			"client_username": clientUsername,
 			"parent_dir_id":   parentDirectoryId,
@@ -85,55 +77,44 @@ func Mkdir(ctx context.Context, clientUsername, parentDirectoryId, directoryName
 		return nil, fiber.ErrInternalServerError
 	}
 
+	if len(res.Records) == 0 {
+		return nil, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct 'parentDirectoryId'")
+	}
+
 	newDir, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "new_dir")
 
 	return newDir, nil
 }
 
 func Del(ctx context.Context, clientUsername, parentDirectoryId string, objectIds []string) (bool, []any, error) {
-	var cypher string
+
+	var matchPath string
 
 	if parentDirectoryId == "/" {
-		cypher = `
-		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)(()-[:HAS_CHILD]->(childObjs))*
-			
-		WITH obj, childObjs,
-			[o IN collect(obj) WHERE o.obj_type = "file" | o.id] AS objFileIds,
-			[co IN childObjs WHERE co.obj_type = "file" | co.id] AS childObjFileIds
-
-		DETACH DELETE obj
-
-		WITH objFileIds, childObjFileIds, childObjs
-
-		UNWIND (childObjs + [null]) AS cObj
-		DETACH DELETE cObj
-		WITH objFileIds, childObjFileIds
-
-		RETURN objFileIds + childObjFileIds AS file_ids
-		`
+		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL)(()-[:HAS_CHILD]->(childObjs))*"
 	} else {
-		cypher = `
-		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)(()-[:HAS_CHILD]->(childObjs))*
-			
-		WITH obj, childObjs,
-			[o IN collect(obj) WHERE o.obj_type = "file" | o.id] AS objFileIds,
-			[co IN childObjs WHERE co.obj_type = "file" | co.id] AS childObjFileIds
-
-		DETACH DELETE obj
-
-		WITH objFileIds, childObjFileIds, childObjs
-
-		UNWIND (childObjs + [null]) AS cObj
-		DETACH DELETE cObj
-		WITH objFileIds, childObjFileIds
-
-		RETURN objFileIds + childObjFileIds AS file_ids
-		`
+		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)(()-[:HAS_CHILD]->(childObjs))*"
 	}
 
 	res, err := db.Query(
 		ctx,
-		cypher,
+		fmt.Sprintf(`
+			MATCH %s
+			
+			WITH obj, childObjs,
+				[o IN collect(obj) WHERE o.obj_type = "file" | o.id] AS objFileIds,
+				[co IN childObjs WHERE co.obj_type = "file" | co.id] AS childObjFileIds
+
+			DETACH DELETE obj
+
+			WITH objFileIds, childObjFileIds, childObjs
+
+			UNWIND (childObjs + [null]) AS cObj
+			DETACH DELETE cObj
+			WITH objFileIds, childObjFileIds
+
+			RETURN objFileIds + childObjFileIds AS file_ids
+		`, matchPath),
 		map[string]any{
 			"client_username": clientUsername,
 			"parent_dir_id":   parentDirectoryId,
@@ -145,37 +126,36 @@ func Del(ctx context.Context, clientUsername, parentDirectoryId string, objectId
 		return false, nil, fiber.ErrInternalServerError
 	}
 
+	if len(res.Records) == 0 {
+		return false, nil, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids, and that you're not trying to delete a native directory")
+	}
+
 	fileIds, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "file_ids")
 
 	return true, fileIds, nil
 }
 
 func Trash(ctx context.Context, clientUsername, parentDirectoryId string, objectIds []string) (bool, error) {
-	var cypher string
+	var matchPath string
 
 	if parentDirectoryId == "/" {
-		cypher = `
-		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL)
-
-		SET obj.trashed = true, obj.trashed_on = $now
-
-		MATCH (trash:UserTrash{ user: $client_username })
-		CREATE (trash)-[:HAS_CHILD]->(obj)
-		`
+		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL)"
 	} else {
-		cypher = `
-		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)
-			
-		SET obj.trashed = true, obj.trashed_on = $now
-
-		MATCH (trash:UserTrash{ user: $client_username })
-		CREATE (trash)-[:HAS_CHILD]->(obj)
-		`
+		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)"
 	}
 
-	_, err := db.Query(
+	res, err := db.Query(
 		ctx,
-		cypher,
+		fmt.Sprintf(`
+			MATCH %s
+
+			SET obj.trashed = true, obj.trashed_on = $now
+
+			MATCH (trash:UserTrash{ user: $client_username })
+			CREATE (trash)-[:HAS_CHILD]->(obj)
+
+			RETURN true AS workdone
+		`, matchPath),
 		map[string]any{
 			"client_username": clientUsername,
 			"parent_dir_id":   parentDirectoryId,
@@ -188,11 +168,15 @@ func Trash(ctx context.Context, clientUsername, parentDirectoryId string, object
 		return false, fiber.ErrInternalServerError
 	}
 
+	if len(res.Records) == 0 {
+		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids, and that you're not trying to trash a native directory")
+	}
+
 	return true, nil
 }
 
 func Restore(ctx context.Context, clientUsername string, objectIds []string) (bool, error) {
-	_, err := db.Query(
+	res, err := db.Query(
 		ctx,
 		`
 		OPTIONAL MATCH (:UserTrash{ user: $client_username })-[tr:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)
@@ -200,6 +184,8 @@ func Restore(ctx context.Context, clientUsername string, objectIds []string) (bo
 		DELETE tr
 
 		SET obj.trashed = null, obj.trashed_on = null
+
+		RETURN true AS workdone
 		`,
 		map[string]any{
 			"client_username": clientUsername,
@@ -209,6 +195,10 @@ func Restore(ctx context.Context, clientUsername string, objectIds []string) (bo
 	if err != nil {
 		log.Println("rfsCmdModel.go: Restore:", err)
 		return false, fiber.ErrInternalServerError
+	}
+
+	if len(res.Records) == 0 {
+		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids")
 	}
 
 	return true, nil
@@ -239,25 +229,21 @@ func ShowTrash(ctx context.Context, clientUsername string) ([]any, error) {
 }
 
 func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, newName string) (bool, error) {
-	var cypher string
+	var matchPath string
 
 	if parentDirectoryId == "/" {
-		cypher = `
-		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj:Object{ id: $object_id } WHERE obj.native IS NULL)
-
-		SET obj.name = $new_name, obj.date_modified = $now
-		`
+		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj:Object{ id: $object_id } WHERE obj.native IS NULL)"
 	} else {
-		cypher = `
-		MATCH (:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj:Object{ id: $object_id })
-			
-		SET obj.name = $new_name, obj.date_modified = $now
-		`
+		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj:Object{ id: $object_id })"
 	}
 
-	_, err := db.Query(
+	res, err := db.Query(
 		ctx,
-		cypher,
+		fmt.Sprintf(`
+			MATCH %s
+
+			SET obj.name = $new_name, obj.date_modified = $now
+		`, matchPath),
 		map[string]any{
 			"client_username": clientUsername,
 			"parent_dir_id":   parentDirectoryId,
@@ -268,6 +254,10 @@ func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, ne
 	if err != nil {
 		log.Println("rfsCmdModel.go: Rename:", err)
 		return false, fiber.ErrInternalServerError
+	}
+
+	if len(res.Records) == 0 {
+		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids, and that you're not trying to rename a native directory")
 	}
 
 	return true, nil
@@ -288,12 +278,11 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		DELETE old
 
 		WITH root, obj
-
 		MATCH (root)-[:HAS_CHILD]->+(toParDir:Object{ id: $to_parent_dir_id })
-
 		SET toParDir.date_modified = $now
-
 		CREATE (toParDir)-[:HAS_CHILD]->(obj)
+
+		RETURN true AS workdone
 		`
 	} else if fromParentDirectoryId != "/" && toParentDirectoryId == "/" {
 		cypher = `
@@ -305,8 +294,9 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		DELETE old
 
 		WITH root, obj
-
 		CREATE (root)-[:HAS_CHILD]->(obj)
+
+		RETURN true AS workdone
 		`
 	} else {
 		cypher = `
@@ -319,12 +309,13 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		DELETE old
 
 		WITH toParDir, obj
-
 		CREATE (toParDir)-[:HAS_CHILD]->(obj)
+
+		RETURN true AS workdone
 		`
 	}
 
-	_, err := db.Query(
+	res, err := db.Query(
 		ctx,
 		cypher,
 		map[string]any{
@@ -338,6 +329,10 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 	if err != nil {
 		log.Println("rfsCmdModel.go: Move:", err)
 		return false, fiber.ErrInternalServerError
+	}
+
+	if len(res.Records) == 0 {
+		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids, and that you're not trying to move a native directory")
 	}
 
 	return true, nil
@@ -387,16 +382,16 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 			return nil, err
 		}
 
+		if res.Record() == nil {
+			return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids")
+		}
+
 		parentIds, _, _ := neo4j.GetRecordValue[[]any](res.Record(), "parent_ids")
 		childrenIds, _, _ := neo4j.GetRecordValue[[]any](res.Record(), "children_ids")
 
 		parentIdsLen := len(parentIds)
-		childrenIdsLen := len(childrenIds)
-		if parentIdsLen == 0 || childrenIdsLen == 0 {
-			return fiber.NewError(fiber.StatusBadRequest, "nothing to copy/paste"), nil
-		}
 
-		if parentIdsLen != childrenIdsLen {
+		if parentIdsLen != len(childrenIds) {
 			return nil, fmt.Errorf("you have a problem here: parLen and chiLen not equal")
 		}
 
@@ -464,7 +459,7 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 			CREATE (%[1]s)->[:HAS_CHILD]->(obj)
 			
 			SET %[1]s.date_modified = $now
-			
+
 			WITH obj
 			MATCH (obj)-[:HAS_CHILD]->*(cobjs)
 
@@ -490,6 +485,10 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		)
 		if err3 != nil {
 			return nil, err3
+		}
+
+		if res.Record() == nil {
+			return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids")
 		}
 
 		fileCopyIdMaps, _, _ := neo4j.GetRecordValue[[]any](res.Record(), "file_copy_id_maps")

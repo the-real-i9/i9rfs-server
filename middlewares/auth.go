@@ -21,7 +21,6 @@ func Auth(c *fiber.Ctx) error {
 	if !ok {
 		log.Println("auth.go: Auth: sess.Get: authJwt is missing")
 		return fiber.ErrInternalServerError
-
 	}
 
 	clientUser, err := securityServices.JwtVerify[appTypes.ClientUser](sessionToken, os.Getenv("AUTH_JWT_SECRET"))

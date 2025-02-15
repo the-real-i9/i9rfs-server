@@ -16,12 +16,6 @@ func MapToStruct(val map[string]any, yourStruct any) {
 	json.Unmarshal(bt, yourStruct)
 }
 
-func StructToMap(val any, yourMap *map[string]any) {
-	bt, _ := json.Marshal(val)
-
-	json.Unmarshal(bt, yourMap)
-}
-
 func ToStruct(val any, yourStruct any) {
 	bt, _ := json.Marshal(val)
 
@@ -38,7 +32,7 @@ func WSErrResp(err error) appTypes.WSResp {
 
 	return appTypes.WSResp{
 		StatusCode: errCode,
-		ErrorMsg:   err.Error(),
+		ErrorMsg:   fmt.Sprintf("%s", err),
 	}
 }
 
