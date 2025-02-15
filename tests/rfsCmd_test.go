@@ -26,6 +26,10 @@ func TestCmds_CaseOne(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, http.StatusOK, res.StatusCode)
 
+			bd, err := resBody(res.Body)
+			require.NoError(t, err)
+			require.NotEmpty(t, bd)
+
 			signupSessCookie = res.Header.Get("Set-Cookie")
 		})
 
@@ -178,7 +182,7 @@ func TestCmds_CaseOne(t *testing.T) {
 		require.Contains(t, videoDirs, "DeleteMe")
 	})
 
-	t.Run("delete 'NotAVideo' dir in native root dir 'Videos'", func(t *testing.T) {
+	t.Run("delete 'NotAVideo' and 'DeleteMe' dirs in native root dir 'Videos'", func(t *testing.T) {
 		sendData := map[string]any{
 			"command": "del",
 			"data": map[string]any{
@@ -196,6 +200,60 @@ func TestCmds_CaseOne(t *testing.T) {
 		require.Equal(t, http.StatusOK, wsResp.StatusCode)
 		require.NotEmpty(t, wsResp.Body)
 		require.Empty(t, wsResp.ErrorMsg)
+	})
+
+	t.Run("list the dirs now in native dir 'Videos' to confirm deletion", func(t *testing.T) {
+
+		sendData := map[string]any{
+			"command": "ls",
+			"data": map[string]any{
+				"directoryId": nativeRootDirs["Videos"],
+			},
+		}
+
+		require.NoError(t, wsConn.WriteJSON(sendData))
+
+		var wsResp appTypes.WSResp
+
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
+
+		require.Equal(t, http.StatusOK, wsResp.StatusCode)
+		require.NotEmpty(t, wsResp.Body)
+		require.Empty(t, wsResp.ErrorMsg)
+
+		dirMaps, ok := wsResp.Body.([]any)
+		require.True(t, ok)
+
+		clear(videoDirs)
+
+		for _, dm := range dirMaps {
+			m := dm.(map[string]any)
+			videoDirs[m["name"].(string)] = m["id"].(string)
+		}
+		require.Contains(t, videoDirs, "Musical")
+		require.Contains(t, videoDirs, "Action")
+		require.NotContains(t, videoDirs, "NotAVideo")
+		require.NotContains(t, videoDirs, "DeleteMe")
+	})
+
+	t.Run("attempt to delete a native directory fails", func(t *testing.T) {
+		sendData := map[string]any{
+			"command": "del",
+			"data": map[string]any{
+				"parentDirectoryId": "/",
+				"objectIds":         []string{nativeRootDirs["Downloads"]},
+			},
+		}
+
+		require.NoError(t, wsConn.WriteJSON(sendData))
+
+		var wsResp appTypes.WSResp
+
+		require.NoError(t, wsConn.ReadJSON(&wsResp))
+
+		require.Equal(t, http.StatusBadRequest, wsResp.StatusCode)
+		require.Empty(t, wsResp.Body)
+		require.NotEmpty(t, wsResp.ErrorMsg)
 	})
 
 	require.NoError(t, wsConn.CloseHandler()(websocket.CloseNormalClosure, "done"))

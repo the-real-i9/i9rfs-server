@@ -16,7 +16,7 @@ func (b requestNewAccountBody) Validate() error {
 	err := validation.ValidateStruct(&b,
 		validation.Field(&b.Email,
 			validation.Required,
-			is.Email,
+			is.EmailFormat,
 		),
 	)
 

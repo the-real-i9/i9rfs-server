@@ -44,14 +44,9 @@ func reqBody(data map[string]any) (io.Reader, error) {
 	return bytes.NewReader(dataBt), err
 }
 
-func ResBody(body io.ReadCloser) ([]byte, error) {
+func resBody(body io.ReadCloser) (string, error) {
 	defer body.Close()
 
-	return io.ReadAll(body)
-}
-
-func JsonData(d any) string {
-	bt, _ := json.MarshalIndent(d, "", "  ")
-
-	return string(bt)
+	bt, err := io.ReadAll(body)
+	return string(bt), err
 }

@@ -27,6 +27,10 @@ func TestUserAuth(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, http.StatusOK, res.StatusCode)
 
+			bd, err := resBody(res.Body)
+			require.NoError(t, err)
+			require.NotEmpty(t, bd)
+
 			sscookie = res.Header.Get("Set-Cookie")
 		})
 
