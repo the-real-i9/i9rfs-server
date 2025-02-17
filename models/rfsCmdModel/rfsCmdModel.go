@@ -6,6 +6,7 @@ import (
 	"i9rfs/appGlobals"
 	"i9rfs/models/db"
 	"log"
+	"maps"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -24,7 +25,7 @@ func Ls(ctx context.Context, clientUsername, directoryId string) ([]any, error) 
 	res, err := db.Query(
 		ctx,
 		fmt.Sprintf(`
-			OPTIONAL MATCH %s
+			MATCH %s
 			WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified
 			ORDER BY obj.obj_type DESC, obj.name ASC
 			RETURN collect(obj { .*, date_created, date_modified }) AS dir_cont
@@ -37,6 +38,10 @@ func Ls(ctx context.Context, clientUsername, directoryId string) ([]any, error) 
 	if err != nil {
 		log.Println("rfsCmdModel.go: Ls:", err)
 		return nil, fiber.ErrInternalServerError
+	}
+
+	if len(res.Records) == 0 {
+		return nil, fiber.NewError(fiber.StatusBadRequest, "logical error! check that: you're specifying a valid 'directoryId'")
 	}
 
 	dirCont, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "dir_cont")
@@ -78,7 +83,7 @@ func Mkdir(ctx context.Context, clientUsername, parentDirectoryId, directoryName
 	}
 
 	if len(res.Records) == 0 {
-		return nil, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct 'parentDirectoryId'")
+		return nil, fiber.NewError(fiber.StatusBadRequest, "logical error! check that: you're specifying a valid 'parentDirectoryId'")
 	}
 
 	newDir, _, _ := neo4j.GetRecordValue[map[string]any](res.Records[0], "new_dir")
@@ -127,7 +132,7 @@ func Del(ctx context.Context, clientUsername, parentDirectoryId string, objectId
 	}
 
 	if len(res.Records) == 0 {
-		return false, nil, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids for the command, and that you're not trying to delete a native directory")
+		return false, nil, fiber.NewError(fiber.StatusBadRequest, "logical error! check that: you're specifying a valid 'parentDirectoryId', and valid 'objectIds' in the directory | no value in 'objectIds' is a native directory")
 	}
 
 	fileIds, _, _ := neo4j.GetRecordValue[[]any](res.Records[0], "file_ids")
@@ -171,7 +176,7 @@ func Trash(ctx context.Context, clientUsername, parentDirectoryId string, object
 	}
 
 	if len(res.Records) == 0 {
-		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids for the command, and that you're not trying to trash a native directory")
+		return false, fiber.NewError(fiber.StatusBadRequest, "logical error! check that: you're specifying a valid 'parentDirectoryId', and valid 'objectIds' in the directory | no value in 'objectIds' is a native directory")
 	}
 
 	return true, nil
@@ -181,7 +186,7 @@ func Restore(ctx context.Context, clientUsername string, objectIds []string) (bo
 	res, err := db.Query(
 		ctx,
 		`
-		OPTIONAL MATCH (:UserTrash{ user: $client_username })-[tr:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)
+		MATCH (:UserTrash{ user: $client_username })-[tr:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)
 
 		DELETE tr
 
@@ -200,7 +205,7 @@ func Restore(ctx context.Context, clientUsername string, objectIds []string) (bo
 	}
 
 	if len(res.Records) == 0 {
-		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids for the command")
+		return false, fiber.NewError(fiber.StatusBadRequest, "logical error! check that: you're specifying valid 'objectIds' in Trash")
 	}
 
 	return true, nil
@@ -262,7 +267,7 @@ func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, ne
 	}
 
 	if len(res.Records) == 0 {
-		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids for the command, and that you're not trying to rename a native or trashed directory")
+		return false, fiber.NewError(fiber.StatusBadRequest, "logical error! check that: you're specifying a valid 'parentDirectoryId', and a valid 'objectId' in the directory | 'objectId' is not a native directory and not in Trash")
 	}
 
 	return true, nil
@@ -278,12 +283,12 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 	if fromParentDirectoryId == "/" && toParentDirectoryId != "/" {
 		cypher = `
 		MATCH (root:UserRoot{ user: $client_username }),
-			(root)-[old:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL)
+			(root)-[old:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL),
+			(root)-[:HAS_CHILD]->+(toParDir:Object{ id: $to_parent_dir_id })
 
 		DELETE old
 
 		WITH root, obj
-		MATCH (root)-[:HAS_CHILD]->+(toParDir:Object{ id: $to_parent_dir_id })
 		SET toParDir.date_modified = $now
 		CREATE (toParDir)-[:HAS_CHILD]->(obj)
 
@@ -337,7 +342,7 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 	}
 
 	if len(res.Records) == 0 {
-		return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids for the command, and that you're not trying to move a native directory")
+		return false, fiber.NewError(fiber.StatusBadRequest, "logical error! check that: you're specifying a valid 'fromParentDirectoryId', valid 'objectIds' in the directory, and a valid 'toParentDirectoryId' | no value in 'objectIds' is a native directory")
 	}
 
 	return true, nil
@@ -357,8 +362,14 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 	}()
 
 	res, err := sess.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		var matchPath string
-		var matchIdent string
+		var (
+			matchPath  string
+			matchIdent string
+
+			res neo4j.ResultWithContext
+			err error
+			now = time.Now().UTC()
+		)
 
 		if fromParentDirectoryId == "/" {
 			matchPath = "(root:UserRoot{ user: $client_username })"
@@ -368,7 +379,7 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 			matchIdent = "fromParDir"
 		}
 
-		res, err := tx.Run(
+		res, err = tx.Run(
 			ctx,
 			fmt.Sprintf(`
 			MATCH %s
@@ -388,11 +399,15 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		}
 
 		if res.Record() == nil {
-			return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids for the command")
+			return false, fiber.NewError(fiber.StatusBadRequest, "logical error! check that: you're specifying a valid 'fromParentDirectoryId', valid 'objectIds' in the directory, and a valid 'toParentDirectoryId'")
 		}
 
-		parentIds, _, _ := neo4j.GetRecordValue[[]any](res.Record(), "parent_ids")
-		childrenIds, _, _ := neo4j.GetRecordValue[[]any](res.Record(), "children_ids")
+		recMap := make(map[string]any, 2)
+
+		maps.Copy(res.Record().AsMap(), recMap)
+
+		parentIds := recMap["parent_ids"].([]string)
+		childrenIds := recMap["children_ids"].([]string)
 
 		parentIdsLen := len(parentIds)
 
@@ -406,7 +421,7 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 			parChildList[i] = []any{parentIds[i], childrenIds[i]}
 		}
 
-		_, err2 := tx.Run(
+		_, err = tx.Run(
 			ctx,
 			fmt.Sprintf(`
 			MATCH %s
@@ -434,11 +449,11 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 				"par_child_list":     parChildList,
 				"client_username":    clientUsername,
 				"from_parent_dir_id": fromParentDirectoryId,
-				"$now":               time.Now().UTC(),
+				"now":                now,
 			},
 		)
-		if err2 != nil {
-			return nil, err2
+		if err != nil {
+			return nil, err
 		}
 
 		if toParentDirectoryId == "/" {
@@ -450,7 +465,7 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		}
 
 		// the `badObj` are bad copies that will be deleted
-		res, err3 := tx.Run(
+		res, err = tx.Run(
 			ctx,
 			fmt.Sprintf(`
 			MATCH %s
@@ -488,12 +503,12 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 				"now":              time.Now().UTC(),
 			},
 		)
-		if err3 != nil {
-			return nil, err3
+		if err != nil {
+			return nil, err
 		}
 
 		if res.Record() == nil {
-			return false, fiber.NewError(fiber.StatusBadRequest, "check that you're specifying the correct target ids for the command")
+			return false, fiber.NewError(fiber.StatusBadRequest, "logical error! check that: you're specifying a valid 'fromParentDirectoryId', valid 'objectIds' in the directory, and a valid 'toParentDirectoryId'")
 		}
 
 		fileCopyIdMaps, _, _ := neo4j.GetRecordValue[[]any](res.Record(), "file_copy_id_maps")
@@ -501,12 +516,12 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		return fileCopyIdMaps, nil
 	})
 	if err != nil {
+		if fe, ok := res.(*fiber.Error); ok {
+			return false, nil, fe
+		}
+
 		log.Println("rfsCmdModel.go: Copy:", err)
 		return false, nil, fiber.ErrInternalServerError
-	}
-
-	if fiberErr, ok := res.(*fiber.Error); ok {
-		return false, nil, fiberErr
 	}
 
 	return true, res.([]any), nil
