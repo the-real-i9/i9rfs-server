@@ -5,8 +5,12 @@ import (
 	"i9rfs/src/routes/appRoutes"
 	"i9rfs/src/routes/authRoutes"
 	"log"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/encryptcookie"
+	"github.com/gofiber/fiber/v2/middleware/helmet"
 )
 
 func init() {
@@ -20,9 +24,24 @@ func main() {
 
 	app := fiber.New()
 
+	app.Use(helmet.New())
+	app.Use(cors.New())
+
+	app.Use(encryptcookie.New(encryptcookie.Config{
+		Key: os.Getenv("COOKIE_SECRET"),
+	}))
+
 	app.Route("/api/auth", authRoutes.Route)
 
 	app.Route("/api/app", appRoutes.Route)
 
-	app.Listen(":8000")
+	var PORT string
+
+	if os.Getenv("GO_ENV") != "production" {
+		PORT = "8000"
+	} else {
+		PORT = os.Getenv("PORT")
+	}
+
+	log.Fatalln(app.Listen("0.0.0.0:" + PORT))
 }
