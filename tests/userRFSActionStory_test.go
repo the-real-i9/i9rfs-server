@@ -183,8 +183,8 @@ func TestUserRFSActionStory(t *testing.T) {
 			"data":     containsDirs("Documents", "Downloads", "Music", "Videos", "Pictures"),
 		}, nil))
 
-		for _, dm := range serverWSReply["data"].([]map[string]any) {
-			m := dm
+		for _, dm := range serverWSReply["data"].([]any) {
+			m := dm.(map[string]any)
 			nativeRootDirs[m["name"].(string)] = m["id"].(string)
 		}
 	}
@@ -240,8 +240,8 @@ func TestUserRFSActionStory(t *testing.T) {
 				"data":     containsDirs("Horror", "Comedy", "Legal", "Musical", "Action", "NotAVideo", "DeleteMe"),
 			}, nil))
 
-			for _, dm := range serverWSReply["data"].([]map[string]any) {
-				m := dm
+			for _, dm := range serverWSReply["data"].([]any) {
+				m := dm.(map[string]any)
 				videoDirs[m["name"].(string)] = m["id"].(string)
 			}
 		}
@@ -288,8 +288,8 @@ func TestUserRFSActionStory(t *testing.T) {
 
 			clear(videoDirs)
 
-			for _, dm := range serverWSReply["data"].([]map[string]any) {
-				m := dm
+			for _, dm := range serverWSReply["data"].([]any) {
+				m := dm.(map[string]any)
 				videoDirs[m["name"].(string)] = m["id"].(string)
 			}
 		}
@@ -367,8 +367,8 @@ func TestUserRFSActionStory(t *testing.T) {
 				"data":     containsDirs("Gospel", "Rock", "Pop", "Folk", "Old Songs"),
 			}, nil))
 
-			for _, dm := range serverWSReply["data"].([]map[string]any) {
-				m := dm
+			for _, dm := range serverWSReply["data"].([]any) {
+				m := dm.(map[string]any)
 				musicDirs[m["name"].(string)] = m["id"].(string)
 			}
 		}
@@ -415,8 +415,8 @@ func TestUserRFSActionStory(t *testing.T) {
 
 			clear(musicDirs)
 
-			for _, dm := range serverWSReply["data"].([]map[string]any) {
-				m := dm
+			for _, dm := range serverWSReply["data"].([]any) {
+				m := dm.(map[string]any)
 				musicDirs[m["name"].(string)] = m["id"].(string)
 			}
 		}
@@ -439,8 +439,8 @@ func TestUserRFSActionStory(t *testing.T) {
 				"data":     containsDirs("Folk", "Old Songs"),
 			}, nil))
 
-			for _, dm := range serverWSReply["data"].([]map[string]any) {
-				m := dm
+			for _, dm := range serverWSReply["data"].([]any) {
+				m := dm.(map[string]any)
 				trashDirs[m["name"].(string)] = m["id"].(string)
 			}
 		}
@@ -481,8 +481,8 @@ func TestUserRFSActionStory(t *testing.T) {
 				"data":     td.All(notContainsDirs("Folk"), containsDirs("Old Songs")),
 			}, nil))
 
-			for _, dm := range serverWSReply["data"].([]map[string]any) {
-				m := dm
+			for _, dm := range serverWSReply["data"].([]any) {
+				m := dm.(map[string]any)
 				trashDirs[m["name"].(string)] = m["id"].(string)
 			}
 		}
@@ -508,8 +508,8 @@ func TestUserRFSActionStory(t *testing.T) {
 
 			clear(musicDirs)
 
-			for _, dm := range serverWSReply["data"].([]map[string]any) {
-				m := dm
+			for _, dm := range serverWSReply["data"].([]any) {
+				m := dm.(map[string]any)
 				musicDirs[m["name"].(string)] = m["id"].(string)
 			}
 		}
@@ -578,8 +578,8 @@ func TestUserRFSActionStory(t *testing.T) {
 
 			clear(musicDirs)
 
-			for _, dm := range serverWSReply["data"].([]map[string]any) {
-				m := dm
+			for _, dm := range serverWSReply["data"].([]any) {
+				m := dm.(map[string]any)
 				musicDirs[m["name"].(string)] = m["id"].(string)
 			}
 		}

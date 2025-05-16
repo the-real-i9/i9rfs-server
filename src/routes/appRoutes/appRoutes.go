@@ -11,7 +11,7 @@ import (
 func Route(router fiber.Router) {
 	router.Use(authMiddlewares.UserAuth)
 
-	router.Get("/signout")
+	router.Get("/signout", appControllers.Signout)
 
 	router.Use("/rfs", func(c *fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
