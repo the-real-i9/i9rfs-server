@@ -1,9 +1,9 @@
 package main
 
 import (
-	"i9rfs/initializers"
-	"i9rfs/routes/appRoutes"
-	"i9rfs/routes/authRoutes"
+	"i9rfs/src/initializers"
+	"i9rfs/src/routes/appRoutes"
+	"i9rfs/src/routes/authRoutes"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -20,9 +20,9 @@ func main() {
 
 	app := fiber.New()
 
-	app.Route("/api/auth", authRoutes.Init)
+	app.Route("/api/auth", authRoutes.Route)
 
-	app.Route("/api/app", appRoutes.Init)
+	app.Route("/api/app", appRoutes.Route)
 
 	app.Listen(":8000")
 }
