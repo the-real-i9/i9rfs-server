@@ -14,12 +14,12 @@ import (
 )
 
 func Ls(ctx context.Context, clientUsername, directoryId string) ([]any, error) {
-	var matchPath string
+	var matchFromPath string
 
 	if directoryId == "/" {
-		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.trashed IS NULL)"
+		matchFromPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.trashed IS NULL)"
 	} else {
-		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $directory_id })-[:HAS_CHILD]->(obj WHERE obj.trashed IS NULL)"
+		matchFromPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $directory_id })-[:HAS_CHILD]->(obj WHERE obj.trashed IS NULL)"
 	}
 
 	res, err := db.Query(
@@ -29,7 +29,7 @@ func Ls(ctx context.Context, clientUsername, directoryId string) ([]any, error) 
 			WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified
 			ORDER BY obj.obj_type DESC, obj.name ASC
 			RETURN collect(obj { .*, date_created, date_modified }) AS dir_cont
-		`, matchPath),
+		`, matchFromPath),
 		map[string]any{
 			"client_username": clientUsername,
 			"directory_id":    directoryId,
@@ -50,15 +50,15 @@ func Ls(ctx context.Context, clientUsername, directoryId string) ([]any, error) 
 }
 
 func Mkdir(ctx context.Context, clientUsername, parentDirectoryId, directoryName string) (map[string]any, error) {
-	var matchPath string
-	var matchIdent string
+	var matchFromPath string
+	var matchFromIdent string
 
 	if parentDirectoryId == "/" {
-		matchPath = "(root:UserRoot{ user: $client_username })"
-		matchIdent = "root"
+		matchFromPath = "(root:UserRoot{ user: $client_username })"
+		matchFromIdent = "root"
 	} else {
-		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(parObj:Object{ id: $parent_dir_id })"
-		matchIdent = "parObj"
+		matchFromPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(parObj:Object{ id: $parent_dir_id })"
+		matchFromIdent = "parObj"
 	}
 
 	res, err := db.Query(
@@ -69,7 +69,7 @@ func Mkdir(ctx context.Context, clientUsername, parentDirectoryId, directoryName
 			
 			WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified
 			RETURN obj { .*, date_created, date_modified } AS new_dir
-		`, matchPath, matchIdent),
+		`, matchFromPath, matchFromIdent),
 		map[string]any{
 			"client_username": clientUsername,
 			"parent_dir_id":   parentDirectoryId,
@@ -93,12 +93,12 @@ func Mkdir(ctx context.Context, clientUsername, parentDirectoryId, directoryName
 
 func Del(ctx context.Context, clientUsername, parentDirectoryId string, objectIds []string) (bool, []any, error) {
 
-	var matchPath string
+	var matchFromPath string
 
 	if parentDirectoryId == "/" {
-		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL)(()-[:HAS_CHILD]->(childObjs))*"
+		matchFromPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL)(()-[:HAS_CHILD]->(childObjs))*"
 	} else {
-		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)(()-[:HAS_CHILD]->(childObjs))*"
+		matchFromPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)(()-[:HAS_CHILD]->(childObjs))*"
 	}
 
 	res, err := db.Query(
@@ -116,10 +116,11 @@ func Del(ctx context.Context, clientUsername, parentDirectoryId string, objectId
 
 			UNWIND (childObjs + [null]) AS cObj
 			DETACH DELETE cObj
+
 			WITH objFileIds, childObjFileIds
 
 			RETURN objFileIds + childObjFileIds AS file_ids
-		`, matchPath),
+		`, matchFromPath),
 		map[string]any{
 			"client_username": clientUsername,
 			"parent_dir_id":   parentDirectoryId,
@@ -141,12 +142,12 @@ func Del(ctx context.Context, clientUsername, parentDirectoryId string, objectId
 }
 
 func Trash(ctx context.Context, clientUsername, parentDirectoryId string, objectIds []string) (bool, error) {
-	var matchPath string
+	var matchFromPath string
 
 	if parentDirectoryId == "/" {
-		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL)"
+		matchFromPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL)"
 	} else {
-		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)"
+		matchFromPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)"
 	}
 
 	res, err := db.Query(
@@ -162,7 +163,7 @@ func Trash(ctx context.Context, clientUsername, parentDirectoryId string, object
 			CREATE (trash)-[:HAS_CHILD]->(obj)
 
 			RETURN true AS workdone
-		`, matchPath),
+		`, matchFromPath),
 		map[string]any{
 			"client_username": clientUsername,
 			"parent_dir_id":   parentDirectoryId,
@@ -236,12 +237,12 @@ func ShowTrash(ctx context.Context, clientUsername string) ([]any, error) {
 }
 
 func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, newName string) (bool, error) {
-	var matchPath string
+	var matchFromPath string
 
 	if parentDirectoryId == "/" {
-		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj:Object{ id: $object_id } WHERE obj.native IS NULL AND obj.trashed IS NULL)"
+		matchFromPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->(obj:Object{ id: $object_id } WHERE obj.native IS NULL AND obj.trashed IS NULL)"
 	} else {
-		matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj:Object{ id: $object_id } WHERE obj.trashed IS NULL)"
+		matchFromPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(:Object{ id: $parent_dir_id })-[:HAS_CHILD]->(obj:Object{ id: $object_id } WHERE obj.trashed IS NULL)"
 	}
 
 	res, err := db.Query(
@@ -252,7 +253,7 @@ func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, ne
 			SET obj.name = $new_name, obj.date_modified = $now
 
 			RETURN true AS workdone
-		`, matchPath),
+		`, matchFromPath),
 		map[string]any{
 			"client_username": clientUsername,
 			"parent_dir_id":   parentDirectoryId,
@@ -274,10 +275,6 @@ func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, ne
 }
 
 func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDirectoryId string, objectIds []string) (bool, error) {
-	if fromParentDirectoryId == toParentDirectoryId {
-		return false, fiber.NewError(fiber.StatusBadRequest, "attempt to move to the same directory")
-	}
-
 	var cypher string
 
 	if fromParentDirectoryId == "/" && toParentDirectoryId != "/" {
@@ -348,11 +345,7 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 	return true, nil
 }
 
-func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDirectoryId string, objectIds []string) (bool, []any, error) {
-	if fromParentDirectoryId == toParentDirectoryId {
-		return false, nil, fiber.NewError(fiber.StatusBadRequest, "attempt to copy to the same directory")
-	}
-
+func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDirectoryId, objectId string) ([]any, error) {
 	sess := appGlobals.Neo4jDriver.NewSession(ctx, neo4j.SessionConfig{})
 
 	defer func() {
@@ -363,166 +356,221 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 
 	res, err := sess.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		var (
-			matchPath  string
-			matchIdent string
+			matchFromPath, matchFromIdent string
+			matchToPath, matchToIdent     string
 
-			res neo4j.ResultWithContext
-			err error
 			now = time.Now().UTC()
 		)
 
 		if fromParentDirectoryId == "/" {
-			matchPath = "(root:UserRoot{ user: $client_username })"
-			matchIdent = "root"
+			matchFromPath = "(root:UserRoot{ user: $client_username })"
+			matchFromIdent = "root"
 		} else {
-			matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(fromParDir:Object{ id: $from_parent_dir_id })"
-			matchIdent = "fromParDir"
-		}
-
-		res, err = tx.Run(
-			ctx,
-			fmt.Sprintf(`
-			MATCH %s
-			MATCH (%s)-[HAS_CHILD]->(obj WHERE obj.id IN $object_ids)
-				((parents)-[:HAS_CHILD]->(children))*
-
-			RETURN [p IN parents | p.id] AS parent_ids, [c IN children | c.id] AS children_ids
-			`, matchPath, matchIdent),
-			map[string]any{
-				"client_username":    clientUsername,
-				"from_parent_dir_id": fromParentDirectoryId,
-				"object_ids":         objectIds,
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if !res.Next(ctx) {
-			return false, nil
-		}
-
-		recMap := make(map[string]any, 2)
-
-		maps.Copy(res.Record().AsMap(), recMap)
-
-		parentIds := recMap["parent_ids"].([]string)
-		childrenIds := recMap["children_ids"].([]string)
-
-		parentIdsLen := len(parentIds)
-
-		if parentIdsLen != len(childrenIds) {
-			return nil, fmt.Errorf("you have a problem here: parLen and chiLen not equal")
-		}
-
-		parChildList := make([][]any, parentIdsLen)
-
-		for i := 0; i < parentIdsLen; i++ {
-			parChildList[i] = []any{parentIds[i], childrenIds[i]}
-		}
-
-		_, err = tx.Run(
-			ctx,
-			fmt.Sprintf(`
-			MATCH %s
-			UNWIND $par_child_list AS par_child
-			CALL (%[1]s, par_child) {
-				MATCH (%[1]s)-[:HAS_CHILD]->(par:Object{ id: par_child[0] })
-
-				MERGE (pc:Object{ copied_id: par.id })
-				ON CREATE
-					SET pc += par { .*, id: randomUUID(), native: null, date_created: $now, date_modified: $now }
-	
-				OPTIONAL MATCH (%[1]s)-[:HAS_CHILD]->(chi:Object{ id: par_child[1] })
-
-				CREATE (pc)-[:HAS_CHILD]->(cc:Object{ copied_id: chi.id })
-				SET cc += chi { .*, id: randomUUID(), date_created: $now, date_modified: $now }
-			}
-			`, matchPath, matchIdent,
-			// If `par` happens to be a file or an empty folder, `chi` will be null
-			// But we always have to create child copies`cc`, therefore,
-			// the child copies, `cc`, in these cases are considered "bad copies" (with incomplete or no properties),
-			// because they have no corresponding copy source,
-			// and they will be deleted in the next query
-			),
-			map[string]any{
-				"par_child_list":     parChildList,
-				"client_username":    clientUsername,
-				"from_parent_dir_id": fromParentDirectoryId,
-				"now":                now,
-			},
-		)
-		if err != nil {
-			return nil, err
+			matchFromPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(fromParDir:Object{ id: $from_parent_dir_id })"
+			matchFromIdent = "fromParDir"
 		}
 
 		if toParentDirectoryId == "/" {
-			matchPath = "(root:UserRoot{ user: $client_username })"
-			matchIdent = "root"
+			matchToPath = "(root:UserRoot{ user: $client_username })"
+			matchToIdent = "root"
 		} else {
-			matchPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(toParDir:Object{ id: $to_parent_dir_id })"
-			matchIdent = "toParDir"
+			matchToPath = "(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(toParDir:Object{ id: $to_parent_dir_id })"
+			matchToIdent = "toParDir"
 		}
 
-		// the `badObj` are bad copies that will be deleted
-		res, err = tx.Run(
-			ctx,
-			fmt.Sprintf(`
-			MATCH %s
+		var objectHasChildren bool
 
-			MATCH (obj:Object WHERE obj.copied_id IN $object_ids)-[:HAS_CHILD]->+(badObj WHERE badObj.copied_id IS NULL)
+		{
+			res, err := tx.Run(
+				ctx,
+				fmt.Sprintf(`
+					MATCH %[1]s
 
-			DETACH DELETE badObj
+					RETURN EXISTS { (%[2]s)-[:HAS_CHILD]->(:Object{ id: $object_id })-[:HAS_CHILD]->() } AS object_has_children
+				`, matchFromPath, matchFromIdent),
+				map[string]any{
+					"client_username":    clientUsername,
+					"from_parent_dir_id": fromParentDirectoryId,
+					"object_id":          objectId,
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
 
-			WITH %[1]s, obj
+			if !res.Next(ctx) {
+				return nil, nil
+			}
 
-			CREATE (%[1]s)->[:HAS_CHILD]->(obj)
+			objectHasChildren, _, _ = neo4j.GetRecordValue[bool](res.Record(), "object_has_children")
+		}
+
+		var fileCopyIdMaps []any
+
+		if objectHasChildren {
+			res, err := tx.Run(
+				ctx,
+				fmt.Sprintf(`
+				MATCH %[1]s
+				MATCH (%[2]s)-[:HAS_CHILD]->(obj:Object{ id: $object_id })
+					((parents)-[:HAS_CHILD]->(children))+
+	
+				RETURN [p IN parents | p.id] AS parent_ids, [c IN children | c.id] AS children_ids
+				`, matchFromPath, matchFromIdent),
+				map[string]any{
+					"client_username":    clientUsername,
+					"from_parent_dir_id": fromParentDirectoryId,
+					"object_id":          objectId,
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			if !res.Next(ctx) {
+				return nil, nil
+			}
+
+			recMap := make(map[string]any)
+
+			recs, _ := res.Collect(ctx)
+
+			// last record contains the full parents and children
+			maps.Copy(recMap, recs[len(recs)-1].AsMap())
+
+			parentIds := recMap["parent_ids"].([]any)
+			childrenIds := recMap["children_ids"].([]any)
+
+			parentIdsLen := len(parentIds)
+
+			parentIdToChildId := make([][]any, parentIdsLen)
+
+			for i := range parentIdsLen {
+				parentIdToChildId[i] = []any{parentIds[i], childrenIds[i]}
+			}
+
+			{
+				_, err := tx.Run(
+					ctx,
+					fmt.Sprintf(`
+					MATCH %[1]s
+
+					UNWIND $par_id_to_child_id AS par_id_0_chi_id_1
+					CALL (%[2]s, par_id_0_chi_id_1) {
+						MATCH (%[2]s)-[:HAS_CHILD]->+(par:Object{ id: par_id_0_chi_id_1[0] })
+
+						MERGE (parentCopy:Object{ copied_id: par.id })
+						ON CREATE
+							SET parentCopy += par { .*, id: randomUUID(), native: null, date_created: $now, date_modified: $now }
 			
-			SET %[1]s.date_modified = $now
+						WITH par, par_id_0_chi_id_1, parentCopy
 
-			WITH obj
-			MATCH (obj)-[:HAS_CHILD]->*(cobjs)
+						MATCH (par)-[:HAS_CHILD]->(chi:Object{ id: par_id_0_chi_id_1[1] })
 
-			WITH obj, cobjs, 
-				[o IN collect(obj) WHERE o.obj_type = "file" | o { .copied_id, copy_id: o.id }] AS objFileCopyIdMaps,
-				[co IN cobjs WHERE co.obj_type = "file" | co { .copied_id, copy_id: co.id }] AS cobjFileCopyIdMaps
+						CREATE (parentCopy)-[:HAS_CHILD]->(childCopy:Object{ copied_id: chi.id })
+						SET childCopy += chi { .*, id: randomUUID(), date_created: $now, date_modified: $now }
+					}
+					`, matchFromPath, matchFromIdent,
+					),
+					map[string]any{
+						"par_id_to_child_id": parentIdToChildId,
+						"client_username":    clientUsername,
+						"from_parent_dir_id": fromParentDirectoryId,
+						"now":                now,
+					},
+				)
+				if err != nil {
+					return nil, err
+				}
+			}
 
-			SET obj.copied_id = null
+			{
+				res, err := tx.Run(
+					ctx,
+					fmt.Sprintf(`
+					MATCH %[1]s
 
-			UNWIND (cobjs + [null]) AS cobj
-			SET cobj.copied_id = null
+					MATCH (obj:Object { copied_id: $object_id })
 
-			WITH objFileCopyIdMaps, cobjFileCopyIdMaps
+					CREATE (%[2]s)-[:HAS_CHILD]->(obj)
 
-			RETURN objFileCopyIdMaps + cobjFileCopyIdMaps AS file_copy_id_maps
-			`, matchPath, matchIdent),
-			map[string]any{
-				"client_username":  clientUsername,
-				"to_parent_dir_id": toParentDirectoryId,
-				"object_ids":       objectIds,
-				"now":              time.Now().UTC(),
-			},
-		)
-		if err != nil {
-			return nil, err
+					WITH %[2]s, obj
+					
+					MATCH (obj)-[:HAS_CHILD]->*(cobj)
+
+					WITH %[2]s, obj, cobj, 
+						[o IN collect(obj) WHERE o.obj_type = "file" | o { .copied_id, copy_id: o.id }] AS objFileCopyIdMaps,
+						[co IN collect(cobj) WHERE co.obj_type = "file" | co { .copied_id, copy_id: co.id }] AS cobjFileCopyIdMaps
+
+					SET obj.copied_id = null,
+						cobj.copied_id = null
+					
+					SET %[2]s.date_modified = $now
+
+					RETURN objFileCopyIdMaps + cobjFileCopyIdMaps AS file_copy_id_maps
+					`, matchToPath, matchToIdent),
+					map[string]any{
+						"client_username":  clientUsername,
+						"to_parent_dir_id": toParentDirectoryId,
+						"object_id":        objectId,
+						"now":              now,
+					},
+				)
+				if err != nil {
+					return nil, err
+				}
+
+				if !res.Next(ctx) {
+					return nil, nil
+				}
+
+				fileCopyIdMaps, _, _ = neo4j.GetRecordValue[[]any](res.Record(), "file_copy_id_maps")
+			}
+		} else {
+			res, err := tx.Run(
+				ctx,
+				fmt.Sprintf(`
+				MATCH %[1]s
+				MATCH %[3]s
+
+				MATCH (%[2]s)-[:HAS_CHILD]->(obj:Object{ id: $object_id })
+
+				CREATE (%[4]s)-[:HAS_CHILD]->(objCopy:Object)
+				SET objCopy += obj { .*, id: randomUUID(), native: null, date_created: $now, date_modified: $now }
+
+				SET %[4]s.date_modified = $now
+
+				RETURN 
+					CASE obj.obj_type 
+						WHEN = "file" THEN [{ copied_id: $object_id, copy_id: objCopy }]
+						ELSE []
+					END AS file_copy_id_maps
+				`, matchFromPath, matchFromIdent, matchToPath, matchToIdent),
+				map[string]any{
+					"client_username":    clientUsername,
+					"from_parent_dir_id": fromParentDirectoryId,
+					"to_parent_dir_id":   toParentDirectoryId,
+					"object_id":          objectId,
+					"now":                now,
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			if !res.Next(ctx) {
+				return nil, nil
+			}
+
+			fileCopyIdMaps, _, _ = neo4j.GetRecordValue[[]any](res.Record(), "file_copy_id_maps")
 		}
-
-		if !res.Next(ctx) {
-			return false, nil
-		}
-
-		fileCopyIdMaps, _, _ := neo4j.GetRecordValue[[]any](res.Record(), "file_copy_id_maps")
 
 		return fileCopyIdMaps, nil
 	})
 	if err != nil {
-		if fe, ok := res.(*fiber.Error); ok {
-			return false, nil, fe
-		}
-
 		log.Println("rfsCmdModel.go: Copy:", err)
-		return false, nil, fiber.ErrInternalServerError
+		return nil, fiber.ErrInternalServerError
 	}
 
-	return true, res.([]any), nil
+	return res.([]any), nil
 }

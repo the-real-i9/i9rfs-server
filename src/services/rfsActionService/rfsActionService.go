@@ -3,6 +3,8 @@ package rfsActionService
 import (
 	"context"
 	"i9rfs/src/models/rfsActionModel"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 func Ls(ctx context.Context, clientUsername, directoryId string) ([]any, error) {
@@ -44,6 +46,10 @@ func Rename(ctx context.Context, clientUsername, parentDirectoryId, objectId, ne
 }
 
 func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDirectoryId string, objectIds []string) (bool, error) {
+	if fromParentDirectoryId == toParentDirectoryId {
+		return false, fiber.NewError(fiber.StatusBadRequest, "attempt to move to the same directory")
+	}
+
 	return rfsActionModel.Move(ctx, clientUsername, fromParentDirectoryId, toParentDirectoryId, objectIds)
 }
 
@@ -52,9 +58,21 @@ func copyFilesInCS(fileCopyIdMaps []any) {
 }
 
 func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDirectoryId string, objectIds []string) (bool, error) {
-	done, fileCopyIdMaps, err := rfsActionModel.Copy(ctx, clientUsername, fromParentDirectoryId, toParentDirectoryId, objectIds)
+	if fromParentDirectoryId == toParentDirectoryId {
+		return false, fiber.NewError(fiber.StatusBadRequest, "attempt to copy to the same directory")
+	}
 
-	go copyFilesInCS(fileCopyIdMaps)
+	for _, oid := range objectIds {
+		fileCopyIdMaps, err := rfsActionModel.Copy(ctx, clientUsername, fromParentDirectoryId, toParentDirectoryId, oid)
 
-	return done, err
+		if err != nil {
+			return false, err
+		}
+
+		if len(fileCopyIdMaps) > 0 {
+			go copyFilesInCS(fileCopyIdMaps)
+		}
+	}
+
+	return true, nil
 }

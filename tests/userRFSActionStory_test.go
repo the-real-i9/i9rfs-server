@@ -161,7 +161,7 @@ func TestUserRFSActionStory(t *testing.T) {
 
 	t.Log("----------")
 
-	nativeRootDirs := make(map[string]string)
+	nativeRootDirs := make(map[string]string, 5)
 
 	{
 		t.Log("Action: list native directories in root")
@@ -218,7 +218,7 @@ func TestUserRFSActionStory(t *testing.T) {
 			}
 		}
 
-		videoDirs := make(map[string]string)
+		videoDirs := make(map[string]string, 7)
 
 		{
 			t.Log("list the dirs in native dir: 'Videos'")
@@ -247,7 +247,33 @@ func TestUserRFSActionStory(t *testing.T) {
 		}
 
 		{
-			t.Log("delete 'NotAVideo' and 'DeleteMe' dirs in native root dir: 'Videos'")
+			t.Log("Action: put a sub-directory inside 'DeleteMe' dir | to test recursive deletion")
+
+			err := user.WSConn.WriteJSON(map[string]any{
+				"action": "mkdir",
+				"data": map[string]any{
+					"parentDirectoryId": videoDirs["DeleteMe"],
+					"directoryName":     "DeleteMyChild",
+				},
+			})
+
+			require.NoError(t, err)
+
+			serverWSReply := <-user.ServerWSMsg
+
+			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
+				"event":    "server reply",
+				"toAction": "mkdir",
+				"data": td.SuperMapOf(map[string]any{
+					"id":       td.Ignore(),
+					"obj_type": "directory",
+					"name":     "DeleteMyChild",
+				}, nil),
+			}, nil))
+		}
+
+		{
+			t.Log("Action: delete 'NotAVideo' and 'DeleteMe' dirs in native root dir: 'Videos'")
 
 			err := user.WSConn.WriteJSON(map[string]any{
 				"action": "del",
@@ -314,6 +340,120 @@ func TestUserRFSActionStory(t *testing.T) {
 				"data":     false,
 			}, nil))
 		}
+
+		{
+			t.Log("Action: put sub-directories inside 'Horror' dir | to test recursive copy")
+
+			err := user.WSConn.WriteJSON(map[string]any{
+				"action": "mkdir",
+				"data": map[string]any{
+					"parentDirectoryId": videoDirs["Horror"],
+					"directoryName":     "The Conjuring",
+				},
+			})
+
+			require.NoError(t, err)
+
+			serverWSReply := <-user.ServerWSMsg
+
+			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
+				"event":    "server reply",
+				"toAction": "mkdir",
+				"data": td.SuperMapOf(map[string]any{
+					"id":       td.Ignore(),
+					"obj_type": "directory",
+					"name":     "The Conjuring",
+				}, nil),
+			}, nil))
+
+			err = user.WSConn.WriteJSON(map[string]any{
+				"action": "mkdir",
+				"data": map[string]any{
+					"parentDirectoryId": serverWSReply["data"].(map[string]any)["id"],
+					"directoryName":     "Season 1",
+				},
+			})
+
+			require.NoError(t, err)
+
+			serverWSReply = <-user.ServerWSMsg
+
+			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
+				"event":    "server reply",
+				"toAction": "mkdir",
+				"data": td.SuperMapOf(map[string]any{
+					"id":       td.Ignore(),
+					"obj_type": "directory",
+					"name":     "Season 1",
+				}, nil),
+			}, nil))
+
+			err = user.WSConn.WriteJSON(map[string]any{
+				"action": "mkdir",
+				"data": map[string]any{
+					"parentDirectoryId": serverWSReply["data"].(map[string]any)["id"],
+					"directoryName":     "Episodes",
+				},
+			})
+
+			require.NoError(t, err)
+
+			serverWSReply = <-user.ServerWSMsg
+
+			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
+				"event":    "server reply",
+				"toAction": "mkdir",
+				"data": td.SuperMapOf(map[string]any{
+					"id":       td.Ignore(),
+					"obj_type": "directory",
+					"name":     "Episodes",
+				}, nil),
+			}, nil))
+		}
+
+		{
+			t.Log("Action: copy 'Horror' and 'Comedy' dirs from/to native root dir 'Videos'/'Downloads'")
+
+			err := user.WSConn.WriteJSON(map[string]any{
+				"action": "copy",
+				"data": map[string]any{
+					"fromParentDirectoryId": nativeRootDirs["Videos"],
+					"toParentDirectoryId":   nativeRootDirs["Downloads"],
+					"objectIds":             []string{videoDirs["Horror"], videoDirs["Comedy"]},
+				},
+			})
+			require.NoError(t, err)
+
+			serverWSReply := <-user.ServerWSMsg
+
+			t.Log(serverWSReply)
+
+			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
+				"event":    "server reply",
+				"toAction": "copy",
+				"data":     true,
+			}, nil))
+		}
+
+		{
+			t.Log("list the dirs in native dir: 'Downloads' | confirm copy")
+
+			err := user.WSConn.WriteJSON(map[string]any{
+				"action": "ls",
+				"data": map[string]any{
+					"directoryId": nativeRootDirs["Downloads"],
+				},
+			})
+			require.NoError(t, err)
+
+			serverWSReply := <-user.ServerWSMsg
+
+			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
+				"event":    "server reply",
+				"toAction": "ls",
+				"data":     containsDirs("Horror", "Comedy"),
+			}, nil))
+		}
 	}
 
 	{
@@ -345,7 +485,7 @@ func TestUserRFSActionStory(t *testing.T) {
 			}
 		}
 
-		musicDirs := make(map[string]string)
+		musicDirs := make(map[string]string, 5)
 
 		{
 			t.Log("list the dirs in native dir: 'Music'")
