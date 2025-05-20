@@ -221,7 +221,7 @@ func TestUserRFSActionStory(t *testing.T) {
 		videoDirs := make(map[string]string, 7)
 
 		{
-			t.Log("list the dirs in native dir: 'Videos'")
+			t.Log("Action: list the dirs in native dir: 'Videos'")
 
 			err := user.WSConn.WriteJSON(map[string]any{
 				"action": "ls",
@@ -294,7 +294,7 @@ func TestUserRFSActionStory(t *testing.T) {
 		}
 
 		{
-			t.Log("list the dirs now in native dir: 'Videos' | confirm deletion")
+			t.Log("Action: list the dirs now in native dir: 'Videos' | confirm deletion")
 
 			err := user.WSConn.WriteJSON(map[string]any{
 				"action": "ls",
@@ -436,7 +436,7 @@ func TestUserRFSActionStory(t *testing.T) {
 		}
 
 		{
-			t.Log("list the dirs in native dir: 'Downloads' | confirm copy")
+			t.Log("Action: list the dirs in native dir: 'Downloads' | confirm copy")
 
 			err := user.WSConn.WriteJSON(map[string]any{
 				"action": "ls",
@@ -488,7 +488,7 @@ func TestUserRFSActionStory(t *testing.T) {
 		musicDirs := make(map[string]string, 5)
 
 		{
-			t.Log("list the dirs in native dir: 'Music'")
+			t.Log("Action: list the dirs in native dir: 'Music'")
 
 			err := user.WSConn.WriteJSON(map[string]any{
 				"action": "ls",
@@ -535,7 +535,7 @@ func TestUserRFSActionStory(t *testing.T) {
 		}
 
 		{
-			t.Log("list the dirs now in native dir: 'Music' | confirm trashing")
+			t.Log("Action: list the dirs now in native dir: 'Music' | confirm trashing")
 
 			err := user.WSConn.WriteJSON(map[string]any{
 				"action": "ls",
@@ -628,7 +628,7 @@ func TestUserRFSActionStory(t *testing.T) {
 		}
 
 		{
-			t.Log("list the dirs now in native dir: 'Music' | confirm 'Folk' dir restored")
+			t.Log("Action: list the dirs now in native dir: 'Music' | confirm 'Folk' dir restored")
 
 			err := user.WSConn.WriteJSON(map[string]any{
 				"action": "ls",
@@ -698,7 +698,7 @@ func TestUserRFSActionStory(t *testing.T) {
 		}
 
 		{
-			t.Log("list the dirs now in native dir: 'Music' | confirm renaming")
+			t.Log("Action: list the dirs now in native dir: 'Music' | confirm renaming")
 
 			err := user.WSConn.WriteJSON(map[string]any{
 				"action": "ls",
@@ -743,6 +743,112 @@ func TestUserRFSActionStory(t *testing.T) {
 				"event":    "server reply",
 				"toAction": "rename",
 				"data":     false,
+			}, nil))
+		}
+
+		{
+			t.Log("Action: create nested sub-directories in 'Rock' dir | to confirm whole branch move")
+
+			err := user.WSConn.WriteJSON(map[string]any{
+				"action": "mkdir",
+				"data": map[string]any{
+					"parentDirectoryId": musicDirs["Rock"],
+					"directoryName":     "Pop Rock",
+				},
+			})
+
+			require.NoError(t, err)
+
+			serverWSReply := <-user.ServerWSMsg
+
+			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
+				"event":    "server reply",
+				"toAction": "mkdir",
+				"data": td.SuperMapOf(map[string]any{
+					"id":       td.Ignore(),
+					"obj_type": "directory",
+					"name":     "Pop Rock",
+				}, nil),
+			}, nil))
+
+			err = user.WSConn.WriteJSON(map[string]any{
+				"action": "mkdir",
+				"data": map[string]any{
+					"parentDirectoryId": serverWSReply["data"].(map[string]any)["id"].(string),
+					"directoryName":     "Afro Pop Rock",
+				},
+			})
+
+			require.NoError(t, err)
+
+			serverWSReply = <-user.ServerWSMsg
+
+			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
+				"event":    "server reply",
+				"toAction": "mkdir",
+				"data": td.SuperMapOf(map[string]any{
+					"id":       td.Ignore(),
+					"obj_type": "directory",
+					"name":     "Afro Pop Rock",
+				}, nil),
+			}, nil))
+		}
+
+		{
+			t.Log("Action: move 'Rock' and 'Pop' dirs from/to native root dir 'Music'/'Downloads'")
+
+			err := user.WSConn.WriteJSON(map[string]any{
+				"action": "move",
+				"data": map[string]any{
+					"fromParentDirectoryId": nativeRootDirs["Music"],
+					"toParentDirectoryId":   nativeRootDirs["Downloads"],
+					"objectIds":             []string{musicDirs["Rock"], musicDirs["Pop"]},
+				},
+			})
+			require.NoError(t, err)
+
+			serverWSReply := <-user.ServerWSMsg
+
+			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
+				"event":    "server reply",
+				"toAction": "move",
+				"data":     true,
+			}, nil))
+		}
+
+		{
+			t.Log("Action: list the dirs in native dir: 'Downloads' and 'Music' | confirm move")
+
+			err := user.WSConn.WriteJSON(map[string]any{
+				"action": "ls",
+				"data": map[string]any{
+					"directoryId": nativeRootDirs["Downloads"],
+				},
+			})
+			require.NoError(t, err)
+
+			serverWSReply := <-user.ServerWSMsg
+
+			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
+				"event":    "server reply",
+				"toAction": "ls",
+				"data":     containsDirs("Pop", "Rock"),
+			}, nil))
+
+			err = user.WSConn.WriteJSON(map[string]any{
+				"action": "ls",
+				"data": map[string]any{
+					"directoryId": nativeRootDirs["Music"],
+				},
+			})
+			require.NoError(t, err)
+
+			serverWSReply = <-user.ServerWSMsg
+
+			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
+				"event":    "server reply",
+				"toAction": "ls",
+				"data":     notContainsDirs("Pop", "Rock"),
 			}, nil))
 		}
 	}

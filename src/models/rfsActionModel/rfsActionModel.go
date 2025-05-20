@@ -282,12 +282,11 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		MATCH (root:UserRoot{ user: $client_username }),
 			(root)-[old:HAS_CHILD]->(obj WHERE obj.id IN $object_ids AND obj.native IS NULL),
 			(root)-[:HAS_CHILD]->+(toParDir:Object{ id: $to_parent_dir_id })
+			
+		CREATE (toParDir)-[:HAS_CHILD]->(obj)
+		SET toParDir.date_modified = $now
 
 		DELETE old
-
-		WITH root, obj
-		SET toParDir.date_modified = $now
-		CREATE (toParDir)-[:HAS_CHILD]->(obj)
 
 		RETURN true AS workdone
 		`
@@ -296,12 +295,10 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 		MATCH (root:UserRoot{ user: $client_username }),
 			(root)-[:HAS_CHILD]->+(fromParDir:Object{ id: $from_parent_dir_id })-[old:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)
 
+		CREATE (root)-[:HAS_CHILD]->(obj)
 		SET fromParDir.date_modified = $now
 
 		DELETE old
-
-		WITH root, obj
-		CREATE (root)-[:HAS_CHILD]->(obj)
 
 		RETURN true AS workdone
 		`
@@ -311,12 +308,10 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 			(root)-[:HAS_CHILD]->+(toParDir:Object{ id: $to_parent_dir_id }),
 			(root)-[:HAS_CHILD]->+(fromParDir:Object{ id: $from_parent_dir_id })-[old:HAS_CHILD]->(obj WHERE obj.id IN $object_ids)
 
+		CREATE (toParDir)-[:HAS_CHILD]->(obj)
 		SET fromParDir.date_modified = $now, toParDir.date_modified = $now
 
 		DELETE old
-
-		WITH toParDir, obj
-		CREATE (toParDir)-[:HAS_CHILD]->(obj)
 
 		RETURN true AS workdone
 		`
@@ -345,7 +340,7 @@ func Move(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 	return true, nil
 }
 
-func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDirectoryId, objectId string) ([]any, error) {
+func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDirectoryId, objectId string) (bool, []any, error) {
 	sess := appGlobals.Neo4jDriver.NewSession(ctx, neo4j.SessionConfig{})
 
 	defer func() {
@@ -569,8 +564,12 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 	})
 	if err != nil {
 		log.Println("rfsCmdModel.go: Copy:", err)
-		return nil, fiber.ErrInternalServerError
+		return false, nil, fiber.ErrInternalServerError
 	}
 
-	return res.([]any), nil
+	if res == nil {
+		return false, nil, nil
+	}
+
+	return true, res.([]any), nil
 }

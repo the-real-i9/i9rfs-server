@@ -63,13 +63,12 @@ func Copy(ctx context.Context, clientUsername, fromParentDirectoryId, toParentDi
 	}
 
 	for _, oid := range objectIds {
-		fileCopyIdMaps, err := rfsActionModel.Copy(ctx, clientUsername, fromParentDirectoryId, toParentDirectoryId, oid)
-
+		done, fileCopyIdMaps, err := rfsActionModel.Copy(ctx, clientUsername, fromParentDirectoryId, toParentDirectoryId, oid)
 		if err != nil {
 			return false, err
 		}
 
-		if len(fileCopyIdMaps) > 0 {
+		if done {
 			go copyFilesInCS(fileCopyIdMaps)
 		}
 	}

@@ -50,7 +50,7 @@ var RFSAction = websocket.New(func(c *websocket.Conn) {
 			app_err error
 		)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 
 		switch body.Action {
