@@ -1,0 +1,66 @@
+import * as db from "./db/db.ts"
+
+export async function New(email: string, username: string, password: string) {
+  const res = await db.WriteQuery(
+    `/* cypher */
+		CREATE (u:User { email: $email, username: $username, password: $password })
+		
+		CREATE (root:UserRoot{ user: $username }),
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Documents", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Downloads", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Music", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Pictures", date_created: $now, date_modified: $now, native: true, starred: false }),
+			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Videos", date_created: $now, date_modified: $now, native: true, starred: false })
+		
+		CREATE (:UserTrash{ user: $username })
+			
+		RETURN u { .username } AS new_user
+		`,
+    {
+      email,
+      username,
+      password,
+      now: Date.now(),
+    }
+  )
+
+  return res.records[0]?.get("new_user") as { username: string }
+}
+
+export async function AuthFind(emailOrUsername: string) {
+  const res = await db.ReadQuery(
+    `/* cypher */
+		MATCH (u:User)
+		WHERE u.email = $emailOrUsername OR u.username = $emailOrUsername
+		RETURN u { .username, .password } AS found_user
+		`,
+    {
+      emailOrUsername,
+    }
+  )
+
+  if (res.records.length === 0) {
+    return null
+  }
+
+  return res.records[0]?.get("found_user") as {
+    username: string
+    password: string
+  }
+}
+
+export async function Exists(emailOrUsername: string) {
+  const res = await db.ReadQuery(
+    `/* cypher */
+		RETURN EXISTS {
+			MATCH (u:User)
+			WHERE u.email = $emailOrUsername OR u.username = $emailOrUsername
+		} AS user_exists
+		`,
+    {
+      emailOrUsername,
+    }
+  )
+
+  return res.records[0]?.get("user_exists") as boolean
+}
