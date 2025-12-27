@@ -11,12 +11,13 @@ i9rfs is a full-fledged remote file system API server built in Node.js and Neo4j
 ## Technologies
 
 <div style="display: flex;">
-<img style="margin-right: 10px" alt="go" width="40" src="./.attachments/tech-icons/nodejs-original.svg" />
-<img style="margin-right: 10px" alt="go" width="40" src="./.attachments/tech-icons/express-original.svg" />
-<img style="margin-right: 10px" alt="go" width="40" src="./.attachments/tech-icons/websocket.svg" />
+<img style="margin-right: 10px" alt="nodejs" width="40" src="./.attachments/tech-icons/nodejs-original.svg" />
+<img style="margin-right: 10px" alt="typescript" width="40" src="./.attachments/tech-icons/typescript-original.svg" />
+<img style="margin-right: 10px" alt="express" width="40" src="./.attachments/tech-icons/express-original.svg" />
 <img style="margin-right: 10px" alt="neo4j" width="60" src="./.attachments/tech-icons/neo4j-original.svg" />
-<img style="margin-right: 10px" alt="go" width="40" src="./.attachments/tech-icons/jwt.svg" />
-<img style="margin-right: 10px" alt="go" width="40" src="./.attachments/tech-icons/googlecloud-original.svg" />
+<img style="margin-right: 10px" alt="websocket" width="40" src="./.attachments/tech-icons/websocket.svg" />
+<img style="margin-right: 10px" alt="jwt" width="40" src="./.attachments/tech-icons/jwt.svg" />
+<img style="margin-right: 10px" alt="googlecloud" width="40" src="./.attachments/tech-icons/googlecloud-original.svg" />
 </div>
 
 ## Table of Contents
