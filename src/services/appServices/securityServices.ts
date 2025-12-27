@@ -11,7 +11,7 @@ export function PasswordMatchesHash(hash: string, plainPassword: string) {
 
 export function GetTokenAndExpiration() {
   let token: string
-  const expires = 60 * 60 * 1000
+  const expires = Date.now() + 60 * 60 * 1000
 
   if (process.env.NODE_ENV != "production") {
     token = process.env.DUMMY_TOKEN || ""
@@ -22,8 +22,8 @@ export function GetTokenAndExpiration() {
   return { token, expires }
 }
 
-export function JwtSign(payload: object, secret: string, expires: number) {
-  return jwt.sign(payload, secret, { expiresIn: expires })
+export function JwtSign(payload: object, secret: string, expiresIn: number) {
+  return jwt.sign(payload, secret, { expiresIn: expiresIn })
 }
 
 export function JwtVerify(tokenString: string, secret: string) {

@@ -8,5 +8,7 @@ export function valResHandler(req: Request, res: Response, next: NextFunction) {
     return next()
   }
 
-  res.status(StatusCodes.BAD_REQUEST).send({ errors: result.array() })
+  res
+    .status(StatusCodes.BAD_REQUEST)
+    .send({ validation_errors: result.array() })
 }

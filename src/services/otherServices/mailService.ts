@@ -1,6 +1,10 @@
 import nodemailer from "nodemailer"
 
 export function SendMail(email: string, subject: string, body: string) {
+  if (process.env.NODE_ENV === "test") {
+    return
+  }
+
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -13,7 +17,7 @@ export function SendMail(email: string, subject: string, body: string) {
     .sendMail({
       from: process.env.MAILING_EMAIL,
       to: email,
-      subject,
+      subject: `i9rfs - ${subject}`,
       html: body,
     })
     .catch((err) => {

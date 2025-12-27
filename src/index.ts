@@ -4,11 +4,19 @@ import helmet from "helmet"
 import cors from "cors"
 import cookieSession from "cookie-session"
 import { WebSocketServer } from "ws"
+import dotenv from "dotenv"
 
 import authRoutes from "./routes/authRoutes.ts"
 import appRoutes from "./routes/appRoutes.ts"
 import * as appControllers from "./controllers/app/appControllers.ts"
 import * as initializers from "./initializers.ts"
+
+if (process.env.NODE_ENV !== "remote_test") {
+  dotenv.config({
+    path: process.env.NODE_ENV === "test" ? ".env.test" : ".env",
+    quiet: true,
+  })
+}
 
 await initializers.InitApp()
 
@@ -47,9 +55,11 @@ if (process.env.NODE_ENV != "production") {
 }
 
 // Start listening
-server.listen(PORT, () => {
-  console.log(`HTTP + WS server running on http://localhost:${PORT}`)
-})
+if (process.env.NODE_ENV !== "test") {
+  server.listen(PORT, () => {
+    console.log(`HTTP + WS server running on http://localhost:${PORT}`)
+  })
+}
 
 server.on("close", () => {
   initializers.CleanUp()
@@ -58,3 +68,5 @@ server.on("close", () => {
 server.on("error", () => {
   initializers.CleanUp()
 })
+
+export default server

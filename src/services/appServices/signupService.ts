@@ -67,7 +67,7 @@ export async function VerifyEmail(
   const newSessionData = { email: sd.email }
 
   const respData = {
-    msg: `Your email, ${sd.email}, has been verified!"`,
+    msg: `Your email, ${sd.email}, has been verified!`,
   }
 
   return { respData, newSessionData }

@@ -47,7 +47,6 @@ export function RegisterUser() {
             errorMessage: "username too short",
             options: {
               min: 3,
-              max: 0,
             },
           },
           matches: {
@@ -60,7 +59,6 @@ export function RegisterUser() {
             errorMessage: "minimum of 8 characters",
             options: {
               min: 8,
-              max: 0,
             },
           },
         },
@@ -84,7 +82,6 @@ export function Signin() {
             if: body("emailOrUsername").not().contains("@"),
             options: {
               min: 3,
-              max: 0,
             },
             bail: true,
           },
@@ -98,7 +95,6 @@ export function Signin() {
             errorMessage: "minimum of 8 characters",
             options: {
               min: 8,
-              max: 0,
             },
           },
         },

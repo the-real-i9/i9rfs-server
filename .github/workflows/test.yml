@@ -3,35 +3,33 @@ on:
     branches:
       - main
 name: "Test i9rfs"
+permissions:
+  contents: read
 jobs:
   Tests:
     runs-on: ubuntu-latest
     services:
       neo4j:
-        image: 'neo4j:latest'
+        image: "neo4j:latest"
         ports:
-          - '7687:7687'
+          - "7687:7687"
         env:
           NEO4J_AUTH: "neo4j/pass#w%rd"
 
-    strategy:
-      matrix:
-        go-version:
-          - 1.24.x
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v4
 
-      - name: Install Go
-        uses: actions/setup-go@v5
+      - name: Setup Node
+        uses: actions/setup-node@v6
         with:
-          go-version: '${{ matrix.go-version }}'
+          node-version: latest
 
-      - name: Build server
-        run: go build -o i9rfs_server
+      - name: Install Node deps
+        run: npm ci
 
-      - name: Start server
-        run: ./i9rfs_server &
+      - name: Run Test
+        run: npm test
         env:
           NEO4J_URL: "neo4j://localhost"
           NEO4J_USER: neo4j
@@ -43,13 +41,5 @@ jobs:
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
           GCS_API_KEY: ${{ secrets.GCS_API_KEY }}
           SERVER_HOST: ${{ vars.SERVER_HOST }}
-          DUMMY_VERF_TOKEN: ${{ secrets.DUMMY_VERF_TOKEN }}
-          GO_ENV: test
-
-      - name: Run Test
-        run: sleep 5; cd ./tests && go test ./... -v -race
-        env:
-          NEO4J_URL: "neo4j://localhost"
-          NEO4J_USER: neo4j
-          NEO4J_PASSWORD: "pass#w%rd"
-          DUMMY_VERF_TOKEN: ${{ secrets.DUMMY_VERF_TOKEN }}
+          DUMMY_TOKEN: ${{ secrets.DUMMY_VERF_TOKEN }}
+          NODE_ENV: remote_test

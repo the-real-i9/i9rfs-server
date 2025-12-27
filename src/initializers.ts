@@ -17,6 +17,10 @@ async function initNeo4jDriver() {
     )
   )
 
+  if (process.env.NODE_ENV === "test") {
+    await driver.executeQuery(`/* cypher */MATCH (n) DETACH DELETE n`, null)
+  }
+
   const sess = driver.session()
 
   await sess.executeWrite(async (tx) => {
