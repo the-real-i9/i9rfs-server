@@ -325,6 +325,98 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
       .close()
       .expectClosed()
   }
+
+  {
+    console.log(
+      "Action: copy 'Horror' and 'Comedy' dirs from/to native root dir 'Videos'/'Downloads'"
+    )
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "copy",
+        data: {
+          fromParentDirectoryId: nativeRootDirs.Videos,
+          toParentDirectoryId: nativeRootDirs.Downloads,
+          objectIds: [videoDirs.Horror, videoDirs.Comedy],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "copy",
+          data: true,
+        })
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log(
+      "Action: list the dirs in native dir: 'Downloads' | confirm copy"
+    )
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "ls",
+        data: {
+          directoryId: nativeRootDirs.Downloads,
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "ls",
+        })
+        containsDirs(msg.data as DirT[], ["Horror", "Comedy"], t)
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  let musicDirs: { [x: string]: string } = {}
+
+  {
+    console.log("Action: bulk create dirs in native dir: 'Music'")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "mkdir",
+        data: {
+          parentDirectoryId: nativeRootDirs.Music,
+          directoryNames: ["Gospel", "Rock", "Pop", "Folk", "Old Songs"],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "mkdir",
+        })
+        containsDirs(
+          msg.data as DirT[],
+          ["Gospel", "Rock", "Pop", "Folk", "Old Songs"],
+          t
+        )
+
+        for (const dir of msg.data as DirT[]) {
+          musicDirs[dir.name] = dir.id
+        }
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
 })
 
 /* func TestUserRFSActionStory(t *testing.T) {
@@ -334,178 +426,6 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
 	nativeRootDirs := make(map[string]string, 5)
 
 	{
-
-		{
-			t.Log("Action: put sub-directories inside 'Horror' dir | to test recursive copy")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "mkdir",
-				"data": map[string]any{
-					"parentDirectoryId": videoDirs["Horror"],
-					"directoryName":     "The Conjuring",
-				},
-			})
-
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "mkdir",
-				"data": td.SuperMapOf(map[string]any{
-					"id":       td.Ignore(),
-					"obj_type": "directory",
-					"name":     "The Conjuring",
-				}, nil),
-			}, nil))
-
-			err = user.WSConn.WriteJSON(map[string]any{
-				"action": "mkdir",
-				"data": map[string]any{
-					"parentDirectoryId": serverWSReply["data"].(map[string]any)["id"],
-					"directoryName":     "Season 1",
-				},
-			})
-
-			require.NoError(t, err)
-
-			serverWSReply = <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "mkdir",
-				"data": td.SuperMapOf(map[string]any{
-					"id":       td.Ignore(),
-					"obj_type": "directory",
-					"name":     "Season 1",
-				}, nil),
-			}, nil))
-
-			err = user.WSConn.WriteJSON(map[string]any{
-				"action": "mkdir",
-				"data": map[string]any{
-					"parentDirectoryId": serverWSReply["data"].(map[string]any)["id"],
-					"directoryName":     "Episodes",
-				},
-			})
-
-			require.NoError(t, err)
-
-			serverWSReply = <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "mkdir",
-				"data": td.SuperMapOf(map[string]any{
-					"id":       td.Ignore(),
-					"obj_type": "directory",
-					"name":     "Episodes",
-				}, nil),
-			}, nil))
-		}
-
-		{
-			t.Log("Action: copy 'Horror' and 'Comedy' dirs from/to native root dir 'Videos'/'Downloads'")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "copy",
-				"data": map[string]any{
-					"fromParentDirectoryId": nativeRootDirs["Videos"],
-					"toParentDirectoryId":   nativeRootDirs["Downloads"],
-					"objectIds":             []string{videoDirs["Horror"], videoDirs["Comedy"]},
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			t.Log(serverWSReply)
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "copy",
-				"data":     true,
-			}, nil))
-		}
-
-		{
-			t.Log("Action: list the dirs in native dir: 'Downloads' | confirm copy")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "ls",
-				"data": map[string]any{
-					"directoryId": nativeRootDirs["Downloads"],
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "ls",
-				"data":     containsDirs("Horror", "Comedy"),
-			}, nil))
-		}
-	}
-
-	{
-		{
-			t.Log("Action: bulk create dirs in native dir: 'Music'")
-
-			for _, dir := range []string{"Gospel", "Rock", "Pop", "Folk", "Old Songs"} {
-				err := user.WSConn.WriteJSON(map[string]any{
-					"action": "mkdir",
-					"data": map[string]any{
-						"parentDirectoryId": nativeRootDirs["Music"],
-						"directoryName":     dir,
-					},
-				})
-
-				require.NoError(t, err)
-
-				serverWSReply := <-user.ServerWSMsg
-
-				td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-					"event":    "server reply",
-					"toAction": "mkdir",
-					"data": td.SuperMapOf(map[string]any{
-						"id":       td.Ignore(),
-						"obj_type": "directory",
-						"name":     dir,
-					}, nil),
-				}, nil))
-			}
-		}
-
-		musicDirs := make(map[string]string, 5)
-
-		{
-			t.Log("Action: list the dirs in native dir: 'Music'")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "ls",
-				"data": map[string]any{
-					"directoryId": nativeRootDirs["Music"],
-				},
-			})
-
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "ls",
-				"data":     containsDirs("Gospel", "Rock", "Pop", "Folk", "Old Songs"),
-			}, nil))
-
-			for _, dm := range serverWSReply["data"].([]any) {
-				m := dm.(map[string]any)
-				musicDirs[m["name"].(string)] = m["id"].(string)
-			}
-		}
 
 		{
 			t.Log("trash 'Folk' and 'Old Songs' dirs in native dir: 'Music'")
