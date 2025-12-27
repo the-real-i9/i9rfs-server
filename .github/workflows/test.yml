@@ -41,5 +41,5 @@ jobs:
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
           GCS_API_KEY: ${{ secrets.GCS_API_KEY }}
           SERVER_HOST: ${{ vars.SERVER_HOST }}
-          DUMMY_TOKEN: ${{ secrets.DUMMY_VERF_TOKEN }}
+          DUMMY_TOKEN: ${{ secrets.DUMMY_TOKEN }}
           NODE_ENV: remote_test
