@@ -1,4 +1,5 @@
 import appGlobals from "../appGlobals.ts"
+import type { DirT } from "../appTypes.ts"
 import * as db from "./db/db.ts"
 
 export async function Ls(clientUsername: string, directoryId: string) {
@@ -69,7 +70,7 @@ export async function Mkdir(
     return null
   }
 
-  return res.records[0]?.get("new_dir")
+  return res.records[0]?.get("new_dir") as DirT
 }
 
 export async function Del(

@@ -1,5 +1,4 @@
-import assert from "node:assert"
-import { beforeEach, afterEach, test } from "node:test"
+import { beforeEach, afterEach, test, type TestContext } from "node:test"
 import request from "superwstest"
 import { StatusCodes } from "http-status-codes"
 
@@ -10,8 +9,6 @@ const signinPath = "/api/auth/signin"
 
 const signoutPath = "/api/app/signout"
 
-const rfsPath = "/rfs"
-
 beforeEach((_, done) => {
   server.listen(0, "localhost", done)
 })
@@ -20,7 +17,7 @@ afterEach((_, done) => {
   server.close(done)
 })
 
-test("TestUserAuthStory", async () => {
+test("TestUserAuthStory", async (t: TestContext) => {
   const user = {
     email: "suberu@gmail.com",
     username: "suberu",
@@ -41,8 +38,8 @@ test("TestUserAuthStory", async () => {
       console.error("unexpected error:", res.body)
     }
 
-    assert.equal(res.statusCode, StatusCodes.OK)
-    assert.partialDeepStrictEqual(res.body, {
+    t.assert.strictEqual(res.statusCode, StatusCodes.OK)
+    t.assert.partialDeepStrictEqual(res.body, {
       msg: `Enter the 6-digit code sent to ${user.email} to verify your email`,
     })
 
@@ -63,8 +60,8 @@ test("TestUserAuthStory", async () => {
       console.error("unexpected error:", res.body)
     }
 
-    assert.equal(res.statusCode, StatusCodes.BAD_REQUEST)
-    assert.equal(
+    t.assert.strictEqual(res.statusCode, StatusCodes.BAD_REQUEST)
+    t.assert.strictEqual(
       res.body,
       "Incorrect verification code! Check or Re-submit your email."
     )
@@ -86,8 +83,8 @@ test("TestUserAuthStory", async () => {
       console.error("unexpected error:", res.body)
     }
 
-    assert.equal(res.statusCode, StatusCodes.OK)
-    assert.partialDeepStrictEqual(res.body, {
+    t.assert.strictEqual(res.statusCode, StatusCodes.OK)
+    t.assert.partialDeepStrictEqual(res.body, {
       msg: `Your email, ${user.email}, has been verified!`,
     })
 
@@ -108,12 +105,12 @@ test("TestUserAuthStory", async () => {
       console.error("unexpected error:", res.body)
     }
 
-    assert.equal(res.statusCode, StatusCodes.CREATED)
-    assert.ok(
+    t.assert.strictEqual(res.statusCode, StatusCodes.CREATED)
+    t.assert.ok(
       res.body?.user?.username,
       "user.username doesn't exist on res.body"
     )
-    assert.equal(res.body?.msg, "Signup success!")
+    t.assert.strictEqual(res.body?.msg, "Signup success!")
 
     user.sessionCookie = res.header["set-cookie"]
   }
@@ -129,7 +126,7 @@ test("TestUserAuthStory", async () => {
       console.error("unexpected error:", res.body)
     }
 
-    assert.equal(res.statusCode, StatusCodes.OK)
+    t.assert.strictEqual(res.statusCode, StatusCodes.OK)
   }
 
   {
@@ -148,8 +145,8 @@ test("TestUserAuthStory", async () => {
       console.error("unexpected error:", res.body)
     }
 
-    assert.equal(res.statusCode, StatusCodes.NOT_FOUND)
-    assert.equal(res.body, "Incorrect email or password")
+    t.assert.strictEqual(res.statusCode, StatusCodes.NOT_FOUND)
+    t.assert.strictEqual(res.body, "Incorrect email or password")
   }
 
   {
@@ -168,8 +165,8 @@ test("TestUserAuthStory", async () => {
       console.error("unexpected error:", res.body)
     }
 
-    assert.equal(res.statusCode, StatusCodes.OK)
-    assert.equal(res.body.msg, "Signin success!")
+    t.assert.strictEqual(res.statusCode, StatusCodes.OK)
+    t.assert.strictEqual(res.body.msg, "Signin success!")
 
     user.sessionCookie = res.header["set-cookie"]
   }

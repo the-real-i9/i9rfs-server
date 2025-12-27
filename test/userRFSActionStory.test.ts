@@ -1,331 +1,339 @@
+import { beforeEach, afterEach, test, type TestContext } from "node:test"
+import request from "superwstest"
+import { StatusCodes } from "http-status-codes"
+
+import server from "../src/index.ts"
+import { containsDirs, notContainsDirs } from "./testHelpers.ts"
+import { type DirT } from "../src/appTypes.ts"
+
+const signupPath = "/api/auth/signup"
+
+const rfsPath = "/rfs"
+
+beforeEach((_, done) => {
+  server.listen(0, "localhost", done)
+})
+
+afterEach((_, done) => {
+  server.close(done)
+})
+
+test("TestUserRFSActionStory", async (t: TestContext) => {
+  const user = {
+    email: "mikeross@gmail.com",
+    username: "mikeross",
+    password: "paralegal_zane",
+    sessionCookie: "",
+  }
+
+  console.log("Action: user creates new account")
+
+  {
+    const res = await request(server)
+      .post(signupPath + "/request_new_account")
+      .send({ email: user.email })
+      .set("Accept", "application/json")
+      .expect("Content-Type", /json/)
+
+    if (res.statusCode !== StatusCodes.OK) {
+      console.error("unexpected error:", res.body)
+    }
+
+    t.assert.strictEqual(res.statusCode, StatusCodes.OK)
+    t.assert.partialDeepStrictEqual(res.body, {
+      msg: `Enter the 6-digit code sent to ${user.email} to verify your email`,
+    })
+
+    user.sessionCookie = res.header["set-cookie"]
+  }
+
+  {
+    const verfCode = process.env.DUMMY_TOKEN
+
+    const res = await request(server)
+      .post(signupPath + "/verify_email")
+      .send({ code: verfCode })
+      .set("Cookie", user.sessionCookie)
+      .set("Accept", "application/json")
+      .expect("Content-Type", /json/)
+
+    if (res.statusCode !== StatusCodes.OK) {
+      console.error("unexpected error:", res.body)
+    }
+
+    t.assert.strictEqual(res.statusCode, StatusCodes.OK)
+    t.assert.partialDeepStrictEqual(res.body, {
+      msg: `Your email, ${user.email}, has been verified!`,
+    })
+
+    user.sessionCookie = res.header["set-cookie"]
+  }
+
+  {
+    const res = await request(server)
+      .post(signupPath + "/register_user")
+      .send({ username: user.username, password: user.password })
+      .set("Cookie", user.sessionCookie)
+      .set("Accept", "application/json")
+      .expect("Content-Type", /json/)
+
+    if (res.statusCode !== StatusCodes.CREATED) {
+      console.error("unexpected error:", res.body)
+    }
+
+    t.assert.strictEqual(res.statusCode, StatusCodes.CREATED)
+    t.assert.ok(
+      res.body?.user?.username,
+      "user.username doesn't exist on res.body"
+    )
+    t.assert.strictEqual(res.body?.msg, "Signup success!")
+
+    user.sessionCookie = res.header["set-cookie"]
+  }
+
+  const nativeRootDirs: { [x: string]: string } = {}
+
+  {
+    console.log("Action: list native directories in root")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "ls",
+        data: {
+          directoryId: "/",
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "ls",
+        })
+        containsDirs(
+          msg.data as DirT[],
+          ["Documents", "Downloads", "Music", "Videos", "Pictures"],
+          t
+        )
+
+        for (const dir of msg.data as DirT[]) {
+          nativeRootDirs[dir.name] = dir.id
+        }
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  let videoDirs: { [x: string]: string } = {}
+
+  {
+    console.log("Action: bulk create dirs in native dir: 'Videos'")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "mkdir",
+        data: {
+          parentDirectoryId: nativeRootDirs.Videos,
+          directoryNames: [
+            "Horror",
+            "Comedy",
+            "Legal",
+            "Musical",
+            "Action",
+            "NotAVideo",
+            "DeleteMe",
+          ],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "mkdir",
+        })
+        containsDirs(
+          msg.data as DirT[],
+          [
+            "Horror",
+            "Comedy",
+            "Legal",
+            "Musical",
+            "Action",
+            "NotAVideo",
+            "DeleteMe",
+          ],
+          t
+        )
+
+        for (const dir of msg.data as DirT[]) {
+          videoDirs[dir.name] = dir.id
+        }
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log(
+      "Action: put a sub-directory inside 'DeleteMe' dir | to test recursive deletion"
+    )
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "mkdir",
+        data: {
+          parentDirectoryId: videoDirs.DeleteMe,
+          directoryNames: ["DeleteMyChild"],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "mkdir",
+        })
+        containsDirs(msg.data as DirT[], ["DeleteMyChild"], t)
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log(
+      "Action: delete 'NotAVideo' and 'DeleteMe' dirs in native root dir: 'Videos'"
+    )
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "del",
+        data: {
+          parentDirectoryId: nativeRootDirs.Videos,
+          objectIds: [videoDirs.NotAVideo, videoDirs.DeleteMe],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.deepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "del",
+          data: true,
+        })
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log(
+      "Action: list the dirs now in native dir: 'Videos' | confirm deletion"
+    )
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "ls",
+        data: {
+          directoryId: nativeRootDirs.Videos,
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "ls",
+        })
+        containsDirs(
+          msg.data as DirT[],
+          ["Horror", "Comedy", "Legal", "Musical", "Action"],
+          t
+        )
+        notContainsDirs(msg.data as DirT[], ["NotAVideo", "DeleteMe"], t)
+
+        videoDirs = {}
+
+        for (const dir of msg.data as DirT[]) {
+          videoDirs[dir.name] = dir.id
+        }
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log("attempt to delete a native directory fails")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "del",
+        data: {
+          parentDirectoryId: "/",
+          objectIds: [nativeRootDirs.Downloads],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.deepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "del",
+          data: false,
+        })
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log(
+      "Action: put sub-directories inside 'Horror' dir | to test recursive copy"
+    )
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "mkdir",
+        data: {
+          parentDirectoryId: videoDirs.Horror,
+          directoryNames: ["The Conjuring/Season 1/Episodes"],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "mkdir",
+        })
+        containsDirs(msg.data as DirT[], ["The Conjuring"], t)
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+})
+
 /* func TestUserRFSActionStory(t *testing.T) {
-	t.Parallel()
-
-	user := UserT{
-		Email:    "mikeross@gmail.com",
-		Username: "mikeross",
-		Password: "paralegal_zane",
-	}
-
-	{
-		t.Log("Setup: create new account for users")
-
-		{
-			reqBody, err := makeReqBody(map[string]any{"email": user.Email})
-			require.NoError(t, err)
-
-			res, err := http.Post(signupPath+"/request_new_account", "application/json", reqBody)
-			require.NoError(t, err)
-
-			if !assert.Equal(t, http.StatusOK, res.StatusCode) {
-				rb, err := errResBody(res.Body)
-				require.NoError(t, err)
-				t.Log("unexpected error:", rb)
-				return
-			}
-
-			rb, err := succResBody[map[string]any](res.Body)
-			require.NoError(t, err)
-
-			td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-				"msg": fmt.Sprintf("Enter the 6-digit code sent to %s to verify your email", user.Email),
-			}, nil))
-
-			user.SessionCookie = res.Header.Get("Set-Cookie")
-		}
-
-		{
-			verfCode := os.Getenv("DUMMY_VERF_TOKEN")
-
-			reqBody, err := makeReqBody(map[string]any{"code": verfCode})
-			require.NoError(t, err)
-
-			req, err := http.NewRequest("POST", signupPath+"/verify_email", reqBody)
-			require.NoError(t, err)
-			req.Header.Set("Cookie", user.SessionCookie)
-			req.Header.Add("Content-Type", "application/json")
-
-			res, err := http.DefaultClient.Do(req)
-			require.NoError(t, err)
-
-			if !assert.Equal(t, http.StatusOK, res.StatusCode) {
-				rb, err := errResBody(res.Body)
-				require.NoError(t, err)
-				t.Log("unexpected error:", rb)
-				return
-			}
-
-			rb, err := succResBody[map[string]any](res.Body)
-			require.NoError(t, err)
-
-			td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-				"msg": fmt.Sprintf("Your email, %s, has been verified!", user.Email),
-			}, nil))
-
-			user.SessionCookie = res.Header.Get("Set-Cookie")
-		}
-
-		{
-			reqBody, err := makeReqBody(map[string]any{
-				"username": user.Username,
-				"password": user.Password,
-			})
-			require.NoError(t, err)
-
-			req, err := http.NewRequest("POST", signupPath+"/register_user", reqBody)
-			require.NoError(t, err)
-			req.Header.Set("Cookie", user.SessionCookie)
-			req.Header.Add("Content-Type", "application/json")
-
-			res, err := http.DefaultClient.Do(req)
-			require.NoError(t, err)
-
-			if !assert.Equal(t, http.StatusCreated, res.StatusCode) {
-				rb, err := errResBody(res.Body)
-				require.NoError(t, err)
-				t.Log("unexpected error:", rb)
-				return
-			}
-
-			rb, err := succResBody[map[string]any](res.Body)
-			require.NoError(t, err)
-
-			td.Cmp(td.Require(t), rb, td.SuperMapOf(map[string]any{
-				"user": td.Ignore(),
-				"msg":  "Signup success!",
-			}, nil))
-
-			user.SessionCookie = res.Header.Get("Set-Cookie")
-		}
-	}
-
-	{
-		t.Log("Setup: Init user sockets")
-
-		header := http.Header{}
-		header.Set("Cookie", user.SessionCookie)
-		wsConn, res, err := websocket.DefaultDialer.Dial(rfsPath, header)
-		require.NoError(t, err)
-
-		if !assert.Equal(t, http.StatusSwitchingProtocols, res.StatusCode) {
-			rb, err := errResBody(res.Body)
-			require.NoError(t, err)
-			t.Log("unexpected error:", rb)
-			return
-		}
-
-		require.NotNil(t, wsConn)
-
-		defer wsConn.CloseHandler()(websocket.CloseNormalClosure, user.Username+": GoodBye!")
-
-		user.WSConn = wsConn
-		user.ServerWSMsg = make(chan map[string]any)
-
-		go func() {
-			userCommChan := user.ServerWSMsg
-
-			for {
-				userCommChan := userCommChan
-				userWSConn := user.WSConn
-
-				var wsMsg map[string]any
-
-				if err := userWSConn.ReadJSON(&wsMsg); err != nil {
-					break
-				}
-
-				if wsMsg == nil {
-					continue
-				}
-
-				userCommChan <- wsMsg
-			}
-
-			close(userCommChan)
-		}()
-	}
 
 	t.Log("----------")
 
 	nativeRootDirs := make(map[string]string, 5)
 
 	{
-		t.Log("Action: list native directories in root")
-
-		err := user.WSConn.WriteJSON(map[string]any{
-			"action": "ls",
-			"data": map[string]any{
-				"directoryId": "/",
-			},
-		})
-
-		require.NoError(t, err)
-
-		serverWSReply := <-user.ServerWSMsg
-
-		td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-			"event":    "server reply",
-			"toAction": "ls",
-			"data":     containsDirs("Documents", "Downloads", "Music", "Videos", "Pictures"),
-		}, nil))
-
-		for _, dm := range serverWSReply["data"].([]any) {
-			m := dm.(map[string]any)
-			nativeRootDirs[m["name"].(string)] = m["id"].(string)
-		}
-	}
-
-	{
-		{
-			t.Log("Action: bulk create dirs in native dir: 'Videos'")
-
-			for _, dir := range []string{"Horror", "Comedy", "Legal", "Musical", "Action", "NotAVideo", "DeleteMe"} {
-				err := user.WSConn.WriteJSON(map[string]any{
-					"action": "mkdir",
-					"data": map[string]any{
-						"parentDirectoryId": nativeRootDirs["Videos"],
-						"directoryName":     dir,
-					},
-				})
-
-				require.NoError(t, err)
-
-				serverWSReply := <-user.ServerWSMsg
-
-				td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-					"event":    "server reply",
-					"toAction": "mkdir",
-					"data": td.SuperMapOf(map[string]any{
-						"id":       td.Ignore(),
-						"obj_type": "directory",
-						"name":     dir,
-					}, nil),
-				}, nil))
-			}
-		}
-
-		videoDirs := make(map[string]string, 7)
-
-		{
-			t.Log("Action: list the dirs in native dir: 'Videos'")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "ls",
-				"data": map[string]any{
-					"directoryId": nativeRootDirs["Videos"],
-				},
-			})
-
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "ls",
-				"data":     containsDirs("Horror", "Comedy", "Legal", "Musical", "Action", "NotAVideo", "DeleteMe"),
-			}, nil))
-
-			for _, dm := range serverWSReply["data"].([]any) {
-				m := dm.(map[string]any)
-				videoDirs[m["name"].(string)] = m["id"].(string)
-			}
-		}
-
-		{
-			t.Log("Action: put a sub-directory inside 'DeleteMe' dir | to test recursive deletion")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "mkdir",
-				"data": map[string]any{
-					"parentDirectoryId": videoDirs["DeleteMe"],
-					"directoryName":     "DeleteMyChild",
-				},
-			})
-
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "mkdir",
-				"data": td.SuperMapOf(map[string]any{
-					"id":       td.Ignore(),
-					"obj_type": "directory",
-					"name":     "DeleteMyChild",
-				}, nil),
-			}, nil))
-		}
-
-		{
-			t.Log("Action: delete 'NotAVideo' and 'DeleteMe' dirs in native root dir: 'Videos'")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "del",
-				"data": map[string]any{
-					"parentDirectoryId": nativeRootDirs["Videos"],
-					"objectIds":         []string{videoDirs["NotAVideo"], videoDirs["DeleteMe"]},
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "del",
-				"data":     true,
-			}, nil))
-		}
-
-		{
-			t.Log("Action: list the dirs now in native dir: 'Videos' | confirm deletion")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "ls",
-				"data": map[string]any{
-					"directoryId": nativeRootDirs["Videos"],
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "ls",
-				"data":     td.All(containsDirs("Horror", "Comedy", "Legal", "Musical", "Action"), notContainsDirs("NotAVideo", "DeleteMe")),
-			}, nil))
-
-			clear(videoDirs)
-
-			for _, dm := range serverWSReply["data"].([]any) {
-				m := dm.(map[string]any)
-				videoDirs[m["name"].(string)] = m["id"].(string)
-			}
-		}
-
-		{
-			t.Log("attempt to delete a native directory fails")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "del",
-				"data": map[string]any{
-					"parentDirectoryId": "/",
-					"objectIds":         []string{nativeRootDirs["Downloads"]},
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "del",
-				"data":     false,
-			}, nil))
-		}
 
 		{
 			t.Log("Action: put sub-directories inside 'Horror' dir | to test recursive copy")

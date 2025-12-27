@@ -1,16 +1,45 @@
 import { StatusCodes } from "http-status-codes"
 import * as rfsCommandModel from "../../models/rfsCommandModel.ts"
+import type { DirT } from "../../appTypes.ts"
 
 export function Ls(clientUsername: string, directoryId: string) {
   return rfsCommandModel.Ls(clientUsername, directoryId)
 }
 
-export function Mkdir(
+export async function Mkdir(
   clientUsername: string,
   parentDirectoryId: string,
-  directoryName: string
+  directoryNames: string[]
 ) {
-  return rfsCommandModel.Mkdir(clientUsername, parentDirectoryId, directoryName)
+  const newDirs: (DirT | null)[] = []
+
+  for (const dirName of directoryNames) {
+    if (!dirName.includes("/")) {
+      newDirs.push(
+        await rfsCommandModel.Mkdir(clientUsername, parentDirectoryId, dirName)
+      )
+    } else {
+      const subDirs = dirName.split("/")
+
+      let outerDirId: string = parentDirectoryId
+
+      for (let i = 0; i < subDirs.length; i++) {
+        const innerDir = await rfsCommandModel.Mkdir(
+          clientUsername,
+          outerDirId,
+          subDirs[i] || ""
+        )
+
+        outerDirId = innerDir?.id || ""
+
+        if (i === 0) {
+          newDirs.push(innerDir)
+        }
+      }
+    }
+  }
+
+  return newDirs
 }
 
 export function deleteFilesInCS(fileIds: any[]) {}

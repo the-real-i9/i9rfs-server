@@ -3,7 +3,7 @@ import * as z from "zod"
 export function rfsCommandBodyValid(body: any) {
   const schema = z.object({
     command: z.string(),
-    data: body.command === "view trash" ? z.object().optional() : z.object(),
+    data: body.command === "view trash" ? z.any().optional() : z.any(),
   })
 
   const res = schema.safeParse(body)
@@ -24,7 +24,7 @@ export function lsCommandValid(command: any) {
 export function mkdirCommandValid(command: any) {
   const schema = z.object({
     parentDirectoryId: z.literal("/").or(z.uuid()),
-    directoryName: z.string(),
+    directoryNames: z.array(z.string()),
   })
 
   const res = schema.safeParse(command)

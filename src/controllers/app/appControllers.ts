@@ -5,7 +5,6 @@ import type WebSocket from "ws"
 import type { ClientUserT } from "../../appTypes.ts"
 import { GetSessionDataFromCookieHeader } from "../../helpers.ts"
 import * as securityServices from "../../services/appServices/securityServices.ts"
-import type { JwtPayload } from "jsonwebtoken"
 import {
   copyCommandValid,
   delCommandValid,
@@ -38,9 +37,7 @@ export function RFSController(ws: WebSocket, request: IncomingMessage) {
       return ws.close(1000, "401: authentication required")
     }
 
-    const {
-      user: { authJwt },
-    }: { user: { authJwt: string } } = sessionData
+    const { authJwt } = JSON.parse(sessionData.user)
 
     const authPayload = securityServices.JwtVerify(
       authJwt,
@@ -68,7 +65,7 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
   return async function (data: WebSocket.RawData) {
     const rfsCommandBody = JSON.parse(data.toString())
 
-    const { success, error, data: body } = rfsCommandBodyValid(rfsCommandBody)
+    const { success, error } = rfsCommandBodyValid(rfsCommandBody)
     if (!success) {
       return ws.send(
         helpers.WSErrReply(
@@ -78,6 +75,8 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
         )
       )
     }
+
+    const body = rfsCommandBody
 
     try {
       let resp
@@ -93,6 +92,7 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
           }
 
           resp = await rfsCommandService.Ls(clientUsername, data.directoryId)
+          break
         }
         case "mkdir": {
           const { success, error, data } = mkdirCommandValid(body.data)
@@ -106,8 +106,9 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
           resp = await rfsCommandService.Mkdir(
             clientUsername,
             data.parentDirectoryId,
-            data.directoryName
+            data.directoryNames
           )
+          break
         }
         case "del": {
           const { success, error, data } = delCommandValid(body.data)
@@ -123,6 +124,8 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
             data.parentDirectoryId,
             data.objectIds
           )
+
+          break
         }
         case "trash": {
           const { success, error, data } = trashCommandValid(body.data)
@@ -138,6 +141,8 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
             data.parentDirectoryId,
             data.objectIds
           )
+
+          break
         }
         case "restore": {
           const { success, error, data } = restoreCommandValid(body.data)
@@ -149,9 +154,13 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
           }
 
           resp = await rfsCommandService.Restore(clientUsername, data.objectIds)
+
+          break
         }
         case "vwtrash": {
           resp = await rfsCommandService.ViewTrash(clientUsername)
+
+          break
         }
         case "rename": {
           const { success, error, data } = renameCommandValid(body.data)
@@ -168,6 +177,8 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
             data.objectId,
             data.newName
           )
+
+          break
         }
         case "move": {
           const { success, error, data } = moveCommandValid(body.data)
@@ -184,6 +195,8 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
             data.toParentDirectoryId,
             data.objectIds
           )
+
+          break
         }
         case "copy": {
           const { success, error, data } = copyCommandValid(body.data)
@@ -200,8 +213,11 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
             data.toParentDirectoryId,
             data.objectIds
           )
+
+          break
         }
         case "upload": {
+          break
         }
         default: {
           resp = `unknown command:${body.command}`
