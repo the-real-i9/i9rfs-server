@@ -3,7 +3,7 @@ import * as z from "zod"
 export function rfsCommandBodyValid(body: any) {
   const schema = z.object({
     command: z.string(),
-    data: body.command === "view trash" ? z.any().optional() : z.any(),
+    data: body.command === "viewtrash" ? z.any().optional() : z.any(),
   })
 
   const res = schema.safeParse(body)

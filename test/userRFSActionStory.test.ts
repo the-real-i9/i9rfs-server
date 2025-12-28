@@ -417,354 +417,399 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
       .close()
       .expectClosed()
   }
+
+  {
+    console.log("trash 'Folk' and 'Old Songs' dirs in native dir: 'Music'")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "trash",
+        data: {
+          parentDirectoryId: nativeRootDirs.Music,
+          objectIds: [musicDirs.Folk, musicDirs["Old Songs"]],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "trash",
+          data: true,
+        })
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log(
+      "Action: list the dirs now in native dir: 'Music' | confirm trashing"
+    )
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "ls",
+        data: {
+          directoryId: nativeRootDirs.Music,
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "ls",
+        })
+        containsDirs(msg.data as DirT[], ["Gospel", "Rock", "Pop"], t)
+        notContainsDirs(msg.data as DirT[], ["Folk", "Old Songs"], t)
+
+        musicDirs = {}
+
+        for (const dir of msg.data as DirT[]) {
+          musicDirs[dir.name] = dir.id
+        }
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  let trashDirs: { [x: string]: string } = {}
+
+  {
+    console.log("view dirs in Trash")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "viewtrash",
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "viewtrash",
+        })
+        containsDirs(msg.data as DirT[], ["Folk", "Old Songs"], t)
+
+        for (const dir of msg.data as DirT[]) {
+          trashDirs[dir.name] = dir.id
+        }
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log("restore 'Folk' dir from Trash")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "restore",
+        data: {
+          objectIds: [trashDirs.Folk],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "restore",
+          data: true,
+        })
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log("view dirs now in Trash | confirm 'Folk' dir restored")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "viewtrash",
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "viewtrash",
+        })
+        notContainsDirs(msg.data as DirT[], ["Folk"], t)
+        containsDirs(msg.data as DirT[], ["Old Songs"], t)
+
+        trashDirs = {}
+
+        for (const dir of msg.data as DirT[]) {
+          trashDirs[dir.name] = dir.id
+        }
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log(
+      "Action: list the dirs now in native dir: 'Music' | confirm 'Folk' dir restored"
+    )
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "ls",
+        data: {
+          directoryId: nativeRootDirs.Music,
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "ls",
+        })
+        containsDirs(msg.data as DirT[], ["Gospel", "Rock", "Pop", "Folk"], t)
+        notContainsDirs(msg.data as DirT[], ["Old Songs"], t)
+
+        musicDirs = {}
+
+        for (const dir of msg.data as DirT[]) {
+          musicDirs[dir.name] = dir.id
+        }
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log("attempt to trash a native directory fails")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "trash",
+        data: {
+          parentDirectoryId: "/",
+          objectIds: [nativeRootDirs.Documents],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "trash",
+          data: false,
+        })
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log(
+      "rename 'Gospel' dir in native root dir: 'Music' to 'Christian Music'"
+    )
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "rename",
+        data: {
+          parentDirectoryId: nativeRootDirs.Music,
+          objectId: musicDirs.Gospel,
+          newName: "Christian Music",
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "rename",
+          data: true,
+        })
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log(
+      "Action: list the dirs now in native dir: 'Music' | confirm renaming"
+    )
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "ls",
+        data: {
+          directoryId: nativeRootDirs.Music,
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "ls",
+        })
+        containsDirs(
+          msg.data as DirT[],
+          ["Christian Music", "Rock", "Pop", "Folk"],
+          t
+        )
+        notContainsDirs(msg.data as DirT[], ["Gospel"], t)
+
+        musicDirs = {}
+
+        for (const dir of msg.data as DirT[]) {
+          musicDirs[dir.name] = dir.id
+        }
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log("attempt to rename a native directory fails")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "rename",
+        data: {
+          parentDirectoryId: "/",
+          objectId: nativeRootDirs.Pictures,
+          newName: "Images",
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "rename",
+          data: false,
+        })
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log(
+      "Action: create nested sub-directories in 'Rock' dir | to confirm whole branch move"
+    )
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "mkdir",
+        data: {
+          parentDirectoryId: musicDirs.Rock,
+          directoryNames: ["Pop Rock/Afro Pop Rock"],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "mkdir",
+        })
+        containsDirs(msg.data as DirT[], ["Pop Rock"], t)
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log(
+      "Action: move 'Rock' and 'Pop' dirs from/to native root dir 'Music'/'Downloads'"
+    )
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "move",
+        data: {
+          fromParentDirectoryId: nativeRootDirs.Music,
+          toParentDirectoryId: nativeRootDirs.Downloads,
+          objectIds: [musicDirs.Rock, musicDirs.Pop],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "move",
+          data: true,
+        })
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log(
+      "Action: list the dirs in native dir: 'Downloads' and 'Music' | confirm move"
+    )
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "ls",
+        data: {
+          directoryId: nativeRootDirs.Downloads,
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "ls",
+        })
+        containsDirs(msg.data as DirT[], ["Pop", "Rock"], t)
+
+        return true
+      })
+      .sendJson({
+        command: "ls",
+        data: {
+          directoryId: nativeRootDirs.Music,
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "ls",
+        })
+        notContainsDirs(msg.data as DirT[], ["Pop", "Rock"], t)
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
 })
-
-/* func TestUserRFSActionStory(t *testing.T) {
-
-	t.Log("----------")
-
-	nativeRootDirs := make(map[string]string, 5)
-
-	{
-
-		{
-			t.Log("trash 'Folk' and 'Old Songs' dirs in native dir: 'Music'")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "trash",
-				"data": map[string]any{
-					"parentDirectoryId": nativeRootDirs["Music"],
-					"objectIds":         []string{musicDirs["Folk"], musicDirs["Old Songs"]},
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "trash",
-				"data":     true,
-			}, nil))
-		}
-
-		{
-			t.Log("Action: list the dirs now in native dir: 'Music' | confirm trashing")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "ls",
-				"data": map[string]any{
-					"directoryId": nativeRootDirs["Music"],
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "ls",
-				"data":     td.All(containsDirs("Gospel", "Rock", "Pop"), notContainsDirs("Folk", "Old Songs")),
-			}, nil))
-
-			clear(musicDirs)
-
-			for _, dm := range serverWSReply["data"].([]any) {
-				m := dm.(map[string]any)
-				musicDirs[m["name"].(string)] = m["id"].(string)
-			}
-		}
-
-		trashDirs := make(map[string]string)
-
-		{
-			t.Log("view dirs in Trash")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "view trash",
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "view trash",
-				"data":     containsDirs("Folk", "Old Songs"),
-			}, nil))
-
-			for _, dm := range serverWSReply["data"].([]any) {
-				m := dm.(map[string]any)
-				trashDirs[m["name"].(string)] = m["id"].(string)
-			}
-		}
-
-		{
-			t.Log("restore 'Folk' dir from Trash")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "restore",
-				"data": map[string]any{
-					"objectIds": []string{trashDirs["Folk"]},
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "restore",
-				"data":     true,
-			}, nil))
-		}
-
-		{
-			t.Log("view dirs now in Trash | confirm 'Folk' dir restored")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "view trash",
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "view trash",
-				"data":     td.All(notContainsDirs("Folk"), containsDirs("Old Songs")),
-			}, nil))
-
-			for _, dm := range serverWSReply["data"].([]any) {
-				m := dm.(map[string]any)
-				trashDirs[m["name"].(string)] = m["id"].(string)
-			}
-		}
-
-		{
-			t.Log("Action: list the dirs now in native dir: 'Music' | confirm 'Folk' dir restored")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "ls",
-				"data": map[string]any{
-					"directoryId": nativeRootDirs["Music"],
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "ls",
-				"data":     td.All(containsDirs("Gospel", "Rock", "Pop", "Folk"), notContainsDirs("Old Songs")),
-			}, nil))
-
-			clear(musicDirs)
-
-			for _, dm := range serverWSReply["data"].([]any) {
-				m := dm.(map[string]any)
-				musicDirs[m["name"].(string)] = m["id"].(string)
-			}
-		}
-
-		{
-			t.Log("attempt to trash a native directory fails")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "trash",
-				"data": map[string]any{
-					"parentDirectoryId": "/",
-					"objectIds":         []string{nativeRootDirs["Documents"]},
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "trash",
-				"data":     false,
-			}, nil))
-		}
-
-		{
-			t.Log("rename 'Gospel' dir in native root dir: 'Music' to 'Christian Music'")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "rename",
-				"data": map[string]any{
-					"parentDirectoryId": nativeRootDirs["Music"],
-					"objectId":          musicDirs["Gospel"],
-					"newName":           "Christian Music",
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "rename",
-				"data":     true,
-			}, nil))
-		}
-
-		{
-			t.Log("Action: list the dirs now in native dir: 'Music' | confirm renaming")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "ls",
-				"data": map[string]any{
-					"directoryId": nativeRootDirs["Music"],
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "ls",
-				"data":     td.All(containsDirs("Christian Music", "Rock", "Pop", "Folk"), notContainsDirs("Gospel")),
-			}, nil))
-
-			clear(musicDirs)
-
-			for _, dm := range serverWSReply["data"].([]any) {
-				m := dm.(map[string]any)
-				musicDirs[m["name"].(string)] = m["id"].(string)
-			}
-		}
-
-		{
-			t.Log("attempt to rename a native directory fails")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "rename",
-				"data": map[string]any{
-					"parentDirectoryId": "/",
-					"objectId":          nativeRootDirs["Pictures"],
-					"newName":           "Images",
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "rename",
-				"data":     false,
-			}, nil))
-		}
-
-		{
-			t.Log("Action: create nested sub-directories in 'Rock' dir | to confirm whole branch move")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "mkdir",
-				"data": map[string]any{
-					"parentDirectoryId": musicDirs["Rock"],
-					"directoryName":     "Pop Rock",
-				},
-			})
-
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "mkdir",
-				"data": td.SuperMapOf(map[string]any{
-					"id":       td.Ignore(),
-					"obj_type": "directory",
-					"name":     "Pop Rock",
-				}, nil),
-			}, nil))
-
-			err = user.WSConn.WriteJSON(map[string]any{
-				"action": "mkdir",
-				"data": map[string]any{
-					"parentDirectoryId": serverWSReply["data"].(map[string]any)["id"].(string),
-					"directoryName":     "Afro Pop Rock",
-				},
-			})
-
-			require.NoError(t, err)
-
-			serverWSReply = <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "mkdir",
-				"data": td.SuperMapOf(map[string]any{
-					"id":       td.Ignore(),
-					"obj_type": "directory",
-					"name":     "Afro Pop Rock",
-				}, nil),
-			}, nil))
-		}
-
-		{
-			t.Log("Action: move 'Rock' and 'Pop' dirs from/to native root dir 'Music'/'Downloads'")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "move",
-				"data": map[string]any{
-					"fromParentDirectoryId": nativeRootDirs["Music"],
-					"toParentDirectoryId":   nativeRootDirs["Downloads"],
-					"objectIds":             []string{musicDirs["Rock"], musicDirs["Pop"]},
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "move",
-				"data":     true,
-			}, nil))
-		}
-
-		{
-			t.Log("Action: list the dirs in native dir: 'Downloads' and 'Music' | confirm move")
-
-			err := user.WSConn.WriteJSON(map[string]any{
-				"action": "ls",
-				"data": map[string]any{
-					"directoryId": nativeRootDirs["Downloads"],
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply := <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "ls",
-				"data":     containsDirs("Pop", "Rock"),
-			}, nil))
-
-			err = user.WSConn.WriteJSON(map[string]any{
-				"action": "ls",
-				"data": map[string]any{
-					"directoryId": nativeRootDirs["Music"],
-				},
-			})
-			require.NoError(t, err)
-
-			serverWSReply = <-user.ServerWSMsg
-
-			td.Cmp(td.Require(t), serverWSReply, td.Map(map[string]any{
-				"event":    "server reply",
-				"toAction": "ls",
-				"data":     notContainsDirs("Pop", "Rock"),
-			}, nil))
-		}
-	}
-}
- */

@@ -30,7 +30,7 @@ export async function Ls(clientUsername: string, directoryId: string) {
     return null
   }
 
-  return res.records[0]?.get("dir_cont") as any[]
+  return res.records[0]?.get("dir_cont") as DirT[]
 }
 
 export async function Mkdir(
@@ -118,7 +118,7 @@ export async function Del(
     return { done: false, fileIds: [] }
   }
 
-  return { done: true, fileIds: res.records[0]?.get("file_ids") as any[] }
+  return { done: true, fileIds: res.records[0]?.get("file_ids") as string[] }
 }
 
 export async function Trash(
@@ -205,7 +205,7 @@ export async function ViewTrash(clientUsername: string) {
     return []
   }
 
-  return res.records[0]?.get("trash_cont") as any[]
+  return res.records[0]?.get("trash_cont") as DirT[]
 }
 
 export async function Rename(
@@ -365,7 +365,7 @@ export async function Copy(
       objectHasChildren = res.records[0]?.get("object_has_children")
     }
 
-    let fileCopyIdMaps: any[]
+    let fileCopyIdMaps: { copied_id: string; copy_id: string }[]
 
     if (objectHasChildren) {
       const res = await tx.run(
@@ -390,12 +390,12 @@ export async function Copy(
       // last record contains the full parents and children
       const recObj = res.records.at(-1)?.toObject()
 
-      const parentIds: any[] = recObj?.parent_ids
-      const childrenIds: any[] = recObj?.children_ids
+      const parentIds: string[] = recObj?.parent_ids
+      const childrenIds: string[] = recObj?.children_ids
 
       const parentIdsLen = parentIds.length
 
-      const parentIdToChildId = []
+      const parentIdToChildId: (string | undefined)[][] = []
 
       for (let i = 0; i < parentIdsLen; i++) {
         parentIdToChildId[i] = [parentIds[i], childrenIds[i]]

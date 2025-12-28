@@ -114,7 +114,12 @@ export function Move(
   )
 }
 
-export function copyFilesInCS(fileCopyIdMaps: any[]) {}
+export function copyFilesInCS(
+  fileCopyIdMaps: {
+    copied_id: string
+    copy_id: string
+  }[]
+) {}
 
 export async function Copy(
   clientUsername: string,

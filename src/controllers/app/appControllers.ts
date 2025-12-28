@@ -157,7 +157,7 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
 
           break
         }
-        case "vwtrash": {
+        case "viewtrash": {
           resp = await rfsCommandService.ViewTrash(clientUsername)
 
           break
