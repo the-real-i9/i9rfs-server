@@ -3,7 +3,7 @@ import * as db from "./db/db.ts"
 export async function New(email: string, username: string, password: string) {
   const res = await db.WriteQuery(
     `/* cypher */
-		CREATE (u:User { email: $email, username: $username, password: $password, storage_used: 0, alloc_storage: 50 * (1024 ** 3) })
+		CREATE (u:User { email: $email, username: $username, password: $password, storage_used: 0, alloc_storage: $alloc_storage })
 		
 		CREATE (root:UserRoot{ user: $username }),
 			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Documents", date_created: $now, date_modified: $now, native: true, starred: false }),
@@ -20,6 +20,7 @@ export async function New(email: string, username: string, password: string) {
       email,
       username,
       password,
+      alloc_storage: 50 * 1024 ** 3,
       now: Date.now(),
     }
   )
@@ -69,7 +70,7 @@ export async function StorageUsage(username: string) {
   const res = await db.ReadQuery(
     `/* cypher */
 		  MATCH (u:User { username: $username })
-		  RETURN { storage_used: toInt(u.storage_used), alloc_storage: toInt(u.alloc_storage) } as storage_usage
+		  RETURN { storage_used: toInteger(u.storage_used), alloc_storage: toInteger(u.alloc_storage) } as storage_usage
 		`,
     {
       username,

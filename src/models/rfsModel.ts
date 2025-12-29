@@ -16,7 +16,7 @@ export async function Ls(clientUsername: string, directoryId: string) {
   const res = await db.ReadQuery(
     `/* cypher */
 			MATCH ${matchFromPath}
-			WITH obj, toInt(obj.date_created) AS date_created, toInt(obj.date_modified) AS date_modified
+			WITH obj, toInteger(obj.date_created) AS date_created, toInteger(obj.date_modified) AS date_modified
 			ORDER BY obj.obj_type DESC, obj.name ASC
 			RETURN collect(obj { .*, date_created, date_modified }) AS dir_cont
 		`,
@@ -55,7 +55,7 @@ export async function Mkdir(
 			MATCH ${matchFromPath}
 			CREATE (${matchFromIdent})-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory", name: $dir_name, date_created: $now, date_modified: $now })
 			
-			WITH obj, toInt(obj.date_created) AS date_created, toInt(obj.date_modified) AS date_modified
+			WITH obj, toInteger(obj.date_created) AS date_created, toInteger(obj.date_modified) AS date_modified
 			RETURN obj { .*, date_created, date_modified } AS new_dir
 		`,
     {
@@ -192,7 +192,7 @@ export async function ViewTrash(clientUsername: string) {
     `/* cypher */
 		MATCH (:UserTrash{ user: $client_username })-[:HAS_CHILD]->(obj)
 
-		WITH obj, toInt(obj.date_created) AS date_created, toInt(obj.date_modified) AS date_modified, toInt(obj.trashed_on) AS trashed_on
+		WITH obj, toInteger(obj.date_created) AS date_created, toInteger(obj.date_modified) AS date_modified, toInteger(obj.trashed_on) AS trashed_on
 		ORDER BY obj.obj_type DESC, obj.name ASC
 		RETURN collect(obj { .*, date_created, date_modified, trashed_on }) AS trash_cont
 		`,
@@ -537,7 +537,7 @@ export async function CreateFile(
 			MATCH ${matchFromPath}
 			CREATE (${matchFromIdent})-[:HAS_CHILD]->(obj:Object{ id: $object_id, obj_type: "file", name: $display_name, cloud_object_name: $cloud_object_name, mime_type: $mime_type, size: $size, date_created: $now, date_modified: $now })
 			
-			WITH obj, toInt(obj.date_created) AS date_created, toInt(obj.date_modified) AS date_modified, toInt(obj.size) as size
+			WITH obj, toInteger(obj.date_created) AS date_created, toInteger(obj.date_modified) AS date_modified, toInteger(obj.size) as size
 			RETURN obj { .*, size, date_created, date_modified } AS new_file
 		`,
     {
