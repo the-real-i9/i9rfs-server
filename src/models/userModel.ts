@@ -3,7 +3,7 @@ import * as db from "./db/db.ts"
 export async function New(email: string, username: string, password: string) {
   const res = await db.WriteQuery(
     `/* cypher */
-		CREATE (u:User { email: $email, username: $username, password: $password })
+		CREATE (u:User { email: $email, username: $username, password: $password, storage_used: 0, alloc_storage: 50 * (1024 ** 3) })
 		
 		CREATE (root:UserRoot{ user: $username }),
 			(root)-[:HAS_CHILD]->(:Object{ id: randomUUID(), obj_type: "directory", name: "Documents", date_created: $now, date_modified: $now, native: true, starred: false }),
@@ -63,4 +63,37 @@ export async function Exists(emailOrUsername: string) {
   )
 
   return res.records[0]?.get("user_exists") as boolean
+}
+
+export async function StorageUsage(username: string) {
+  const res = await db.ReadQuery(
+    `/* cypher */
+		  MATCH (u:User { username: $username })
+		  RETURN { storage_used: toInt(u.storage_used), alloc_storage: toInt(u.alloc_storage) } as storage_usage
+		`,
+    {
+      username,
+    }
+  )
+
+  return res.records[0]?.get("storage_usage") as {
+    storage_used: number
+    alloc_storage: number
+  }
+}
+
+export async function UpdateStorageUsed(username: string, delta: number) {
+  const res = await db.ReadQuery(
+    `/* cypher */
+		  MATCH (u:User { username: $username })
+      SET u.storage_used = u.storage_used + $delta
+		  RETURN true AS done
+		`,
+    {
+      username,
+      delta,
+    }
+  )
+
+  return res.records[0]?.get("done") as boolean
 }

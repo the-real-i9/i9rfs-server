@@ -18,7 +18,8 @@ import {
 } from "./validation.ts"
 import { StatusCodes } from "http-status-codes"
 import * as helpers from "../../helpers.ts"
-import * as rfsCommandService from "../../services/appServices/rfsCommandService.ts"
+import * as rfsService from "../../services/appServices/rfsService.ts"
+import * as uploadService from "../../services/appServices/uploadService.ts"
 
 export async function Signout(req: Request, res: Response) {
   const clientUser: ClientUserT = res.locals.user
@@ -28,16 +29,106 @@ export async function Signout(req: Request, res: Response) {
   return res.json(`Bye, ${clientUser.username}! See you again!`)
 }
 
+export async function AuthorizeUpload(req: Request, res: Response) {
+  try {
+    const clientUser: ClientUserT = res.locals.user
+
+    const { mimeType, size }: { mimeType: string; size: number } = req.body
+
+    const respData = await uploadService.AuthorizeUpload(
+      clientUser.username,
+      mimeType,
+      size
+    )
+
+    if (req.session && typeof req.session === "object") {
+      req.session.upload = {
+        nextStep: "cloud-upload-complete",
+        cloudObjectName: respData.cloudObjectName,
+      }
+    }
+
+    return res.json(respData)
+  } catch (error: any) {
+    if (error.name === "AppError") {
+      return res.status(error.code).json(error.message)
+    }
+
+    console.error(error)
+    return res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR)
+  }
+}
+
+export async function CloudUploadComplete(req: Request, res: Response) {
+  try {
+    const clientUser: ClientUserT = res.locals.user
+    const { cloudObjectName }: { cloudObjectName: string } = req.body
+
+    await uploadService.CloudUploadComplete(
+      clientUser.username,
+      cloudObjectName
+    )
+
+    if (req.session && typeof req.session === "object") {
+      req.session.upload = {
+        nextStep: "create-file-object",
+        cloudObjectName,
+      }
+    }
+
+    return res.json(true)
+  } catch (error: any) {
+    if (error.name === "AppError") {
+      return res.status(error.code).json(error.message)
+    }
+
+    console.error(error)
+    return res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR)
+  }
+}
+
+export async function CreateFileObject(req: Request, res: Response) {
+  try {
+    const clientUser: ClientUserT = res.locals.user
+    const data: {
+      parentDirectoryId: string
+      objectId: string
+      cloudObjectName: string
+      displayName: string
+    } = req.body
+    await rfsService.CreateFile(
+      clientUser.username,
+      data.parentDirectoryId,
+      data.objectId,
+      data.cloudObjectName,
+      data.displayName
+    )
+
+    delete req.session?.upload
+
+    return res.json(true)
+  } catch (error: any) {
+    if (error.name === "AppError") {
+      return res.status(error.code).json(error.message)
+    }
+
+    console.error(error)
+    return res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR)
+  }
+}
+
 export function RFSController(ws: WebSocket, request: IncomingMessage) {
   try {
     const sessionData = GetSessionDataFromCookieHeader(
       request.headers.cookie || ""
     )
     if (!sessionData || !sessionData.user) {
-      return ws.close(1000, "401: authentication required")
+      return ws.close(1001, "401: authentication required")
     }
 
-    const { authJwt } = JSON.parse(sessionData.user)
+    const {
+      user: { authJwt },
+    }: { user: { authJwt: string } } = sessionData
 
     const authPayload = securityServices.JwtVerify(
       authJwt,
@@ -53,7 +144,7 @@ export function RFSController(ws: WebSocket, request: IncomingMessage) {
     ws.on("message", wsMessageHandler(ws, clientUser))
   } catch (error: any) {
     if (error.name === "TokenExpiredError") {
-      return ws.close(1000, "401: session expired")
+      return ws.close(1001, "401: session expired")
     }
 
     console.error(error)
@@ -91,7 +182,7 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
             )
           }
 
-          resp = await rfsCommandService.Ls(clientUsername, data.directoryId)
+          resp = await rfsService.Ls(clientUsername, data.directoryId)
           break
         }
         case "mkdir": {
@@ -103,7 +194,7 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
             )
           }
 
-          resp = await rfsCommandService.Mkdir(
+          resp = await rfsService.Mkdir(
             clientUsername,
             data.parentDirectoryId,
             data.directoryNames
@@ -119,7 +210,7 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
             )
           }
 
-          resp = await rfsCommandService.Del(
+          resp = await rfsService.Del(
             clientUsername,
             data.parentDirectoryId,
             data.objectIds
@@ -136,7 +227,7 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
             )
           }
 
-          resp = await rfsCommandService.Trash(
+          resp = await rfsService.Trash(
             clientUsername,
             data.parentDirectoryId,
             data.objectIds
@@ -153,12 +244,12 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
             )
           }
 
-          resp = await rfsCommandService.Restore(clientUsername, data.objectIds)
+          resp = await rfsService.Restore(clientUsername, data.objectIds)
 
           break
         }
         case "viewtrash": {
-          resp = await rfsCommandService.ViewTrash(clientUsername)
+          resp = await rfsService.ViewTrash(clientUsername)
 
           break
         }
@@ -171,7 +262,7 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
             )
           }
 
-          resp = await rfsCommandService.Rename(
+          resp = await rfsService.Rename(
             clientUsername,
             data.parentDirectoryId,
             data.objectId,
@@ -189,7 +280,7 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
             )
           }
 
-          resp = await rfsCommandService.Move(
+          resp = await rfsService.Move(
             clientUsername,
             data.fromParentDirectoryId,
             data.toParentDirectoryId,
@@ -207,16 +298,13 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
             )
           }
 
-          resp = await rfsCommandService.Copy(
+          resp = await rfsService.Copy(
             clientUsername,
             data.fromParentDirectoryId,
             data.toParentDirectoryId,
             data.objectIds
           )
 
-          break
-        }
-        case "upload": {
           break
         }
         default: {

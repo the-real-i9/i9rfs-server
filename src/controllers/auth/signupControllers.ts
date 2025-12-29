@@ -13,7 +13,7 @@ export async function RequestNewAccount(req: Request, res: Response) {
     req.sessionOptions.expires = new Date(Date.now() + 60 * 60 * 1000)
 
     req.session = {
-      signup: JSON.stringify(sessionData),
+      signup: sessionData,
     }
 
     return res.json(respData)
@@ -41,7 +41,7 @@ export async function VerifyEmail(req: Request, res: Response) {
     req.sessionOptions.expires = new Date(Date.now() + 60 * 60 * 1000)
 
     req.session = {
-      signup: JSON.stringify(newSessionData),
+      signup: newSessionData,
     }
 
     return res.json(respData)
@@ -70,7 +70,7 @@ export async function RegisterUser(req: Request, res: Response) {
     req.sessionOptions.expires = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000) // 10 days
 
     req.session = {
-      user: JSON.stringify({ authJwt }),
+      user: { authJwt },
     }
 
     return res.status(StatusCodes.CREATED).json(respData)

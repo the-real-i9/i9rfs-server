@@ -1,9 +1,10 @@
 import { StatusCodes } from "http-status-codes"
-import * as rfsCommandModel from "../../models/rfsCommandModel.ts"
+import * as rfsModel from "../../models/rfsModel.ts"
 import type { DirT } from "../../appTypes.ts"
+import appGlobals from "../../appGlobals.ts"
 
 export function Ls(clientUsername: string, directoryId: string) {
-  return rfsCommandModel.Ls(clientUsername, directoryId)
+  return rfsModel.Ls(clientUsername, directoryId)
 }
 
 export async function Mkdir(
@@ -16,7 +17,7 @@ export async function Mkdir(
   for (const dirName of directoryNames) {
     if (!dirName.includes("/")) {
       newDirs.push(
-        await rfsCommandModel.Mkdir(clientUsername, parentDirectoryId, dirName)
+        await rfsModel.Mkdir(clientUsername, parentDirectoryId, dirName)
       )
     } else {
       const subDirs = dirName.split("/")
@@ -24,7 +25,7 @@ export async function Mkdir(
       let outerDirId: string = parentDirectoryId
 
       for (let i = 0; i < subDirs.length; i++) {
-        const innerDir = await rfsCommandModel.Mkdir(
+        const innerDir = await rfsModel.Mkdir(
           clientUsername,
           outerDirId,
           subDirs[i] || ""
@@ -49,7 +50,7 @@ export async function Del(
   parentDirectoryId: string,
   objectIds: string[]
 ) {
-  const { done, fileIds } = await rfsCommandModel.Del(
+  const { done, fileIds } = await rfsModel.Del(
     clientUsername,
     parentDirectoryId,
     objectIds
@@ -67,15 +68,15 @@ export function Trash(
   parentDirectoryId: string,
   objectIds: string[]
 ) {
-  return rfsCommandModel.Trash(clientUsername, parentDirectoryId, objectIds)
+  return rfsModel.Trash(clientUsername, parentDirectoryId, objectIds)
 }
 
 export function Restore(clientUsername: string, objectIds: string[]) {
-  return rfsCommandModel.Restore(clientUsername, objectIds)
+  return rfsModel.Restore(clientUsername, objectIds)
 }
 
 export function ViewTrash(clientUsername: string) {
-  return rfsCommandModel.ViewTrash(clientUsername)
+  return rfsModel.ViewTrash(clientUsername)
 }
 
 export function Rename(
@@ -84,12 +85,7 @@ export function Rename(
   objectId: string,
   newName: string
 ) {
-  return rfsCommandModel.Rename(
-    clientUsername,
-    parentDirectoryId,
-    objectId,
-    newName
-  )
+  return rfsModel.Rename(clientUsername, parentDirectoryId, objectId, newName)
 }
 
 export function Move(
@@ -106,7 +102,7 @@ export function Move(
     }
   }
 
-  return rfsCommandModel.Move(
+  return rfsModel.Move(
     clientUsername,
     fromParentDirectoryId,
     toParentDirectoryId,
@@ -136,7 +132,7 @@ export async function Copy(
   }
 
   for (const oid of objectIds) {
-    const { done, fileCopyIdMaps } = await rfsCommandModel.Copy(
+    const { done, fileCopyIdMaps } = await rfsModel.Copy(
       clientUsername,
       fromParentDirectoryId,
       toParentDirectoryId,
@@ -149,4 +145,28 @@ export async function Copy(
   }
 
   return true
+}
+
+export async function CreateFile(
+  clientUsername: string,
+  parentDirectoryId: string,
+  objectId: string,
+  cloudObjectName: string,
+  displayName: string
+) {
+  const file = appGlobals.AppGCSBucket.file(cloudObjectName)
+
+  const [metadata] = await file.getMetadata()
+
+  const done = await rfsModel.CreateFile(
+    clientUsername,
+    parentDirectoryId,
+    objectId,
+    cloudObjectName,
+    displayName,
+    metadata.contentType || "",
+    Number(metadata.size)
+  )
+
+  return done
 }

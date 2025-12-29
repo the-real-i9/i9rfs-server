@@ -1,7 +1,7 @@
-import type { Storage } from "@google-cloud/storage"
+import type { Bucket } from "@google-cloud/storage"
 import type { Driver } from "neo4j-driver"
 
-let gcsClient: Storage
+let appGCSBucket: Bucket
 
 let neo4jDriver: Driver
 
@@ -12,10 +12,10 @@ export default {
   set Neo4jDriver(driver: Driver) {
     neo4jDriver = driver
   },
-  get GCSClient() {
-    return gcsClient
+  get AppGCSBucket() {
+    return appGCSBucket
   },
-  set GCSClient(client: Storage) {
-    gcsClient = client
+  set AppGCSBucket(bucket: Bucket) {
+    appGCSBucket = bucket
   },
 }

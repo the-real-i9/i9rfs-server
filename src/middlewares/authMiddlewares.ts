@@ -4,7 +4,7 @@ import * as securityServices from "../services/appServices/securityServices.ts"
 
 export function SignupSession(req: Request, res: Response, next: NextFunction) {
   try {
-    const ssStr: string = req.session?.signup || ""
+    const ssStr = req.session?.signup
 
     if (!ssStr) {
       return res
@@ -12,7 +12,7 @@ export function SignupSession(req: Request, res: Response, next: NextFunction) {
         .json("no ongoing signup session")
     }
 
-    res.locals.signup_sess_data = JSON.parse(ssStr)
+    res.locals.signup_sess_data = ssStr
 
     return next()
   } catch (error) {
@@ -22,7 +22,7 @@ export function SignupSession(req: Request, res: Response, next: NextFunction) {
 
 export function UserAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    const usStr: string = req.session?.user || ""
+    const usStr = req.session?.user
 
     if (!usStr) {
       return res
@@ -30,10 +30,10 @@ export function UserAuth(req: Request, res: Response, next: NextFunction) {
         .json("authentication required")
     }
 
-    const sessionToken = JSON.parse(usStr).authJwt
+    // const sessionToken = usStr.authJwt
 
     const user = securityServices.JwtVerify(
-      sessionToken,
+      usStr.authJwt,
       process.env.AUTH_JWT_SECRET || ""
     )
 

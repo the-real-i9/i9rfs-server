@@ -4,11 +4,24 @@ export type ClientUserT = {
 
 export type DirT = {
   id: string
-  obj_type: "directory" | "file"
+  obj_type: "directory"
   name: string
   native: boolean
   starred: boolean
-  date_created: string
-  date_modified: string
-  trashed_on: string
+  date_created: number
+  date_modified: number
+  trashed_on: number
+}
+
+export type FileT = {
+  id: string
+  obj_type: "file"
+  name: string
+  cloud_object_name: string
+  mime_type: string
+  size: number
+  starred: boolean
+  date_created: number
+  date_modified: number
+  trashed_on: number
 }

@@ -14,7 +14,7 @@ export async function Signin(req: Request, res: Response) {
     req.sessionOptions.expires = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000) // 10 days
 
     req.session = {
-      user: JSON.stringify({ authJwt }),
+      user: { authJwt },
     }
 
     return res.json(respData)

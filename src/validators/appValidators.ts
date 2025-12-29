@@ -1,0 +1,69 @@
+import { body, checkSchema } from "express-validator"
+import { valResHandler } from "./valResHandler.ts"
+
+export function AuthorizeUpload() {
+  return [
+    checkSchema(
+      {
+        mimeType: {
+          isMimeType: {
+            errorMessage: "invalid MIME type",
+          },
+        },
+        size: {
+          isInt: {
+            errorMessage: "expects size to be an integer greater than zero",
+            options: {
+              min: 1,
+            },
+          },
+        },
+      },
+      ["body"]
+    ),
+    valResHandler,
+  ]
+}
+
+export function CloudUploadComplete() {
+  return [
+    checkSchema(
+      {
+        cloudObjectName: {
+          isString: true,
+          notEmpty: true,
+        },
+      },
+      ["body"]
+    ),
+    valResHandler,
+  ]
+}
+
+export function CreateFileObject() {
+  return [
+    checkSchema(
+      {
+        parentDirectoryId: {
+          isUUID: {
+            if: body("parentDirectoryId").not().equals("/"),
+            errorMessage: "expects a UUID string or '/'",
+          },
+        },
+        objectId: {
+          isUUID: true,
+        },
+        cloudObjectName: {
+          isString: true,
+          notEmpty: true,
+        },
+        displayName: {
+          isString: true,
+          notEmpty: true,
+        },
+      },
+      ["body"]
+    ),
+    valResHandler,
+  ]
+}

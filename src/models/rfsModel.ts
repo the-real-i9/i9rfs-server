@@ -1,5 +1,5 @@
 import appGlobals from "../appGlobals.ts"
-import type { DirT } from "../appTypes.ts"
+import type { DirT, FileT } from "../appTypes.ts"
 import * as db from "./db/db.ts"
 
 export async function Ls(clientUsername: string, directoryId: string) {
@@ -16,7 +16,7 @@ export async function Ls(clientUsername: string, directoryId: string) {
   const res = await db.ReadQuery(
     `/* cypher */
 			MATCH ${matchFromPath}
-			WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified
+			WITH obj, toInt(obj.date_created) AS date_created, toInt(obj.date_modified) AS date_modified
 			ORDER BY obj.obj_type DESC, obj.name ASC
 			RETURN collect(obj { .*, date_created, date_modified }) AS dir_cont
 		`,
@@ -55,7 +55,7 @@ export async function Mkdir(
 			MATCH ${matchFromPath}
 			CREATE (${matchFromIdent})-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory", name: $dir_name, date_created: $now, date_modified: $now })
 			
-			WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified
+			WITH obj, toInt(obj.date_created) AS date_created, toInt(obj.date_modified) AS date_modified
 			RETURN obj { .*, date_created, date_modified } AS new_dir
 		`,
     {
@@ -192,7 +192,7 @@ export async function ViewTrash(clientUsername: string) {
     `/* cypher */
 		MATCH (:UserTrash{ user: $client_username })-[:HAS_CHILD]->(obj)
 
-		WITH obj, toString(obj.date_created) AS date_created, toString(obj.date_modified) AS date_modified, toString(obj.trashed_on) AS trashed_on
+		WITH obj, toInt(obj.date_created) AS date_created, toInt(obj.date_modified) AS date_modified, toInt(obj.trashed_on) AS trashed_on
 		ORDER BY obj.obj_type DESC, obj.name ASC
 		RETURN collect(obj { .*, date_created, date_modified, trashed_on }) AS trash_cont
 		`,
@@ -509,4 +509,52 @@ export async function Copy(
   }
 
   return { done: true, fileCopyIdMaps: res }
+}
+
+export async function CreateFile(
+  clientUsername: string,
+  parentDirectoryId: string,
+  objectId: string,
+  cloudObjectName: string,
+  displayName: string,
+  objectMIMEType: string,
+  objectSize: number
+) {
+  let matchFromPath: string
+  let matchFromIdent: string
+
+  if (parentDirectoryId === "/") {
+    matchFromPath = "/* cypher */(root:UserRoot{ user: $client_username })"
+    matchFromIdent = "/* cypher */root"
+  } else {
+    matchFromPath =
+      "/* cypher */(:UserRoot{ user: $client_username })-[:HAS_CHILD]->+(parObj:Object{ id: $parent_dir_id })"
+    matchFromIdent = "/* cypher */parObj"
+  }
+
+  const res = await db.WriteQuery(
+    `/* cypher */
+			MATCH ${matchFromPath}
+			CREATE (${matchFromIdent})-[:HAS_CHILD]->(obj:Object{ id: $object_id, obj_type: "file", name: $display_name, cloud_object_name: $cloud_object_name, mime_type: $mime_type, size: $size, date_created: $now, date_modified: $now })
+			
+			WITH obj, toInt(obj.date_created) AS date_created, toInt(obj.date_modified) AS date_modified, toInt(obj.size) as size
+			RETURN obj { .*, size, date_created, date_modified } AS new_file
+		`,
+    {
+      client_username: clientUsername,
+      parent_dir_id: parentDirectoryId,
+      object_id: objectId,
+      cloud_object_name: cloudObjectName,
+      display_name: displayName,
+      mime_type: objectMIMEType,
+      size: objectSize,
+      now: Date.now(),
+    }
+  )
+
+  if (!res.records.length) {
+    return null
+  }
+
+  return res.records[0]?.get("new_file") as FileT
 }
