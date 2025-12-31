@@ -24,9 +24,18 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: latest
+          cache: npm
 
       - name: Install Node deps
         run: npm ci
+
+      - name: Write GCP service account key
+        run: |
+          echo '${{ secrets.GCP_SA_KEY }}' > $HOME/gcp-key.json
+
+      - name: Set GCP credentials env var
+        run: |
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-key.json" >> $GITHUB_ENV
 
       - name: Run Test
         run: npm test
@@ -38,8 +47,8 @@ jobs:
           COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
           MAILING_EMAIL: ${{ secrets.MAILING_EMAIL }}
           MAILING_PASSWORD: ${{ secrets.MAILING_PASSWORD }}
-          GCS_BUCKET: ${{ vars.GCS_BUCKET }}
-          GCS_API_KEY: ${{ secrets.GCS_API_KEY }}
+          GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           SERVER_HOST: ${{ vars.SERVER_HOST }}
           DUMMY_TOKEN: ${{ secrets.DUMMY_TOKEN }}
           NODE_ENV: remote_test

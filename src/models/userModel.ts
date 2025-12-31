@@ -85,7 +85,7 @@ export async function StorageUsage(username: string) {
 }
 
 export async function UpdateStorageUsed(username: string, delta: number) {
-  const res = await db.ReadQuery(
+  const res = await db.WriteQuery(
     `/* cypher */
 		  MATCH (u:User { username: $username })
       SET u.storage_used = u.storage_used + $delta

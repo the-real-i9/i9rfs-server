@@ -126,7 +126,6 @@ test("TestUserFileUpload", async (t: TestContext) => {
     const sessionUrl = await startResumableUpload(uploadUrl, contentType)
 
     console.log("Resumable session started:")
-    console.log(sessionUrl)
 
     await uploadFileInChunks(sessionUrl, filePath, contentType, logProgress)
 

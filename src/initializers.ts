@@ -3,9 +3,9 @@ import { Storage } from "@google-cloud/storage"
 import appGlobals from "./appGlobals.ts"
 
 function initGCSClient() {
-  appGlobals.AppGCSBucket = new Storage({
-    apiKey: process.env.GCS_API_KEY || "",
-  }).bucket(process.env.GCS_BUCKET || "")
+  appGlobals.AppGCSBucket = new Storage().bucket(
+    process.env.GCS_BUCKET_NAME || ""
+  )
 }
 
 async function initNeo4jDriver() {
