@@ -11,6 +11,8 @@ import {
 } from "./testHelpers.ts"
 import server from "../src/index.ts"
 import type { FileT } from "../src/appTypes.ts"
+import appGlobals from "../src/appGlobals.ts"
+import { assert } from "node:console"
 
 const signupPath = "/api/auth/signup"
 const uploadPath = "/api/app/uploads"
@@ -184,6 +186,17 @@ test("TestUserFileUpload", async (t: TestContext) => {
       })
 
       user.sessionCookie = res.header["set-cookie"]
+    }
+
+    {
+      console.log("Action: cleanup bucket")
+      const [res] = await appGlobals.AppGCSBucket.file(cloudObjectName).delete()
+
+      if (res.statusCode !== StatusCodes.NO_CONTENT) {
+        console.error("unexpected error:", res.body)
+      }
+
+      t.assert.strictEqual(res.statusCode, StatusCodes.NO_CONTENT)
     }
   }
 })

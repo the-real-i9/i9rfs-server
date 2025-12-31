@@ -1,5 +1,4 @@
 import fs from "node:fs/promises"
-import path from "node:path"
 
 import { type TestContext } from "node:test"
 import { type DirT } from "../src/appTypes.ts"
@@ -53,7 +52,7 @@ export async function startResumableUpload(
   return sessionUrl
 }
 
-const CHUNK_SIZE = 256 * 1024 // 256 KB
+const CHUNK_SIZE = 256 * 1024 // 256 KeB
 
 export async function uploadFileInChunks(
   sessionUrl: string,
