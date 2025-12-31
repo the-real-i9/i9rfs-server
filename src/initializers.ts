@@ -14,7 +14,10 @@ async function initNeo4jDriver() {
     neo4j.auth.basic(
       process.env.NEO4J_USER || "",
       process.env.NEO4J_PASSWORD || ""
-    )
+    ),
+    {
+      disableLosslessIntegers: true,
+    }
   )
 
   if (process.env.NODE_ENV === "test") {

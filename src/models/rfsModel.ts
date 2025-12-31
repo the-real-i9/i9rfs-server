@@ -16,7 +16,7 @@ export async function Ls(clientUsername: string, directoryId: string) {
   const res = await db.ReadQuery(
     `/* cypher */
 			MATCH ${matchFromPath}
-			WITH obj, toInteger(obj.date_created) AS date_created, toInteger(obj.date_modified) AS date_modified
+			WITH obj, obj.date_created AS date_created, obj.date_modified AS date_modified
 			ORDER BY obj.obj_type DESC, obj.name ASC
 			RETURN collect(obj { .*, date_created, date_modified }) AS dir_cont
 		`,
@@ -55,8 +55,7 @@ export async function Mkdir(
 			MATCH ${matchFromPath}
 			CREATE (${matchFromIdent})-[:HAS_CHILD]->(obj:Object{ id: randomUUID(), obj_type: "directory", name: $dir_name, date_created: $now, date_modified: $now })
 			
-			WITH obj, toInteger(obj.date_created) AS date_created, toInteger(obj.date_modified) AS date_modified
-			RETURN obj { .*, date_created, date_modified } AS new_dir
+			RETURN obj { .* } AS new_dir
 		`,
     {
       client_username: clientUsername,
@@ -192,9 +191,8 @@ export async function ViewTrash(clientUsername: string) {
     `/* cypher */
 		MATCH (:UserTrash{ user: $client_username })-[:HAS_CHILD]->(obj)
 
-		WITH obj, toInteger(obj.date_created) AS date_created, toInteger(obj.date_modified) AS date_modified, toInteger(obj.trashed_on) AS trashed_on
 		ORDER BY obj.obj_type DESC, obj.name ASC
-		RETURN collect(obj { .*, date_created, date_modified, trashed_on }) AS trash_cont
+		RETURN collect(obj { .* }) AS trash_cont
 		`,
     {
       client_username: clientUsername,
@@ -537,8 +535,7 @@ export async function CreateFile(
 			MATCH ${matchFromPath}
 			CREATE (${matchFromIdent})-[:HAS_CHILD]->(obj:Object{ id: $object_id, obj_type: "file", name: $display_name, cloud_object_name: $cloud_object_name, mime_type: $mime_type, size: $size, date_created: $now, date_modified: $now })
 			
-			WITH obj, toInteger(obj.date_created) AS date_created, toInteger(obj.date_modified) AS date_modified, toInteger(obj.size) as size
-			RETURN obj { .*, size, date_created, date_modified } AS new_file
+			RETURN obj { .* } AS new_file
 		`,
     {
       client_username: clientUsername,

@@ -158,7 +158,7 @@ export async function CreateFile(
 
   const [metadata] = await file.getMetadata()
 
-  const done = await rfsModel.CreateFile(
+  const newFile = await rfsModel.CreateFile(
     clientUsername,
     parentDirectoryId,
     objectId,
@@ -168,5 +168,5 @@ export async function CreateFile(
     Number(metadata.size)
   )
 
-  return done
+  return newFile
 }

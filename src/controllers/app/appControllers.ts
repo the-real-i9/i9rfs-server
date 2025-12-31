@@ -96,7 +96,7 @@ export async function CreateFileObject(req: Request, res: Response) {
       cloudObjectName: string
       displayName: string
     } = req.body
-    await rfsService.CreateFile(
+    const newFile = await rfsService.CreateFile(
       clientUser.username,
       data.parentDirectoryId,
       data.objectId,
@@ -106,7 +106,7 @@ export async function CreateFileObject(req: Request, res: Response) {
 
     delete req.session?.upload
 
-    return res.json(true)
+    return res.json(newFile)
   } catch (error: any) {
     if (error.name === "AppError") {
       return res.status(error.code).json(error.message)

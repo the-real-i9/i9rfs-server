@@ -1,4 +1,5 @@
 import * as db from "./db/db.ts"
+import neo4j from "neo4j-driver"
 
 export async function New(email: string, username: string, password: string) {
   const res = await db.WriteQuery(
@@ -70,7 +71,7 @@ export async function StorageUsage(username: string) {
   const res = await db.ReadQuery(
     `/* cypher */
 		  MATCH (u:User { username: $username })
-		  RETURN { storage_used: toInteger(u.storage_used), alloc_storage: toInteger(u.alloc_storage) } as storage_usage
+		  RETURN u { .storage_used, .alloc_storage } as storage_usage
 		`,
     {
       username,
