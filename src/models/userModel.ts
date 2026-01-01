@@ -1,5 +1,5 @@
+import type { ClientUserT } from "../appTypes.ts"
 import * as db from "./db/db.ts"
-import neo4j from "neo4j-driver"
 
 export async function New(email: string, username: string, password: string) {
   const res = await db.WriteQuery(
@@ -26,7 +26,7 @@ export async function New(email: string, username: string, password: string) {
     }
   )
 
-  return res.records[0]?.get("new_user") as { username: string }
+  return res.records[0]?.get("new_user") as ClientUserT
 }
 
 export async function AuthFind(emailOrUsername: string) {

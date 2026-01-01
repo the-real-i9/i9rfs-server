@@ -1,8 +1,8 @@
-export type ClientUserT = {
+export interface ClientUserT {
   username: string
 }
 
-export type DirT = {
+export interface DirT {
   id: string
   obj_type: "directory"
   name: string
@@ -13,7 +13,7 @@ export type DirT = {
   trashed_on: number
 }
 
-export type FileT = {
+export interface FileT {
   id: string
   obj_type: "file"
   name: string

@@ -4,6 +4,16 @@ import * as securityServices from "./securityServices.ts"
 import * as mailService from "../otherServices/mailService.ts"
 import type { ClientUserT } from "../../appTypes.ts"
 
+interface SignupRNASessionData {
+  email: string
+  vCode: string
+  vCodeExpires: number
+}
+
+interface SignupRNAResp {
+  msg: string
+}
+
 export async function RequestNewAccount(email: string) {
   if (await user.Exists(email)) {
     throw {
@@ -21,25 +31,29 @@ export async function RequestNewAccount(email: string) {
     `<p>Your email verification code is <strong>${verfCode}</strong></p>`
   )
 
-  const sessionData = {
+  const sessionData: SignupRNASessionData = {
     email: email,
     vCode: verfCode,
     vCodeExpires: expires,
   }
 
-  const respData = {
+  const respData: SignupRNAResp = {
     msg: `Enter the 6-digit code sent to ${email} to verify your email`,
   }
 
   return { respData, sessionData }
 }
 
+interface SignupVESessionData {
+  email: string
+}
+
+interface SignupVEResp {
+  msg: string
+}
+
 export async function VerifyEmail(
-  sd: {
-    email: string
-    vCode: string
-    vCodeExpires: number
-  },
+  sd: SignupRNASessionData,
   inputVerfCode: string
 ) {
   if (sd.vCode != inputVerfCode) {
@@ -64,21 +78,26 @@ export async function VerifyEmail(
     `Your email <strong>${sd.email}</strong> has been verified!`
   )
 
-  const newSessionData = { email: sd.email }
+  const newSessionData: SignupVESessionData = { email: sd.email }
 
-  const respData = {
+  const respData: SignupVEResp = {
     msg: `Your email, ${sd.email}, has been verified!`,
   }
 
   return { respData, newSessionData }
 }
 
+interface SignupRUResp {
+  msg: string
+  user: ClientUserT
+}
+
 export async function RegisterUser(
-  sessionData: any,
+  sessionData: SignupVESessionData,
   username: string,
   password: string
 ) {
-  const { email }: { email: string } = sessionData
+  const { email } = sessionData
 
   if (await user.Exists(username)) {
     throw {
@@ -88,7 +107,7 @@ export async function RegisterUser(
     }
   }
 
-  const newUser: ClientUserT = await user.New(
+  const newUser = await user.New(
     email,
     username,
     await securityServices.HashPassword(password)
@@ -100,7 +119,7 @@ export async function RegisterUser(
     10 * 24 * 60 * 60 * 1000
   ) // 10 days
 
-  const respData = {
+  const respData: SignupRUResp = {
     msg: "Signup success!",
     user: newUser,
   }

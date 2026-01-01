@@ -8,10 +8,11 @@ A Remote File System API Server
 
 i9rfs is a full-fledged remote file system API server built in Node.js and Neo4j. It supports major remote file system application features, serving as a foundation for building apps like Google Drive and Dropbox clones.
 
-## Technologies
+## Technologies & Tools
 
 <div style="display: flex;">
 <img style="margin-right: 10px" alt="nodejs" width="40" src="./.attachments/tech-icons/nodejs-original.svg" />
+<img style="margin-right: 10px" alt="javascript" width="40" src="./.attachments/tech-icons/javascript-original.svg" />
 <img style="margin-right: 10px" alt="typescript" width="40" src="./.attachments/tech-icons/typescript-original.svg" />
 <img style="margin-right: 10px" alt="express" width="40" src="./.attachments/tech-icons/express-original.svg" />
 <img style="margin-right: 10px" alt="neo4j" width="60" src="./.attachments/tech-icons/neo4j-original.svg" />
@@ -20,30 +21,50 @@ i9rfs is a full-fledged remote file system API server built in Node.js and Neo4j
 <img style="margin-right: 10px" alt="googlecloud" width="40" src="./.attachments/tech-icons/googlecloud-original.svg" />
 </div>
 
+### Technologies
+- **JavaScript/TypeScript/Node.js** - Programming Language/Runtimg
+- **Express.js** - REST API Framework
+- **Neo4j** - Graph DBMS
+- **CypherQL** - Query Language for a Graph database
+- **WebSocket** - Full-duplex, Bi-directional communications protocol
+- **Google Cloud Storage**
+
+### Tools
+- Docker
+- Ubuntu Linux
+- VSCode
+- Git & GitHub Version Control
+- GitHub Actions CI
+
+
 ## Table of Contents
 
 - [Intro](#intro)
-- [Technologies](#technologies)
+- [Technologies & Tools](#technologies--tools)
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
-- [API Documentation](API%20doc.md)
+- [✨Technical Highlights✨](#technical-highlights)
+- [API Documentation](#api-documentation)
+- [Upcoming features](#upcoming-features)
 
 ## Features
 
-Visit the API documentation for implementation guide.
+The following are the features supported by this API. *Visit the API documentation for implementation guides.*
 
 - **Create** directories
-- **Upload** files
+- **Upload** and **Download** files
 - **List** the contents of a directory
 - **Copy** and **Move** files/directories
 - **Delete** files/directories
 - **Rename** files/directories
-- Move files/directories to **Trash**
-- View files/directories in Trash
-- Restore files/directories from Trash
+- **Move** files/directories **to Trash**
+- **View** files/directories **in Trash**
+- **Restore** files/directories **from Trash**
+
+## ✨Technical Highlights✨
 
 ## API Documentation
 
-For all **REST request/response Communication**: [Click Here](./.apidoc/restapi.md)
+HTTP request/response communication: [Click Here](./docs/swagger.json)
 
-For all **WebSocket Real-time Communication**: [Click Here](./.apidoc/websocketsapi.md)
+WebSocket real-time communication: [Click Here](./docs/websocketsapi.md)

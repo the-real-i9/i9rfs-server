@@ -1,6 +1,12 @@
 import { StatusCodes } from "http-status-codes"
 import * as user from "../../models/userModel.ts"
 import * as securityServices from "../../services/appServices/securityServices.ts"
+import type { ClientUserT } from "../../appTypes.ts"
+
+interface SigninResp {
+  msg: string
+  user: ClientUserT
+}
 
 export async function Signin(emailOrUsername: string, inputPassword: string) {
   const theUser = await user.AuthFind(emailOrUsername)
@@ -34,7 +40,7 @@ export async function Signin(emailOrUsername: string, inputPassword: string) {
     10 * 24 * 60 * 60 * 1000
   ) // 10 days
 
-  const respData = {
+  const respData: SigninResp = {
     msg: "Signin success!",
     user: { username: theUser.username },
   }

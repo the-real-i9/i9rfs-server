@@ -30,7 +30,7 @@ export async function Ls(clientUsername: string, directoryId: string) {
     return null
   }
 
-  return res.records[0]?.get("dir_cont") as DirT[]
+  return res.records[0]?.get("dir_cont") as (FileT | DirT)[]
 }
 
 export async function Mkdir(
