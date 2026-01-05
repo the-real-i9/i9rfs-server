@@ -54,7 +54,7 @@ export async function startResumableUpload(
   return sessionUrl
 }
 
-const CHUNK_SIZE = 256 * 1024 // 256 KeB
+const CHUNK_SIZE = 512 * 1024 // 512 KiB
 
 export async function uploadFileInChunks(
   sessionUrl: string,
