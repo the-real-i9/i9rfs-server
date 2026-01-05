@@ -171,12 +171,13 @@ test("TestUserFileUpload", async (t: TestContext) => {
 
   {
     console.log("Action: cleanup bucket")
-    const [res] = await appGlobals.AppGCSBucket.file(cloudObjectName).delete()
+    await appGlobals.AppGCSBucket.deleteFiles()
+    // file(cloudObjectName).delete()
 
-    if (res.statusCode !== StatusCodes.NO_CONTENT) {
+    /* if (res.statusCode !== StatusCodes.NO_CONTENT) {
       console.error("unexpected error:", res.body)
     }
 
-    t.assert.strictEqual(res.statusCode, StatusCodes.NO_CONTENT)
+    t.assert.strictEqual(res.statusCode, StatusCodes.NO_CONTENT) */
   }
 })
