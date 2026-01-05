@@ -2,6 +2,7 @@ import { StatusCodes } from "http-status-codes"
 import * as rfsModel from "../../models/rfsModel.ts"
 import type { DirT } from "../../appTypes.ts"
 import appGlobals from "../../appGlobals.ts"
+import * as user from "../../models/userModel.ts"
 
 export function Ls(clientUsername: string, directoryId: string) {
   return rfsModel.Ls(clientUsername, directoryId)
@@ -156,7 +157,41 @@ export async function CreateFile(
 ) {
   const file = appGlobals.AppGCSBucket.file(cloudObjectName)
 
+  const [uploaded] = await file.exists()
+  if (!uploaded) {
+    throw {
+      name: "AppError",
+      code: StatusCodes.NOT_FOUND,
+      message: "cloud upload incomplete",
+    }
+  }
+
   const [metadata] = await file.getMetadata()
+
+  const fileSize = metadata.size
+  if (!fileSize) {
+    throw {
+      name: "AppError",
+      code: StatusCodes.NOT_ACCEPTABLE,
+      message: "file has no content",
+    }
+  }
+
+  const storageUsage = await user.StorageUsage(clientUsername)
+  if (
+    storageUsage.storage_used + Number(fileSize) >=
+    storageUsage.alloc_storage
+  ) {
+    await file.delete()
+    throw {
+      name: "AppError",
+      code: StatusCodes.NOT_ACCEPTABLE,
+      message:
+        "uploaded file exceeds allocated storage space; file has been deleted",
+    }
+  }
+
+  await user.UpdateStorageUsed(clientUsername, Number(fileSize))
 
   const newFile = await rfsModel.CreateFile(
     clientUsername,

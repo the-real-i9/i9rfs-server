@@ -41,42 +41,7 @@ export async function AuthorizeUpload(req: Request, res: Response) {
       size
     )
 
-    if (req.session && typeof req.session === "object") {
-      req.session.upload = {
-        nextStep: "cloud-upload-complete",
-        cloudObjectName: respData.cloudObjectName,
-      }
-    }
-
     return res.json(respData)
-  } catch (error: any) {
-    if (error.name === "AppError") {
-      return res.status(error.code).json(error.message)
-    }
-
-    console.error(error)
-    return res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR)
-  }
-}
-
-export async function CloudUploadComplete(req: Request, res: Response) {
-  try {
-    const clientUser: ClientUserT = res.locals.user
-    const { cloudObjectName }: { cloudObjectName: string } = req.body
-
-    await uploadService.CloudUploadComplete(
-      clientUser.username,
-      cloudObjectName
-    )
-
-    if (req.session && typeof req.session === "object") {
-      req.session.upload = {
-        nextStep: "create-file-object",
-        cloudObjectName,
-      }
-    }
-
-    return res.json(true)
   } catch (error: any) {
     if (error.name === "AppError") {
       return res.status(error.code).json(error.message)
@@ -103,8 +68,6 @@ export async function CreateFileObject(req: Request, res: Response) {
       data.cloudObjectName,
       data.displayName
     )
-
-    delete req.session?.upload
 
     return res.json(newFile)
   } catch (error: any) {

@@ -30,8 +30,6 @@ export function UserAuth(req: Request, res: Response, next: NextFunction) {
         .json("authentication required")
     }
 
-    // const sessionToken = usStr.authJwt
-
     const user = securityServices.JwtVerify(
       usStr.authJwt,
       process.env.AUTH_JWT_SECRET || ""

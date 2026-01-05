@@ -41,7 +41,9 @@ export async function startResumableUpload(
   })
 
   if (!res.ok) {
-    throw new Error(`Failed to start resumable upload: ${res.status}`)
+    throw new Error(
+      `Failed to start resumable upload: ${res.status} (${await res.json()})`
+    )
   }
 
   const sessionUrl = res.headers.get("location")

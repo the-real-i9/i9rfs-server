@@ -25,21 +25,6 @@ export function AuthorizeUpload() {
   ]
 }
 
-export function CloudUploadComplete() {
-  return [
-    checkSchema(
-      {
-        cloudObjectName: {
-          isString: true,
-          notEmpty: true,
-        },
-      },
-      ["body"]
-    ),
-    valResHandler,
-  ]
-}
-
 export function CreateFileObject() {
   return [
     checkSchema(
