@@ -99,3 +99,31 @@ export function copyCommandValid(command: any) {
 
   return res
 }
+
+export function mkfilCommandValid(command: any) {
+  const schema = z.object({
+    parentDirectoryId: z.literal("/").or(z.uuid()),
+    objectId: z.uuid(),
+    cloudObjectName: z
+      .string()
+      .regex(/^uploads\/[\w-/]+\w$/, { error: "invalid cloud object name" }),
+    filename: z.string().regex(/^.+\.\w+$/, { error: "invalid file name" }),
+  })
+
+  const res = schema.safeParse(command)
+
+  return res
+}
+
+export function downloadCommandValid(command: any) {
+  const schema = z.object({
+    objectId: z.uuid(),
+    cloudObjectName: z
+      .string()
+      .regex(/^uploads\/[\w-/]+\w$/, { error: "invalid cloud object name" }),
+  })
+
+  const res = schema.safeParse(command)
+
+  return res
+}

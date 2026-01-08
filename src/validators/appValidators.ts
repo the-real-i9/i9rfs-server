@@ -1,4 +1,4 @@
-import { body, checkSchema } from "express-validator"
+import { checkSchema } from "express-validator"
 import { valResHandler } from "./valResHandler.ts"
 
 export function AuthorizeUpload() {
@@ -17,34 +17,6 @@ export function AuthorizeUpload() {
               min: 1,
             },
           },
-        },
-      },
-      ["body"]
-    ),
-    valResHandler,
-  ]
-}
-
-export function CreateFileObject() {
-  return [
-    checkSchema(
-      {
-        parentDirectoryId: {
-          isUUID: {
-            if: body("parentDirectoryId").not().equals("/"),
-            errorMessage: "expects a UUID string or '/'",
-          },
-        },
-        objectId: {
-          isUUID: true,
-        },
-        cloudObjectName: {
-          isString: true,
-          notEmpty: true,
-        },
-        displayName: {
-          isString: true,
-          notEmpty: true,
         },
       },
       ["body"]

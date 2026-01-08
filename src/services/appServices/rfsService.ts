@@ -44,21 +44,46 @@ export async function Mkdir(
   return newDirs
 }
 
-export function deleteFilesInCS(fileIds: any[]) {}
+export async function deleteFilesInCS(
+  clientUsername: string,
+  fileCloudNames: string[]
+) {
+  console.time("Deleting files in cloud")
+
+  let accFileSize = 0
+
+  for (const fcn of fileCloudNames) {
+    const file = appGlobals.AppGCSBucket.file(fcn)
+
+    if (!(await file.exists())) {
+      continue
+    }
+
+    const [metadata] = await file.getMetadata()
+
+    accFileSize += Number(metadata.size || 0)
+
+    await file.delete()
+  }
+
+  await user.UpdateStorageUsed(clientUsername, -accFileSize)
+
+  console.timeEnd("Finished deleting files in cloud")
+}
 
 export async function Del(
   clientUsername: string,
   parentDirectoryId: string,
   objectIds: string[]
 ) {
-  const { done, fileIds } = await rfsModel.Del(
+  const { done, fileCloudNames } = await rfsModel.Del(
     clientUsername,
     parentDirectoryId,
     objectIds
   )
 
   if (done) {
-    deleteFilesInCS(fileIds)
+    await deleteFilesInCS(clientUsername, fileCloudNames)
   }
 
   return done
@@ -111,12 +136,38 @@ export function Move(
   )
 }
 
-export function copyFilesInCS(
+export async function copyFilesInCS(
+  clientUsername: string,
   fileCopyIdMaps: {
-    copied_id: string
+    cloud_object_name: string
     copy_id: string
   }[]
-) {}
+) {
+  console.time("Copying files in cloud")
+
+  let accFileSize = 0
+
+  const year = new Date().getFullYear()
+  const month = new Date().getMonth()
+
+  for (const { cloud_object_name, copy_id } of fileCopyIdMaps) {
+    const file = appGlobals.AppGCSBucket.file(cloud_object_name)
+
+    if (!(await file.exists())) {
+      continue
+    }
+
+    const [metadata] = await file.getMetadata()
+
+    accFileSize += Number(metadata.size || 0)
+
+    await file.copy(`uploads/${year}${month}/${copy_id}`)
+  }
+
+  await user.UpdateStorageUsed(clientUsername, accFileSize)
+
+  console.timeEnd("Finished copying files in cloud")
+}
 
 export async function Copy(
   clientUsername: string,
@@ -141,34 +192,34 @@ export async function Copy(
     )
 
     if (done) {
-      copyFilesInCS(fileCopyIdMaps)
+      await copyFilesInCS(clientUsername, fileCopyIdMaps)
     }
   }
 
   return true
 }
 
-export async function CreateFile(
-  clientUsername: string,
-  parentDirectoryId: string,
-  objectId: string,
-  cloudObjectName: string,
-  displayName: string
-) {
-  const file = appGlobals.AppGCSBucket.file(cloudObjectName)
+export async function Mkfil(data: {
+  clientUsername: string
+  parentDirectoryId: string
+  objectId: string
+  cloudObjectName: string
+  filename: string
+}) {
+  const file = appGlobals.AppGCSBucket.file(data.cloudObjectName)
 
   const [uploaded] = await file.exists()
   if (!uploaded) {
     throw {
       name: "AppError",
       code: StatusCodes.NOT_FOUND,
-      message: "cloud upload incomplete",
+      message: "object upload incomplete",
     }
   }
 
   const [metadata] = await file.getMetadata()
 
-  const fileSize = metadata.size
+  const fileSize = Number(metadata.size || 0)
   if (!fileSize) {
     throw {
       name: "AppError",
@@ -177,11 +228,8 @@ export async function CreateFile(
     }
   }
 
-  const storageUsage = await user.StorageUsage(clientUsername)
-  if (
-    storageUsage.storage_used + Number(fileSize) >=
-    storageUsage.alloc_storage
-  ) {
+  const storageUsage = await user.StorageUsage(data.clientUsername)
+  if (storageUsage.storage_used + fileSize >= storageUsage.alloc_storage) {
     await file.delete()
     throw {
       name: "AppError",
@@ -191,17 +239,47 @@ export async function CreateFile(
     }
   }
 
-  await user.UpdateStorageUsed(clientUsername, Number(fileSize))
+  await user.UpdateStorageUsed(data.clientUsername, fileSize)
 
-  const newFile = await rfsModel.CreateFile(
-    clientUsername,
-    parentDirectoryId,
-    objectId,
-    cloudObjectName,
-    displayName,
-    metadata.contentType || "",
-    Number(metadata.size)
-  )
+  const newFile = await rfsModel.Mkfil({
+    ...data,
+    mimeType: metadata.contentType || "",
+    size: fileSize,
+  })
 
   return newFile
+}
+
+export async function Download(data: {
+  clientUsername: string
+  objectId: string
+  cloudObjectName: string
+}) {
+  const yes = await user.IsUserObject(data.clientUsername, data.objectId)
+  if (!yes) {
+    throw {
+      name: "AppError",
+      code: StatusCodes.NOT_FOUND,
+      message: "file not found",
+    }
+  }
+
+  const file = appGlobals.AppGCSBucket.file(data.cloudObjectName)
+
+  const [exists] = await file.exists()
+  if (!exists) {
+    throw {
+      name: "AppError",
+      code: StatusCodes.NOT_FOUND,
+      message: "file not found",
+    }
+  }
+
+  const [downloadUrl] = await file.getSignedUrl({
+    version: "v4",
+    action: "read",
+    expires: Date.now() + 1 * 24 * 60 * 60 * 1000, // 1 day: expected to be used immediately
+  })
+
+  return downloadUrl
 }

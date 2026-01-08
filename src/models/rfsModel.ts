@@ -92,19 +92,19 @@ export async function Del(
 			MATCH ${matchFromPath}
 			
 			WITH obj, childObjs,
-				[o IN collect(obj) WHERE o.obj_type = "file" | o.id] AS objFileIds,
-				[co IN childObjs WHERE co.obj_type = "file" | co.id] AS childObjFileIds
+				[o IN collect(obj) WHERE o.obj_type = "file" | o.cloud_object_name] AS objFileCloudNames,
+				[co IN childObjs WHERE co.obj_type = "file" | co.cloud_object_name] AS childObjFileCloudNames
 
 			DETACH DELETE obj
 
-			WITH objFileIds, childObjFileIds, childObjs
+			WITH objFileCloudNames, childObjFileCloudNames, childObjs
 
 			UNWIND (childObjs + [null]) AS cObj
 			DETACH DELETE cObj
 
-			WITH objFileIds, childObjFileIds
+			WITH objFileCloudNames, childObjFileCloudNames
 
-			RETURN objFileIds + childObjFileIds AS file_ids
+			RETURN objFileCloudNames + childObjFileCloudNames AS file_cloud_names
 		`,
     {
       client_username: clientUsername,
@@ -114,10 +114,13 @@ export async function Del(
   )
 
   if (!res.records.length) {
-    return { done: false, fileIds: [] }
+    return { done: false, fileCloudNames: [] }
   }
 
-  return { done: true, fileIds: res.records[0]?.get("file_ids") as string[] }
+  return {
+    done: true,
+    fileCloudNames: res.records[0]?.get("file_cloud_names") as string[],
+  }
 }
 
 export async function Trash(
@@ -363,7 +366,7 @@ export async function Copy(
       objectHasChildren = res.records[0]?.get("object_has_children")
     }
 
-    let fileCopyIdMaps: { copied_id: string; copy_id: string }[]
+    let fileCopyIdMaps: { cloud_object_name: string; copy_id: string }[]
 
     if (objectHasChildren) {
       const res = await tx.run(
@@ -423,7 +426,7 @@ export async function Copy(
             par_id_to_child_id: parentIdToChildId,
             client_username: clientUsername,
             from_parent_dir_id: fromParentDirectoryId,
-            now: Date.now(),
+            now,
           }
         )
       }
@@ -442,8 +445,8 @@ export async function Copy(
 					MATCH (obj)-[:HAS_CHILD]->*(cobj)
 
 					WITH ${matchToIdent}, obj, cobj, 
-						[o IN collect(obj) WHERE o.obj_type = "file" | o { .copied_id, copy_id: o.id }] AS objFileCopyIdMaps,
-						[co IN collect(cobj) WHERE co.obj_type = "file" | co { .copied_id, copy_id: co.id }] AS cobjFileCopyIdMaps
+						[o IN collect(obj) WHERE o.obj_type = "file" | o { .cloud_object_name, copy_id: o.id }] AS objFileCopyIdMaps,
+						[co IN collect(cobj) WHERE co.obj_type = "file" | co { .cloud_object_name, copy_id: co.id }] AS cobjFileCopyIdMaps
 
 					SET obj.copied_id = null,
 						cobj.copied_id = null
@@ -480,7 +483,7 @@ export async function Copy(
 
 				RETURN 
 					CASE obj.obj_type 
-						WHEN = "file" THEN [{ copied_id: $object_id, copy_id: objCopy }]
+						WHEN = "file" THEN [{ cloud_object_name: obj.cloud_object_name, copy_id: objCopy.id }]
 						ELSE []
 					END AS file_copy_id_maps
 				`,
@@ -509,19 +512,19 @@ export async function Copy(
   return { done: true, fileCopyIdMaps: res }
 }
 
-export async function CreateFile(
-  clientUsername: string,
-  parentDirectoryId: string,
-  objectId: string,
-  cloudObjectName: string,
-  displayName: string,
-  objectMIMEType: string,
-  objectSize: number
-) {
+export async function Mkfil(data: {
+  clientUsername: string
+  parentDirectoryId: string
+  objectId: string
+  cloudObjectName: string
+  filename: string
+  mimeType: string
+  size: number
+}) {
   let matchFromPath: string
   let matchFromIdent: string
 
-  if (parentDirectoryId === "/") {
+  if (data.parentDirectoryId === "/") {
     matchFromPath = "/* cypher */(root:UserRoot{ user: $client_username })"
     matchFromIdent = "/* cypher */root"
   } else {
@@ -533,18 +536,18 @@ export async function CreateFile(
   const res = await db.WriteQuery(
     `/* cypher */
 			MATCH ${matchFromPath}
-			CREATE (${matchFromIdent})-[:HAS_CHILD]->(obj:Object{ id: $object_id, obj_type: "file", name: $display_name, cloud_object_name: $cloud_object_name, mime_type: $mime_type, size: $size, date_created: $now, date_modified: $now })
+			CREATE (${matchFromIdent})-[:HAS_CHILD]->(obj:Object{ id: $object_id, obj_type: "file", name: $filename, cloud_object_name: $cloud_object_name, mime_type: $mime_type, size: $size, date_created: $now, date_modified: $now })
 			
 			RETURN obj { .* } AS new_file
 		`,
     {
-      client_username: clientUsername,
-      parent_dir_id: parentDirectoryId,
-      object_id: objectId,
-      cloud_object_name: cloudObjectName,
-      display_name: displayName,
-      mime_type: objectMIMEType,
-      size: objectSize,
+      client_username: data.clientUsername,
+      parent_dir_id: data.parentDirectoryId,
+      object_id: data.objectId,
+      cloud_object_name: data.cloudObjectName,
+      filename: data.filename,
+      mime_type: data.mimeType,
+      size: data.size,
       now: Date.now(),
     }
   )

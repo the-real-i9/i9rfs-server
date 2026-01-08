@@ -13,12 +13,6 @@ router.post(
   appControllers.AuthorizeUpload
 )
 
-router.post(
-  "/uploads/create_file_object",
-  ...appValidators.CreateFileObject(),
-  appControllers.CreateFileObject
-)
-
 router.get("/signout", appControllers.Signout)
 
 export default router

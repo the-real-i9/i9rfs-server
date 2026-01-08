@@ -1,13 +1,23 @@
-import { beforeEach, afterEach, test, type TestContext } from "node:test"
+import path from "node:path"
+import fs from "node:fs/promises"
 import request from "superwstest"
 import { StatusCodes } from "http-status-codes"
+import { beforeEach, afterEach, test, type TestContext } from "node:test"
 
 import server from "../src/index.ts"
-import { containsDirs, notContainsDirs } from "./testHelpers.ts"
-import { type DirT } from "../src/appTypes.ts"
+import {
+  containsDirs,
+  containsFiles,
+  logProgress,
+  notContainsDirs,
+  startResumableUpload,
+  uploadFileInChunks,
+} from "./testHelpers.ts"
+import type { FileT, DirT } from "../src/appTypes.ts"
+import appGlobals from "../src/appGlobals.ts"
 
 const signupPath = "/api/auth/signup"
-
+const uploadPath = "/api/app/uploads"
 const rfsPath = "/rfs"
 
 beforeEach((_, done) => {
@@ -811,5 +821,240 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
       })
       .close()
       .expectClosed()
+  }
+
+  /* ==== FILE TESTING ==== */
+
+  let uploadUrl: string, fileObjectId: string, cloudObjectName: string
+  const filePath = path.resolve("./test/test_files/Aye Ole - Infinity.mp3")
+  const contentType = "audio/mp3"
+
+  {
+    console.log("Action: upload file: authorize upload")
+
+    const res = await request(server)
+      .post(uploadPath + "/authorize")
+      .send({ mimeType: contentType, size: (await fs.stat(filePath)).size })
+      .set("Cookie", user.sessionCookie)
+      .set("Accept", "application/json")
+      .expect("Content-Type", /json/)
+
+    if (res.statusCode !== StatusCodes.OK) {
+      console.error("unexpected error:", res.body)
+    }
+
+    t.assert.strictEqual(res.statusCode, StatusCodes.OK)
+    t.assert.ok(res.body.uploadUrl)
+    t.assert.ok(res.body.objectId)
+    t.assert.ok(res.body.cloudObjectName)
+
+    uploadUrl = res.body.uploadUrl
+    fileObjectId = res.body.objectId
+    cloudObjectName = res.body.cloudObjectName
+  }
+
+  {
+    console.log("Upload session started:")
+
+    const sessionUrl = await startResumableUpload(uploadUrl, contentType)
+
+    await uploadFileInChunks(sessionUrl, filePath, contentType, logProgress)
+
+    console.log("Upload complete")
+  }
+
+  {
+    console.log("Action: create file in root dir")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "mkfil",
+        data: {
+          parentDirectoryId: "/",
+          objectId: fileObjectId,
+          cloudObjectName,
+          filename: "Aye-Ole.mp3",
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "mkfil",
+        })
+
+        const data: FileT = msg.data
+        t.assert.ok(data.id)
+        t.assert.partialDeepStrictEqual(data, {
+          obj_type: "file",
+          name: "Aye-Ole.mp3",
+          cloud_object_name: cloudObjectName,
+          mime_type: contentType,
+        })
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log("Action: list files in root")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "ls",
+        data: {
+          directoryId: "/",
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "ls",
+        })
+        containsFiles(msg.data as FileT[], ["Aye-Ole.mp3"], t)
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log("Action: download file created in root")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "download",
+        data: {
+          objectId: fileObjectId,
+          cloudObjectName,
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "download",
+        })
+        t.assert.ok(typeof msg.data === "string")
+
+        const msgData: string = msg.data
+        t.assert.ok(msgData.startsWith("https://"))
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  let oldMusicDirId: string = ""
+
+  {
+    console.log("Action: create 'Old Music' dir in 'Music' dir")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "mkdir",
+        data: {
+          parentDirectoryId: nativeRootDirs.Music,
+          directoryNames: ["Old Music"],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "mkdir",
+        })
+        const msgData: DirT[] = msg.data
+        containsDirs(msgData, ["Old Music"], t)
+
+        oldMusicDirId = msgData[0].id
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log("Action: copy file in root to 'Old Music' dir in 'Music'")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "copy",
+        data: {
+          fromParentDirectoryId: "/",
+          toParentDirectoryId: oldMusicDirId,
+          objectIds: [fileObjectId],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.partialDeepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "copy",
+          data: true,
+        })
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log("Action: delete file in root and 'Old Music' dir")
+
+    await request(server)
+      .ws(rfsPath)
+      .set("Cookie", user.sessionCookie)
+      .sendJson({
+        command: "del",
+        data: {
+          parentDirectoryId: "/",
+          objectIds: [fileObjectId],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.deepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "del",
+          data: true,
+        })
+
+        return true
+      })
+      .sendJson({
+        command: "del",
+        data: {
+          parentDirectoryId: nativeRootDirs.Music,
+          objectIds: [oldMusicDirId],
+        },
+      })
+      .expectJson((msg) => {
+        t.assert.deepStrictEqual(msg, {
+          event: "server reply",
+          toCommand: "del",
+          data: true,
+        })
+
+        return true
+      })
+      .close()
+      .expectClosed()
+  }
+
+  {
+    console.log("Action: cleanup bucket")
+    await appGlobals.AppGCSBucket.deleteFiles()
   }
 })

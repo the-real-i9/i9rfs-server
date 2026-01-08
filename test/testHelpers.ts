@@ -1,7 +1,7 @@
 import fs from "node:fs/promises"
 
 import { type TestContext } from "node:test"
-import { type DirT } from "../src/appTypes.ts"
+import type { FileT, DirT } from "../src/appTypes.ts"
 
 export function containsDirs(
   actual: DirT[],
@@ -25,6 +25,19 @@ export function notContainsDirs(
 
   for (const dirName of notExpectedDirs) {
     t.assert.ok(!actualDirs.includes(dirName))
+  }
+}
+
+export function containsFiles(
+  actual: FileT[],
+  expectedFiles: string[],
+  t: TestContext
+) {
+  for (const filename of expectedFiles) {
+    const file = actual.find((f) => f.name === filename)
+    t.assert.ok(file)
+    t.assert.ok(file.id)
+    t.assert.strictEqual(file.obj_type, "file")
   }
 }
 

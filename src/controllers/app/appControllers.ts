@@ -8,14 +8,16 @@ import * as securityServices from "../../services/appServices/securityServices.t
 import {
   copyCommandValid,
   delCommandValid,
+  downloadCommandValid,
   lsCommandValid,
   mkdirCommandValid,
+  mkfilCommandValid,
   moveCommandValid,
   renameCommandValid,
   restoreCommandValid,
   rfsCommandBodyValid,
   trashCommandValid,
-} from "./validation.ts"
+} from "./acValidation.ts"
 import { StatusCodes } from "http-status-codes"
 import * as helpers from "../../helpers.ts"
 import * as rfsService from "../../services/appServices/rfsService.ts"
@@ -42,34 +44,6 @@ export async function AuthorizeUpload(req: Request, res: Response) {
     )
 
     return res.json(respData)
-  } catch (error: any) {
-    if (error.name === "AppError") {
-      return res.status(error.code).json(error.message)
-    }
-
-    console.error(error)
-    return res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR)
-  }
-}
-
-export async function CreateFileObject(req: Request, res: Response) {
-  try {
-    const clientUser: ClientUserT = res.locals.user
-    const data: {
-      parentDirectoryId: string
-      objectId: string
-      cloudObjectName: string
-      displayName: string
-    } = req.body
-    const newFile = await rfsService.CreateFile(
-      clientUser.username,
-      data.parentDirectoryId,
-      data.objectId,
-      data.cloudObjectName,
-      data.displayName
-    )
-
-    return res.json(newFile)
   } catch (error: any) {
     if (error.name === "AppError") {
       return res.status(error.code).json(error.message)
@@ -267,6 +241,32 @@ function wsMessageHandler(ws: WebSocket, clientUsername: string) {
             data.toParentDirectoryId,
             data.objectIds
           )
+
+          break
+        }
+        case "mkfil": {
+          const { success, error, data } = mkfilCommandValid(body.data)
+
+          if (!success) {
+            return ws.send(
+              helpers.WSErrReply(StatusCodes.BAD_REQUEST, error, body.command)
+            )
+          }
+
+          resp = await rfsService.Mkfil({ clientUsername, ...data })
+
+          break
+        }
+        case "download": {
+          const { success, error, data } = downloadCommandValid(body.data)
+
+          if (!success) {
+            return ws.send(
+              helpers.WSErrReply(StatusCodes.BAD_REQUEST, error, body.command)
+            )
+          }
+
+          resp = await rfsService.Download({ clientUsername, ...data })
 
           break
         }
