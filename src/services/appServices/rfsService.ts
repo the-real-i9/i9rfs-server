@@ -48,6 +48,10 @@ export async function deleteFilesInCS(
   clientUsername: string,
   fileCloudNames: string[]
 ) {
+  if (!fileCloudNames.length) {
+    return
+  }
+
   console.log("Deleting files in cloud")
 
   let accFileSize = 0
@@ -143,6 +147,10 @@ export async function copyFilesInCS(
     copy_id: string
   }[]
 ) {
+  if (!fileCopyIdMaps.length) {
+    return
+  }
+
   console.log("Copying files in cloud")
 
   let accFileSize = 0
