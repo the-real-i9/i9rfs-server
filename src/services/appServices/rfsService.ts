@@ -142,12 +142,13 @@ export function Move(
 
 export async function copyFilesInCS(
   clientUsername: string,
-  fileCopyIdMaps: {
+  now: number,
+  fileCopyMaps: {
     cloud_object_name: string
     copy_id: string
   }[]
 ) {
-  if (!fileCopyIdMaps.length) {
+  if (!fileCopyMaps.length) {
     return
   }
 
@@ -155,10 +156,10 @@ export async function copyFilesInCS(
 
   let accFileSize = 0
 
-  const year = new Date().getFullYear()
-  const month = new Date().getMonth()
+  const year = new Date(now).getFullYear()
+  const month = new Date(now).getMonth()
 
-  for (const { cloud_object_name, copy_id } of fileCopyIdMaps) {
+  for (const { cloud_object_name, copy_id } of fileCopyMaps) {
     const file = appGlobals.AppGCSBucket.file(cloud_object_name)
 
     if (!(await file.exists())) {
@@ -191,16 +192,19 @@ export async function Copy(
     }
   }
 
+  const now = Date.now()
+
   for (const oid of objectIds) {
-    const { done, fileCopyIdMaps } = await rfsModel.Copy(
+    const { done, fileCopyMaps } = await rfsModel.Copy(
       clientUsername,
       fromParentDirectoryId,
       toParentDirectoryId,
-      oid
+      oid,
+      now
     )
 
     if (done) {
-      await copyFilesInCS(clientUsername, fileCopyIdMaps)
+      await copyFilesInCS(clientUsername, now, fileCopyMaps)
     }
   }
 

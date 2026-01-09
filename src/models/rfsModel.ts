@@ -315,7 +315,8 @@ export async function Copy(
   clientUsername: string,
   fromParentDirectoryId: string,
   toParentDirectoryId: string,
-  objectId: string
+  objectId: string,
+  now: number
 ) {
   const sess = appGlobals.Neo4jDriver.session()
 
@@ -323,7 +324,8 @@ export async function Copy(
     let matchFromPath: string, matchFromIdent: string
     let matchToPath: string, matchToIdent: string
 
-    const now = Date.now()
+    const thisYear = new Date(now).getFullYear()
+    const thisMonth = new Date(now).getMonth()
 
     if (fromParentDirectoryId === "/") {
       matchFromPath = "/* cypher */(root:UserRoot{ user: $client_username })"
@@ -366,7 +368,7 @@ export async function Copy(
       objectHasChildren = res.records[0]?.get("object_has_children")
     }
 
-    let fileCopyIdMaps: { cloud_object_name: string; copy_id: string }[]
+    let fileCopyMaps: { cloud_object_name: string; copy_id: string }[]
 
     if (objectHasChildren) {
       const res = await tx.run(
@@ -434,6 +436,8 @@ export async function Copy(
       {
         const res = await tx.run(
           `/* cypher */
+          CYPHER 25
+
 					MATCH ${matchToPath}
 
 					MATCH (obj:Object { copied_id: $object_id })
@@ -444,33 +448,39 @@ export async function Copy(
 					
 					MATCH (obj)-[:HAS_CHILD]->*(cobj)
 
-					WITH ${matchToIdent}, obj, cobj, 
-						[o IN collect(obj) WHERE o.obj_type = "file" | o { .cloud_object_name, copy_id: o.id }] AS objFileCopyIdMaps,
-						[co IN collect(cobj) WHERE co.obj_type = "file" | co { .cloud_object_name, copy_id: co.id }] AS cobjFileCopyIdMaps
+					WITH ${matchToIdent}, obj, cobj, collect(obj) AS objArr, collect(cobj) AS cobjArr,
+						[o IN collect(obj) WHERE o.obj_type = "file" | o { .cloud_object_name, copy_id: o.id }] AS objFileCopyMaps,
+						[co IN collect(cobj) WHERE co.obj_type = "file" | co { .cloud_object_name, copy_id: co.id }] AS cobjFileCopyMaps
 
 					SET obj.copied_id = null,
 						cobj.copied_id = null
-					
+
 					SET ${matchToIdent}.date_modified = $now
 
-					RETURN objFileCopyIdMaps + cobjFileCopyIdMaps AS file_copy_id_maps
+          FOREACH (o IN [ox IN objArr WHERE ox.obj_type = "file"] | SET o.cloud_object_name = 'uploads/' + $this_year_month + '/' + o.id)
+          FOREACH (co IN [cox IN cobjArr WHERE cox.obj_type = "file"] | SET co.cloud_object_name = 'uploads/' + $this_year_month + '/' + co.id)
+
+					RETURN objFileCopyMaps + cobjFileCopyMaps AS file_copy_maps
 					`,
           {
             client_username: clientUsername,
             to_parent_dir_id: toParentDirectoryId,
             object_id: objectId,
             now: now,
+            this_year_month: thisYear + "" + thisMonth,
           }
         )
         if (!res.records.length) {
           return null
         }
 
-        fileCopyIdMaps = res.records[0]?.get("file_copy_id_maps")
+        fileCopyMaps = res.records[0]?.get("file_copy_maps")
       }
     } else {
       const res = await tx.run(
         `/* cypher */
+        CYPHER 25
+
 				MATCH ${matchFromPath}
 				MATCH ${matchToPath}
 
@@ -481,17 +491,22 @@ export async function Copy(
 
 				SET ${matchToIdent}.date_modified = $now
 
-				RETURN 
+				WITH objCopy, collect(objCopy) AS objCopyArr,
 					CASE obj.obj_type 
 						WHEN = "file" THEN [{ cloud_object_name: obj.cloud_object_name, copy_id: objCopy.id }]
 						ELSE []
-					END AS file_copy_id_maps
+					END AS file_copy_maps
+
+        FOREACH (oc IN [ocx IN objCopyArr WHERE ocx.obj_type = "file"] | SET oc.cloud_object_name = 'uploads/' + $this_year_month + '/' + oc.id)
+
+        RETURN file_copy_maps
 				`,
         {
           client_username: clientUsername,
           from_parent_dir_id: fromParentDirectoryId,
           to_parent_dir_id: toParentDirectoryId,
           object_id: objectId,
+          this_year_month: thisYear + "" + thisMonth,
           now: now,
         }
       )
@@ -499,17 +514,17 @@ export async function Copy(
         return null
       }
 
-      fileCopyIdMaps = res.records[0]?.get("file_copy_id_maps")
+      fileCopyMaps = res.records[0]?.get("file_copy_maps")
     }
 
-    return fileCopyIdMaps
+    return fileCopyMaps
   })
 
   if (!res) {
-    return { done: false, fileCopyIdMaps: [] }
+    return { done: false, fileCopyMaps: [] }
   }
 
-  return { done: true, fileCopyIdMaps: res }
+  return { done: true, fileCopyMaps: res }
 }
 
 export async function Mkfil(data: {
