@@ -48,7 +48,7 @@ export async function deleteFilesInCS(
   clientUsername: string,
   fileCloudNames: string[]
 ) {
-  console.time("Deleting files in cloud")
+  console.log("Deleting files in cloud")
 
   let accFileSize = 0
 
@@ -68,7 +68,7 @@ export async function deleteFilesInCS(
 
   await user.UpdateStorageUsed(clientUsername, -accFileSize)
 
-  console.timeEnd("Finished deleting files in cloud")
+  console.log("Finished deleting files in cloud")
 }
 
 export async function Del(
@@ -143,7 +143,7 @@ export async function copyFilesInCS(
     copy_id: string
   }[]
 ) {
-  console.time("Copying files in cloud")
+  console.log("Copying files in cloud")
 
   let accFileSize = 0
 
@@ -166,7 +166,7 @@ export async function copyFilesInCS(
 
   await user.UpdateStorageUsed(clientUsername, accFileSize)
 
-  console.timeEnd("Finished copying files in cloud")
+  console.log("Finished copying files in cloud")
 }
 
 export async function Copy(
