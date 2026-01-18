@@ -1,5 +1,5 @@
 import type { Request, Response } from "express"
-import * as signinService from "../../services/appServices/signinService.ts"
+import * as signinService from "../../services/signinService.ts"
 import { StatusCodes } from "http-status-codes"
 
 export async function Signin(req: Request, res: Response) {

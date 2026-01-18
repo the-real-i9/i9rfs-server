@@ -1,8 +1,8 @@
 import { StatusCodes } from "http-status-codes"
-import * as rfsModel from "../../models/rfsModel.ts"
-import type { DirT } from "../../appTypes.ts"
-import appGlobals from "../../appGlobals.ts"
-import * as user from "../../models/userModel.ts"
+import * as rfsModel from "../models/rfsModel.ts"
+import type { DirT } from "../appTypes.ts"
+import appGlobals from "../appGlobals.ts"
+import * as user from "../models/userModel.ts"
 
 export function Ls(clientUsername: string, directoryId: string) {
   return rfsModel.Ls(clientUsername, directoryId)

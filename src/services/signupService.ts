@@ -1,8 +1,8 @@
 import { StatusCodes } from "http-status-codes"
-import * as user from "../../models/userModel.ts"
-import * as securityServices from "./securityServices.ts"
-import * as mailService from "../otherServices/mailService.ts"
-import type { ClientUserT } from "../../appTypes.ts"
+import * as user from "../models/userModel.ts"
+import * as securityServices from "./util/securityServices.ts"
+import * as mailService from "./util/mailService.ts"
+import type { ClientUserT } from "../appTypes.ts"
 
 interface SignupRNASessionData {
   email: string

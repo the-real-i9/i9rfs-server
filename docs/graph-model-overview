@@ -1,0 +1,11 @@
+# Graph Model Overview
+
+## Nodes
+
+- User
+- UserRoot
+- Object 
+
+## Relationships
+- `(:UserRoot)-[:HAS_CHILD]->(:Object)`
+- `(:Object)-[:HAS_CHILD]->(:Object)`

@@ -1,6 +1,6 @@
 import { v4 as uuid } from "uuid"
-import appGlobals from "../../appGlobals.ts"
-import * as user from "../../models/userModel.ts"
+import appGlobals from "../appGlobals.ts"
+import * as user from "../models/userModel.ts"
 import { StatusCodes } from "http-status-codes"
 
 export async function AuthorizeUpload(

@@ -1,0 +1,83 @@
+{
+  "asyncapi": "3.0.0",
+  "id": "https://github.com/the-real-i9/i9rfs-server",
+  "info": {
+    "title": "i9rfs API Server",
+    "version": "1.0.0",
+    "description": "A Remote File System API Server",
+    "contact": {
+      "name": "i9",
+      "email": "oluwarinolasam@gmail.com"
+    }
+  },
+  "defaultContentType": "application/json",
+  "channels": {
+    "wsPath": {
+      "address": "/ws",
+      "messages": {
+        "rfsCommandLs": {
+          "$ref": "#/components/messages/rfsCommandLs"
+        }
+      },
+      "bindings": {
+        "ws": {
+          "method": "GET",
+          "headers": {
+            "type": "object",
+            "properties": {
+              "Cookie": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "operations": {
+    "rfsCommandLs": {
+      "title": "List directory contents",
+      "summary": "This operation allows a user list the contents of a directory",
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/wsPath"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/wsPath/messages/rfsCommandLs"
+        }
+      ]
+    }
+  },
+  "components": {
+    "messages": {
+      "rfsCommandLs": {
+        "payload": {
+          "type": "object",
+          "properties": {
+            "comand": {
+              "const": "ls"
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "directoryId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "directoryId"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "command",
+            "data"
+          ],
+          "additionalProperties": false
+        },
+        "contentType": "application/json",
+        "examples": {}
+      }
+    }
+  }
+}

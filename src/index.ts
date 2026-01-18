@@ -8,8 +8,8 @@ import dotenv from "dotenv"
 
 import authRoutes from "./routes/authRoutes.ts"
 import appRoutes from "./routes/appRoutes.ts"
-import * as appControllers from "./controllers/app/appControllers.ts"
 import * as initializers from "./initializers.ts"
+import { RealtimeController } from "./controllers/app/realtimeController.ts"
 
 if (process.env.NODE_ENV !== "remote_test") {
   dotenv.config({
@@ -42,9 +42,9 @@ app.use("/api/app", appRoutes)
 const server = http.createServer(app)
 
 // Attach WebSocket server to the same HTTP server
-const wss = new WebSocketServer({ server, path: "/rfs" })
+const wss = new WebSocketServer({ server, path: "/ws" })
 
-wss.on("connection", appControllers.RFSController)
+wss.on("connection", RealtimeController)
 
 let PORT: number
 

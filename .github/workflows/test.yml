@@ -1,5 +1,9 @@
 on:
   push:
+    paths:
+      - "src"
+      - "test"
+      - "package.json"
     branches:
       - main
 name: "Test i9rfs"

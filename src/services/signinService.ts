@@ -1,7 +1,7 @@
 import { StatusCodes } from "http-status-codes"
-import * as user from "../../models/userModel.ts"
-import * as securityServices from "../../services/appServices/securityServices.ts"
-import type { ClientUserT } from "../../appTypes.ts"
+import * as user from "../models/userModel.ts"
+import * as securityServices from "./util/securityServices.ts"
+import type { ClientUserT } from "../appTypes.ts"
 
 interface SigninResp {
   msg: string

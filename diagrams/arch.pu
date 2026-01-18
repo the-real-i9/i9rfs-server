@@ -1,0 +1,51 @@
+@startuml i9rfs_api_arch
+!include <C4/C4_Component>
+
+' !includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title i9rfs API Server
+
+Container(api, "i9rfs API Server", "Node.js")
+
+System_Ext(emailSystem, "Email System", "Google SMTP")
+System(cloudStorageSystem, "Cloud Storage System", "Google Cloud Storage")
+
+ContainerDb(database, "Database", "Neo4j")
+
+Component(securityServices, "Security Services", "Node.js, jsonwebtoken, bcrypt", "Consists security-related logic for: JWT signing/verification, Digit token generation with expiration etc.")
+Component(mailService, "Mail Service", "Node.js, nodemailer", "Consists routine for sending email")
+Rel(mailService, emailSystem, "Uses")
+
+Component(userModel, "User Model", "Neo4j, Cypher, neo4j-driver", "Consists database logic routines for: creating new user, finding a user, and managing user storage quota")
+Rel(userModel, database, "Reads/Writes")
+
+Component(signupControllers, "Signup Controllers", "Node.js, Express Controller", "Handles signup request steps, signup session management via cookie, stores user auth token in response cookie")
+Component(signupService, "Signup Service", "Node.js", "Performs username or email existence checks; Performs email verification; Stores new user; Generates user auth token")
+Rel(signupControllers, signupService, "Call")
+Rel(signupService, securityServices, "Calls")
+Rel(signupService, mailService, "Calls")
+Rel(signupService, userModel, "Calls")
+
+Component(signinControllers, "Signin Controllers", "Node.js, Express Controller", "Handles signin request, stores user auth token in response cookie")
+Component(signinService, "Signin Service", "Node.js", "Performs username or email existence; Generates user auth token")
+Rel(signinControllers, signinService, "Call")
+Rel(signinService, securityServices, "Calls")
+Rel(signinService, userModel, "Calls")
+
+Component(appControllers, "App Controllers", "Node.js, Express Controller", "Consists HTTP request handlers: Signing out, Authorizing upload; and a WebSocket message handler")
+Component(uploadService, "Upload Service", "Node.js", "Consists a routine for authorizing an upload, while returning an upload URL")
+Component(rfsService, "Remote File System Service", "Node.js", "Consists routines for remote file system operations' logic")
+Component(rfsModel, "Remote File System Model", "Node.js, Cypher, neo4j-driver", "Consists database logic routines to manipulate the file system tree based on FS commands")
+Rel(appControllers, uploadService, "(upload authorization request) calls")
+Rel(appControllers, rfsService, "(WS message handler) calls")
+Rel(uploadService, userModel, "calls (to check storage used)")
+Rel(rfsService, userModel, "calls (to update storage used on object copy or deletion)")
+Rel(rfsService, rfsModel, "calls (to execute graph database logic for file system operations)")
+Rel(uploadService, cloudStorageSystem, "calls (to generate upload urls)")
+Rel(rfsService, cloudStorageSystem, "calls (to copy or delete objects in the cloud)")
+
+Component(realtimeController, "Realtime Controller", "Node.js, websocket", "Handles new Websocket connections; Acquires and manages user connection stream (socket); Authenticates WebSocket connection; Listens for messages on user connection stream (socket)")
+Rel(realtimeController, appControllers, "Calls (to foward message to WS message handler)")
+
+@enduml
+

@@ -18,7 +18,7 @@ import appGlobals from "../src/appGlobals.ts"
 
 const signupPath = "/api/auth/signup"
 const uploadPath = "/api/app/uploads"
-const rfsPath = "/rfs"
+const wsPath = "/ws"
 
 beforeEach((_, done) => {
   server.listen(0, "localhost", done)
@@ -107,7 +107,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("Action: list native directories in root")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "ls",
@@ -142,7 +142,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("Action: bulk create dirs in native dir: 'Videos'")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "mkdir",
@@ -194,7 +194,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     )
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "mkdir",
@@ -222,7 +222,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     )
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "del",
@@ -250,7 +250,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     )
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "ls",
@@ -286,7 +286,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("attempt to delete a native directory fails")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "del",
@@ -314,7 +314,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     )
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "mkdir",
@@ -342,7 +342,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     )
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "copy",
@@ -371,7 +371,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     )
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "ls",
@@ -398,7 +398,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("Action: bulk create dirs in native dir: 'Music'")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "mkdir",
@@ -432,7 +432,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("trash 'Folk' and 'Old Songs' dirs in native dir: 'Music'")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "trash",
@@ -460,7 +460,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     )
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "ls",
@@ -494,7 +494,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("view dirs in Trash")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "viewtrash",
@@ -520,7 +520,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("restore 'Folk' dir from Trash")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "restore",
@@ -545,7 +545,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("view dirs now in Trash | confirm 'Folk' dir restored")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "viewtrash",
@@ -576,7 +576,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     )
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "ls",
@@ -608,7 +608,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("attempt to trash a native directory fails")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "trash",
@@ -636,7 +636,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     )
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "rename",
@@ -665,7 +665,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     )
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "ls",
@@ -701,7 +701,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("attempt to rename a native directory fails")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "rename",
@@ -730,7 +730,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     )
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "mkdir",
@@ -758,7 +758,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     )
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "move",
@@ -787,7 +787,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     )
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "ls",
@@ -867,7 +867,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("Action: create file in root dir")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "mkfil",
@@ -903,7 +903,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("Action: list files in root")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "ls",
@@ -928,7 +928,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("Action: download file created in root")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "download",
@@ -959,7 +959,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("Action: create 'Old Music' dir in 'Music' dir")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "mkdir",
@@ -988,7 +988,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("Action: copy file in root to 'Old Music' dir in 'Music'")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "copy",
@@ -1015,7 +1015,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     console.log("Action: delete file in root and 'Old Music' dir")
 
     await request(server)
-      .ws(rfsPath)
+      .ws(wsPath)
       .set("Cookie", user.sessionCookie)
       .sendJson({
         command: "del",

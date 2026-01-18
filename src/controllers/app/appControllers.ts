@@ -1,10 +1,7 @@
 import type { Request, Response } from "express"
-import type { IncomingMessage } from "node:http"
 import type WebSocket from "ws"
 
 import type { ClientUserT } from "../../appTypes.ts"
-import { GetSessionDataFromCookieHeader } from "../../helpers.ts"
-import * as securityServices from "../../services/appServices/securityServices.ts"
 import {
   copyCommandValid,
   delCommandValid,
@@ -20,8 +17,8 @@ import {
 } from "./acValidation.ts"
 import { StatusCodes } from "http-status-codes"
 import * as helpers from "../../helpers.ts"
-import * as rfsService from "../../services/appServices/rfsService.ts"
-import * as uploadService from "../../services/appServices/uploadService.ts"
+import * as rfsService from "../../services/rfsService.ts"
+import * as uploadService from "../../services/uploadService.ts"
 
 export async function Signout(req: Request, res: Response) {
   const clientUser: ClientUserT = res.locals.user
@@ -54,44 +51,11 @@ export async function AuthorizeUpload(req: Request, res: Response) {
   }
 }
 
-export function RFSController(ws: WebSocket, request: IncomingMessage) {
-  try {
-    const sessionData = GetSessionDataFromCookieHeader(
-      request.headers.cookie || ""
-    )
-    if (!sessionData || !sessionData.user) {
-      return ws.close(1001, "401: authentication required")
-    }
-
-    const {
-      user: { authJwt },
-    }: { user: { authJwt: string } } = sessionData
-
-    const authPayload = securityServices.JwtVerify(
-      authJwt,
-      process.env.AUTH_JWT_SECRET || ""
-    )
-
-    if (typeof authPayload === "string") {
-      throw new Error("invalid auth payload")
-    }
-
-    const { username: clientUser } = authPayload as ClientUserT
-
-    ws.on("message", wsMessageHandler(ws, clientUser))
-  } catch (error: any) {
-    if (error.name === "TokenExpiredError") {
-      return ws.close(1001, "401: session expired")
-    }
-
-    console.error(error)
-    return ws.close(1001, "500: internal server error")
-  }
-}
-
-function wsMessageHandler(ws: WebSocket, clientUsername: string) {
+export function WSMessageHandler(ws: WebSocket, clientUsername: string) {
   return async function (data: WebSocket.RawData) {
-    const rfsCommandBody = JSON.parse(data.toString())
+    const rfsCommandBody: { command: string; data: any } = JSON.parse(
+      data.toString()
+    )
 
     const { success, error } = rfsCommandBodyValid(rfsCommandBody)
     if (!success) {

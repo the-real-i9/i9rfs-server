@@ -1,6 +1,6 @@
 import type { Response, Request, NextFunction } from "express"
 import { StatusCodes } from "http-status-codes"
-import * as securityServices from "../services/appServices/securityServices.ts"
+import * as securityServices from "../services/util/securityServices.ts"
 
 export function SignupSession(req: Request, res: Response, next: NextFunction) {
   try {
