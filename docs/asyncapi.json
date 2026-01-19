@@ -25,7 +25,9 @@
           "headers": {
             "type": "object",
             "properties": {
-              "Cookie": "string"
+              "Cookie": {
+                "type": "string"
+              }
             }
           }
         }
@@ -60,7 +62,8 @@
               "type": "object",
               "properties": {
                 "directoryId": {
-                  "type": "string"
+                  "type": "string",
+                  "format": "uuid"
                 }
               },
               "required": [
@@ -75,8 +78,7 @@
           ],
           "additionalProperties": false
         },
-        "contentType": "application/json",
-        "examples": {}
+        "contentType": "application/json"
       }
     }
   }
