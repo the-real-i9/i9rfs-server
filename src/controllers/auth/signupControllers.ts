@@ -3,6 +3,78 @@ import * as signupService from "../../services/signupService.ts"
 import { StatusCodes } from "http-status-codes"
 
 export async function RequestNewAccount(req: Request, res: Response) {
+  /*
+  #swagger.summary = 'Signup user - Step 1'
+  #swagger.description = 'Submit email to request a new account'
+  #swagger.tags = ['auth']
+  #swagger.requestBody = {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          properties: {
+            email: {
+              type: "string",
+              format: "email",
+              example: "example@gmail.com"
+            }
+          },
+          required: ["email"]
+        }
+      }
+    }
+  } 
+
+  #swagger.responses[200] = {
+    description: 'Step 1 success: Proceed to email verification',
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          properties: {
+            msg: {
+              type: "string",
+            }
+          }
+        }
+      }
+    }
+  } 
+
+  #swagger.responses[400] = {
+    description: 'Step 1 failed: A user with this email already exists',
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          properties: {
+            msg: {
+              type: "string",
+            }
+          }
+        }
+      }
+    }
+  } 
+
+  #swagger.responses[500] = {
+    description: 'Step 1 failed: Internal Server Error',
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          properties: {
+            msg: {
+              type: "string",
+            }
+          }
+        }
+      }
+    }
+  } 
+  */
+
   try {
     const body: { email: string } = req.body
 
