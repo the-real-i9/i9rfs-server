@@ -9,21 +9,29 @@ const router = express.Router()
 router.post(
   "/signup/request_new_account",
   ...authValidators.RequestNewAccount(),
+  signupControllers.RequestNewAccountDoc,
   signupControllers.RequestNewAccount
 )
 router.post(
   "/signup/verify_email",
   ...authValidators.VerifyEmail(),
   authMiddlewares.SignupSession,
+  signupControllers.VerifyEmailDoc,
   signupControllers.VerifyEmail
 )
 router.post(
   "/signup/register_user",
   ...authValidators.RegisterUser(),
   authMiddlewares.SignupSession,
+  signupControllers.RegisterUserDoc,
   signupControllers.RegisterUser
 )
 
-router.post("/signin", ...authValidators.Signin(), signinController.Signin)
+router.post(
+  "/signin",
+  ...authValidators.Signin(),
+  signinController.SigninDoc,
+  signinController.Signin
+)
 
 export default router

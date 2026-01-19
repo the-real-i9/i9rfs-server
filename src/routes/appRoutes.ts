@@ -10,9 +10,10 @@ router.use(authMiddlewares.UserAuth)
 router.post(
   "/uploads/authorize",
   ...appValidators.AuthorizeUpload(),
+  appControllers.AuthorizeUploadDoc,
   appControllers.AuthorizeUpload
 )
 
-router.get("/signout", appControllers.Signout)
+router.get("/signout", appControllers.SignoutDoc, appControllers.Signout)
 
 export default router

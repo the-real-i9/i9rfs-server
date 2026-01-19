@@ -1,4 +1,4 @@
-import type { Request, Response } from "express"
+import type { NextFunction, Request, Response } from "express"
 import type WebSocket from "ws"
 
 import type { ClientUserT } from "../../appTypes.ts"
@@ -257,4 +257,127 @@ export function WSMessageHandler(ws: WebSocket, clientUsername: string) {
       )
     }
   }
+}
+
+/* === DOCS === */
+
+export function SignoutDoc(req: Request, res: Response, next: NextFunction) {
+  /*
+  #swagger.summary = 'Signout user'
+  #swagger.description = 'Signout user'
+  #swagger.tags = ['app']
+
+  #swagger.parameters['Cookie'] = {
+    in: 'header',
+    description: 'Auth user session cookie',
+    required: true
+  }
+
+  #swagger.responses[200] = {
+    description: 'Signout success',
+    content: {
+      "application/json": {
+        schema: {
+          type: "string"
+        }
+      }
+    },
+    headers: {
+      "Set-Cookie": {
+        description: 'Cookie invalidation',
+        schema: {
+          type: "string"
+        }
+      }
+    }
+  } 
+  */
+  next()
+}
+
+export function AuthorizeUploadDoc(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  /*
+  #swagger.summary = 'Authorize file upload'
+  #swagger.description = 'Authorize file upload'
+  #swagger.tags = ['app']
+
+  #swagger.parameters['Cookie'] = {
+    in: 'header',
+    description: 'Auth user session cookie',
+    required: true
+  }
+
+  #swagger.requestBody = {
+    required: true,
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          properties: {
+            mimeType: {
+              type: "string",
+              format: "mime"
+            },
+            size: {
+              type: "number",
+              minimum: 1
+            }
+          },
+          required: ["mimeType", "size"]
+        }
+      }
+    }
+  } 
+
+  #swagger.responses[200] = {
+    description: 'Upload authorization success',
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          properties: {
+            uploadUrl: {
+              type: "string",
+              format: "url"
+            },
+            objectId: {
+              type: "string",
+              format: "uuid"
+            },
+            cloudObjectName: {
+              type: "string"
+            }
+          }
+        }
+      }
+    }
+  } 
+
+  #swagger.responses[406] = {
+    description: 'User does not have enough space',
+    content: {
+      "application/json": {
+        schema: {
+          type: "string"
+        }
+      }
+    }
+  } 
+
+  #swagger.responses[500] = {
+    description: 'Internal Server Error',
+    content: {
+      "application/json": {
+        schema: {
+          type: "string"
+        }
+      }
+    }
+  } 
+  */
+  next()
 }

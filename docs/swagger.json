@@ -21,7 +21,7 @@
         "description": "Submit email to request a new account",
         "responses": {
           "200": {
-            "description": "Step 1 success: Proceed to email verification",
+            "description": "Proceed to email verification",
             "content": {
               "application/json": {
                 "schema": {
@@ -31,36 +31,34 @@
                       "type": "string"
                     }
                   }
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "Signup session cookie",
+                "schema": {
+                  "type": "string"
                 }
               }
             }
           },
           "400": {
-            "description": "Step 1 failed: A user with this email already exists",
+            "description": "A user with this email already exists",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "msg": {
-                      "type": "string"
-                    }
-                  }
+                  "type": "string"
                 }
               }
             }
           },
           "500": {
-            "description": "Step 1 failed: Internal Server Error",
+            "description": "Internal Server Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "msg": {
-                      "type": "string"
-                    }
-                  }
+                  "type": "string"
                 }
               }
             }
@@ -90,22 +88,83 @@
     },
     "/api/auth/signup/verify_email": {
       "post": {
-        "description": "",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Signup user - Step 2",
+        "description": "Provide the 6-digit code sent to email",
+        "parameters": [
+          {
+            "name": "Cookie",
+            "in": "header",
+            "description": "Signup session cookie",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Email verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "msg": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "Signup session cookie",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "(Incorrect verification code! | Verification code expired!) Check or Re-submit your email.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "const": {
-                    "example": "any"
+                  "code": {
+                    "type": "string",
+                    "pattern": "^[0-9]{6}$",
+                    "example": "123456"
                   }
-                }
+                },
+                "required": [
+                  "code"
+                ]
               }
             }
           }
@@ -114,22 +173,90 @@
     },
     "/api/auth/signup/register_user": {
       "post": {
-        "description": "",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Signup user - Step 3",
+        "description": "Provide remaining user credentials",
+        "parameters": [
+          {
+            "name": "Cookie",
+            "in": "header",
+            "description": "Signup session cookie",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
-          "default": {
-            "description": ""
+          "200": {
+            "description": "Signup success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "msg": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/ClientUserT"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "Auth user session cookie",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Username not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "const": {
-                    "example": "any"
+                  "username": {
+                    "type": "string",
+                    "minLength": 3
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
                   }
-                }
+                },
+                "required": [
+                  "username",
+                  "password"
+                ]
               }
             }
           }
@@ -138,22 +265,87 @@
     },
     "/api/auth/signin": {
       "post": {
-        "description": "",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Signin user",
+        "description": "Signin with email/username and password",
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Signin success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "msg": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/ClientUserT"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "Auth user session cookie",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Incorrect email/username or password",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "const": {
-                    "example": "any"
+                  "emailOrUsername": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "format": "email"
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 3
+                      }
+                    ]
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
                   }
-                }
+                },
+                "required": [
+                  "emailOrUsername",
+                  "password"
+                ]
               }
             }
           }
@@ -162,25 +354,87 @@
     },
     "/api/app/uploads/authorize": {
       "post": {
-        "description": "",
+        "tags": [
+          "app"
+        ],
+        "summary": "Authorize file upload",
+        "description": "Authorize file upload",
+        "parameters": [
+          {
+            "name": "Cookie",
+            "in": "header",
+            "description": "Auth user session cookie",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Upload authorization success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "uploadUrl": {
+                      "type": "string",
+                      "format": "url"
+                    },
+                    "objectId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "cloudObjectName": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "User does not have enough space",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
                   "mimeType": {
-                    "example": "any"
+                    "type": "string",
+                    "format": "mime"
                   },
                   "size": {
-                    "example": "any"
+                    "type": "number",
+                    "minimum": 1
                   }
-                }
+                },
+                "required": [
+                  "mimeType",
+                  "size"
+                ]
               }
             }
           }
@@ -189,10 +443,53 @@
     },
     "/api/app/signout": {
       "get": {
-        "description": "",
+        "tags": [
+          "app"
+        ],
+        "summary": "Signout user",
+        "description": "Signout user",
+        "parameters": [
+          {
+            "name": "Cookie",
+            "in": "header",
+            "description": "Auth user session cookie",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Signout success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "Cookie invalidation",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ClientUserT": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "clientUsername"
           }
         }
       }

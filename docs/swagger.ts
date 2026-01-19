@@ -13,7 +13,13 @@ const doc = {
     },
   ],
 
-  components: {},
+  components: {
+    schemas: {
+      ClientUserT: {
+        username: "clientUsername",
+      },
+    },
+  },
 }
 
 const outputFile = "./swagger.json"

@@ -15,7 +15,7 @@ export async function Signin(emailOrUsername: string, inputPassword: string) {
     throw {
       name: "AppError",
       code: StatusCodes.NOT_FOUND,
-      message: "Incorrect email or password",
+      message: "Incorrect email/username or password",
     }
   }
 
@@ -28,7 +28,7 @@ export async function Signin(emailOrUsername: string, inputPassword: string) {
     throw {
       name: "AppError",
       code: StatusCodes.NOT_FOUND,
-      message: "Incorrect email or password",
+      message: "Incorrect email/username or password",
     }
   }
 
