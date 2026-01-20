@@ -573,3 +573,22 @@ export async function Mkfil(data: {
 
   return res.records[0]?.get("new_file") as FileT
 }
+
+export async function Download(clientUsername: string, fileObjectId: string) {
+  const res = await db.WriteQuery(
+    `/* cypher */
+		MATCH (:UserRoot{ user: $username })-[:HAS_CHILD]->+(fileObj:Object{ id: $object_id, obj_type: "file" })
+    RETURN fileObj.cloud_object_name AS file_cloud_object_name
+		`,
+    {
+      username: clientUsername,
+      object_id: fileObjectId,
+    }
+  )
+
+  if (!res.records.length) {
+    return null
+  }
+
+  return res.records[0]?.get("file_cloud_object_name") as string
+}

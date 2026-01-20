@@ -933,8 +933,7 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
       .sendJson({
         command: "download",
         data: {
-          objectId: fileObjectId,
-          cloudObjectName,
+          fileObjectId,
         },
       })
       .expectJson((msg) => {

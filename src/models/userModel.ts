@@ -99,19 +99,3 @@ export async function UpdateStorageUsed(username: string, delta: number) {
 
   return res.records[0]?.get("done") as boolean
 }
-
-export async function IsUserObject(username: string, objectId: string) {
-  const res = await db.WriteQuery(
-    `/* cypher */
-    RETURN EXISTS {
-		  MATCH (:UserRoot{ user: $username })-[:HAS_CHILD]->+(:Object{ id: $object_id })
-    } AS is_user_object
-		`,
-    {
-      username,
-      object_id: objectId,
-    }
-  )
-
-  return res.records[0]?.get("is_user_object") as boolean
-}

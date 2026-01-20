@@ -264,11 +264,13 @@ export async function Mkfil(data: {
 
 export async function Download(data: {
   clientUsername: string
-  objectId: string
-  cloudObjectName: string
+  fileObjectId: string
 }) {
-  const yes = await user.IsUserObject(data.clientUsername, data.objectId)
-  if (!yes) {
+  const fileCloudObjectName = await rfsModel.Download(
+    data.clientUsername,
+    data.fileObjectId
+  )
+  if (!fileCloudObjectName) {
     throw {
       name: "AppError",
       code: StatusCodes.NOT_FOUND,
@@ -276,7 +278,7 @@ export async function Download(data: {
     }
   }
 
-  const file = appGlobals.AppGCSBucket.file(data.cloudObjectName)
+  const file = appGlobals.AppGCSBucket.file(fileCloudObjectName)
 
   const [exists] = await file.exists()
   if (!exists) {

@@ -117,10 +117,7 @@ export function mkfilCommandValid(command: any) {
 
 export function downloadCommandValid(command: any) {
   const schema = z.object({
-    objectId: z.uuid(),
-    cloudObjectName: z
-      .string()
-      .regex(/^uploads\/[\w-/]+\w$/, { error: "invalid cloud object name" }),
+    fileObjectId: z.uuid(),
   })
 
   const res = schema.safeParse(command)
