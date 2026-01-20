@@ -64,7 +64,9 @@ The following are the features supported by this API. *Visit the API documentati
 
 ## ✨Technical Highlights✨
 
--
+- A graph data structure perfectly models a file system tree data structure; enough reason to choose a graph database over a relational database that’s not built for graph-like data structures and queries. I tried it, it was hell-y. This project introduced me to the world of graph databases.
+
+- I utilize Neo4j’s variable expression matching extensively to confine object find tree traversal to the user’s root, and to process complex commands such as directory copy and delete which act recursively on sub-directories.
 
 ## API Graph Model Overview
 
