@@ -3,6 +3,7 @@ on:
     paths:
       - "src/**"
       - "tests/**"
+      - ".github/**"
       - "package.json"
     branches:
       - main
