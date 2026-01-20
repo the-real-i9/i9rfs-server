@@ -1,8 +1,8 @@
 on:
   push:
     paths:
-      - "src"
-      - "test"
+      - "src/**"
+      - "tests/**"
       - "package.json"
     branches:
       - main
