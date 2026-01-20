@@ -146,7 +146,7 @@ test("TestUserAuthStory", async (t: TestContext) => {
     }
 
     t.assert.strictEqual(res.statusCode, StatusCodes.NOT_FOUND)
-    t.assert.strictEqual(res.body, "Incorrect email or password")
+    t.assert.strictEqual(res.body, "Incorrect email/username or password")
   }
 
   {

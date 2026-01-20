@@ -44,8 +44,9 @@ i9rfs is a full-fledged remote file system API server built in Node.js and Neo4j
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
 - [✨Technical Highlights✨](#technical-highlights)
+- [API Graph Model Overview](#api-graph-model-overview)
 - [API Documentation](#api-documentation)
-- [Upcoming features](#upcoming-features)
+- [API Diagrams](#api-diagrams)
 
 ## Features
 
@@ -63,8 +64,20 @@ The following are the features supported by this API. *Visit the API documentati
 
 ## ✨Technical Highlights✨
 
+-
+
+## API Graph Model Overview
+
+Read [Here](./docs/graph-model-overview.md)
+
 ## API Documentation
 
-HTTP request/response communication: [Click Here](./docs/swagger.json)
+HTTP (REST) API: [Open Swagger JSON](./docs/swagger.json)
 
-WebSocket real-time communication: [Click Here](./docs/websocketsapi.md)
+WebSockets API: [Open AsyncAPI JSON](./docs/asyncapi.json)
+
+
+## API Diagrams
+
+Architecture Diagrams: [See here](./diagrams/arch-diags.md)
+

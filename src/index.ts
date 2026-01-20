@@ -55,7 +55,7 @@ if (process.env.NODE_ENV != "production") {
 }
 
 // Start listening
-if (process.env.NODE_ENV !== "test") {
+if (process.env.NODE_ENV !== "test" && process.env.NODE_ENV !== "remote_test") {
   server.listen(PORT, () => {
     console.log(`HTTP + WS server running on http://localhost:${PORT}`)
   })
