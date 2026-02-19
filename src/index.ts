@@ -5,11 +5,13 @@ import cors from "cors"
 import cookieSession from "cookie-session"
 import { WebSocketServer } from "ws"
 import dotenv from "dotenv"
+import msgpack from "express-msgpack"
+import { pack, unpack } from "msgpackr"
 
 import authRoutes from "./routes/authRoutes.ts"
 import appRoutes from "./routes/appRoutes.ts"
 import * as initializers from "./initializers.ts"
-import { RealtimeController } from "./controllers/app/realtimeController.ts"
+import { RFSController } from "./controllers/app/rfsController.ts"
 
 if (process.env.NODE_ENV !== "remote_test") {
   dotenv.config({
@@ -22,14 +24,33 @@ await initializers.InitApp()
 
 const app = express()
 
-app.use(express.json())
-app.use(helmet())
-app.use(cors())
+app.use(
+  msgpack({
+    mimeType: "application/vnd.msgpack",
+    encoder: pack,
+    decoder: unpack,
+  })
+)
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: {
+      // policy: "cross-origin", /* for production */
+    },
+  })
+)
+
+app.use(
+  cors({
+    // origin:     "http://localhost:5173", /* production client host */
+    // credentials: true
+  })
+)
 
 app.use(
   cookieSession({
     secret: process.env.COOKIE_SECRET,
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     httpOnly: true,
   })
 )
@@ -44,7 +65,7 @@ const server = http.createServer(app)
 // Attach WebSocket server to the same HTTP server
 const wss = new WebSocketServer({ server, path: "/ws" })
 
-wss.on("connection", RealtimeController)
+wss.on("connection", RFSController)
 
 let PORT: number
 

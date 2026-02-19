@@ -68,18 +68,22 @@ The following are the features supported by this API. *Visit the API documentati
 
 - I utilize Neo4j’s variable expression matching extensively to confine object find tree traversal to the user’s root, and to process complex commands such as directory copy and delete which act recursively on sub-directories.
 
-## API Graph Model Overview
+## API Documentation &#x1f4d6;
 
-Read [Here](./docs/graph-model-overview.md)
+HTTP API (REST): [Here](./docs/swagger.json). Open in [Swagger Editor](editor.swagger.io)
 
-## API Documentation
+WebSockets API: [Here](./docs/asyncapi.json) Open in [AsyncAPI Editor](studio.asyncapi.com).
 
-HTTP (REST) API: [Open Swagger JSON](./docs/swagger.json)
+API Graph Model Overview [Here](./docs/graph-model-overview.md)
 
-WebSockets API: [Open AsyncAPI JSON](./docs/asyncapi.json)
+## API Diagrams &#x1f3a8;
 
+### Architecture Diagram
+API (C4) Component Level Diagram: [Here](./arch.pu). (Open in [PlantUML Editor](editor.platuml.com))
 
-## API Diagrams
+### Sequence Diagrams
 
-Architecture Diagrams: [See here](./diagrams/arch-diags.md)
+API sequence diagrams: [Here](./diagrams/sequence-diagrams.md)
 
+## Articles &#x1f4f0;
+*Coming Soon...*

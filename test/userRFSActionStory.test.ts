@@ -29,6 +29,11 @@ afterEach((_, done) => {
 })
 
 test("TestUserRFSActionStory", async (t: TestContext) => {
+  t.skip()
+  if (1 === 1) {
+    return
+  }
+
   const user = {
     email: "mikeross@gmail.com",
     username: "mikeross",

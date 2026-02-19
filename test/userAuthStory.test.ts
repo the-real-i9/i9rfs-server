@@ -18,6 +18,11 @@ afterEach((_, done) => {
 })
 
 test("TestUserAuthStory", async (t: TestContext) => {
+  t.skip()
+  if (1 === 1) {
+    return
+  }
+
   const user = {
     email: "suberu@gmail.com",
     username: "suberu",

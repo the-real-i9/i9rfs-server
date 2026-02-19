@@ -1,8 +1,8 @@
 import { StatusCodes } from "http-status-codes"
 import * as rfsModel from "../models/rfsModel.ts"
 import type { DirT } from "../appTypes.ts"
-import appGlobals from "../appGlobals.ts"
-import * as user from "../models/userModel.ts"
+import * as userService from "./userService.ts"
+import * as cloudStorageService from "./cloudStorageService.ts"
 
 export function Ls(clientUsername: string, directoryId: string) {
   return rfsModel.Ls(clientUsername, directoryId)
@@ -44,37 +44,6 @@ export async function Mkdir(
   return newDirs
 }
 
-export async function deleteFilesInCS(
-  clientUsername: string,
-  fileCloudNames: string[]
-) {
-  if (!fileCloudNames.length) {
-    return
-  }
-
-  console.log("Deleting files in cloud")
-
-  let accFileSize = 0
-
-  for (const fcn of fileCloudNames) {
-    const file = appGlobals.AppGCSBucket.file(fcn)
-
-    if (!(await file.exists())) {
-      continue
-    }
-
-    const [metadata] = await file.getMetadata()
-
-    accFileSize += Number(metadata.size || 0)
-
-    await file.delete()
-  }
-
-  await user.UpdateStorageUsed(clientUsername, -accFileSize)
-
-  console.log("Finished deleting files in cloud")
-}
-
 export async function Del(
   clientUsername: string,
   parentDirectoryId: string,
@@ -87,7 +56,12 @@ export async function Del(
   )
 
   if (done) {
-    await deleteFilesInCS(clientUsername, fileCloudNames)
+    await cloudStorageService.DeleteFilesInCS(
+      fileCloudNames,
+      async (deletedFilesSize: number) => {
+        await userService.UpdateStorageUsed(clientUsername, -deletedFilesSize)
+      }
+    )
   }
 
   return done
@@ -140,44 +114,6 @@ export function Move(
   )
 }
 
-export async function copyFilesInCS(
-  clientUsername: string,
-  now: number,
-  fileCopyMaps: {
-    cloud_object_name: string
-    copy_id: string
-  }[]
-) {
-  if (!fileCopyMaps.length) {
-    return
-  }
-
-  console.log("Copying files in cloud")
-
-  let accFileSize = 0
-
-  const year = new Date(now).getFullYear()
-  const month = new Date(now).getMonth()
-
-  for (const { cloud_object_name, copy_id } of fileCopyMaps) {
-    const file = appGlobals.AppGCSBucket.file(cloud_object_name)
-
-    if (!(await file.exists())) {
-      continue
-    }
-
-    const [metadata] = await file.getMetadata()
-
-    accFileSize += Number(metadata.size || 0)
-
-    await file.copy(`uploads/${year}${month}/${copy_id}`)
-  }
-
-  await user.UpdateStorageUsed(clientUsername, accFileSize)
-
-  console.log("Finished copying files in cloud")
-}
-
 export async function Copy(
   clientUsername: string,
   fromParentDirectoryId: string,
@@ -204,7 +140,13 @@ export async function Copy(
     )
 
     if (done) {
-      await copyFilesInCS(clientUsername, now, fileCopyMaps)
+      await cloudStorageService.CopyFilesInCS(
+        now,
+        fileCopyMaps,
+        async (copiedFilesSize: number) => {
+          await userService.UpdateStorageUsed(clientUsername, copiedFilesSize)
+        }
+      )
     }
   }
 
@@ -218,20 +160,20 @@ export async function Mkfil(data: {
   cloudObjectName: string
   filename: string
 }) {
-  const file = appGlobals.AppGCSBucket.file(data.cloudObjectName)
+  const {
+    exists,
+    size: fileSize,
+    contentType: mimeType,
+  } = await cloudStorageService.FileExistsInCS(data.cloudObjectName)
 
-  const [uploaded] = await file.exists()
-  if (!uploaded) {
+  if (!exists) {
     throw {
       name: "AppError",
       code: StatusCodes.NOT_FOUND,
-      message: "object upload incomplete",
+      message: "file not found in cloud",
     }
   }
 
-  const [metadata] = await file.getMetadata()
-
-  const fileSize = Number(metadata.size || 0)
   if (!fileSize) {
     throw {
       name: "AppError",
@@ -240,9 +182,9 @@ export async function Mkfil(data: {
     }
   }
 
-  const storageUsage = await user.StorageUsage(data.clientUsername)
+  const storageUsage = await userService.GetStorageUsage(data.clientUsername)
   if (storageUsage.storage_used + fileSize >= storageUsage.alloc_storage) {
-    await file.delete()
+    await cloudStorageService.DeleteExistingFileInCS(data.cloudObjectName)
     throw {
       name: "AppError",
       code: StatusCodes.NOT_ACCEPTABLE,
@@ -251,11 +193,11 @@ export async function Mkfil(data: {
     }
   }
 
-  await user.UpdateStorageUsed(data.clientUsername, fileSize)
+  await userService.UpdateStorageUsed(data.clientUsername, fileSize)
 
   const newFile = await rfsModel.Mkfil({
     ...data,
-    mimeType: metadata.contentType || "",
+    mimeType,
     size: fileSize,
   })
 
@@ -278,9 +220,10 @@ export async function Download(data: {
     }
   }
 
-  const file = appGlobals.AppGCSBucket.file(fileCloudObjectName)
+  const { exists } = await cloudStorageService.FileExistsInCS(
+    fileCloudObjectName
+  )
 
-  const [exists] = await file.exists()
   if (!exists) {
     throw {
       name: "AppError",
@@ -289,11 +232,9 @@ export async function Download(data: {
     }
   }
 
-  const [downloadUrl] = await file.getSignedUrl({
-    version: "v4",
-    action: "read",
-    expires: Date.now() + 1 * 24 * 60 * 60 * 1000, // 1 day: expected to be used immediately
-  })
+  const downloadUrl = await cloudStorageService.GetDownloadUrl(
+    fileCloudObjectName
+  )
 
   return downloadUrl
 }

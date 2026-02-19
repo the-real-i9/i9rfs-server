@@ -1,6 +1,6 @@
 import { v4 as uuid } from "uuid"
-import appGlobals from "../appGlobals.ts"
-import * as user from "../models/userModel.ts"
+import * as userService from "./userService.ts"
+import * as cloudStorageService from "./cloudStorageService.ts"
 import { StatusCodes } from "http-status-codes"
 
 export async function AuthorizeUpload(
@@ -8,7 +8,7 @@ export async function AuthorizeUpload(
   mimeType: string,
   size: number
 ) {
-  const storageUsage = await user.StorageUsage(username)
+  const storageUsage = await userService.GetStorageUsage(username)
   if (storageUsage.storage_used + size >= storageUsage.alloc_storage) {
     throw {
       name: "AppError",
@@ -20,14 +20,7 @@ export async function AuthorizeUpload(
   const objectId = uuid()
   const cloudObjectName = `uploads/${new Date().getFullYear()}${new Date().getMonth()}/${objectId}`
 
-  const [url] = await appGlobals.AppGCSBucket.file(
-    cloudObjectName
-  ).getSignedUrl({
-    version: "v4",
-    action: "resumable",
-    expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-    contentType: mimeType,
-  })
+  const url = cloudStorageService.GetUploadUrl(cloudObjectName, mimeType)
 
   return { uploadUrl: url, objectId, cloudObjectName }
 }

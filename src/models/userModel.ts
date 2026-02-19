@@ -29,7 +29,7 @@ export async function New(email: string, username: string, password: string) {
   return res.records[0]?.get("new_user") as ClientUserT
 }
 
-export async function AuthFind(emailOrUsername: string) {
+export async function SigninFind(emailOrUsername: string) {
   const res = await db.ReadQuery(
     `/* cypher */
 		MATCH (u:User)

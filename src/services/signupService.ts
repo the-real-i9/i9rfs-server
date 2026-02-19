@@ -1,5 +1,5 @@
 import { StatusCodes } from "http-status-codes"
-import * as user from "../models/userModel.ts"
+import * as userService from "./userService.ts"
 import * as securityServices from "./util/securityServices.ts"
 import * as mailService from "./util/mailService.ts"
 import type { ClientUserT } from "../appTypes.ts"
@@ -15,7 +15,7 @@ interface SignupRNAResp {
 }
 
 export async function RequestNewAccount(email: string) {
-  if (await user.Exists(email)) {
+  if (await userService.UserExists(email)) {
     throw {
       name: "AppError",
       code: StatusCodes.BAD_REQUEST,
@@ -99,7 +99,7 @@ export async function RegisterUser(
 ) {
   const { email } = sessionData
 
-  if (await user.Exists(username)) {
+  if (await userService.UserExists(username)) {
     throw {
       name: "AppError",
       code: StatusCodes.BAD_REQUEST,
@@ -107,7 +107,7 @@ export async function RegisterUser(
     }
   }
 
-  const newUser = await user.New(
+  const newUser = await userService.CreateNewUser(
     email,
     username,
     await securityServices.HashPassword(password)

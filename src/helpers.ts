@@ -1,3 +1,5 @@
+import { pack } from "msgpackr"
+
 export function GetSessionDataFromCookieHeader(cookieHeader: string) {
   const cookies = Object.fromEntries(
     cookieHeader.split(";").map((c) => c.trim().split("="))
@@ -15,7 +17,7 @@ export function GetSessionDataFromCookieHeader(cookieHeader: string) {
 }
 
 export function WSErrReply(errCode: number, err: any, toCommand: string) {
-  return JSON.stringify({
+  return pack({
     event: "server error",
     toCommand,
     data: {
@@ -26,7 +28,7 @@ export function WSErrReply(errCode: number, err: any, toCommand: string) {
 }
 
 export function WSReply(data: any, toCommand: string) {
-  return JSON.stringify({
+  return pack({
     event: "server reply",
     toCommand,
     data,

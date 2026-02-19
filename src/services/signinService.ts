@@ -1,7 +1,7 @@
 import { StatusCodes } from "http-status-codes"
-import * as user from "../models/userModel.ts"
 import * as securityServices from "./util/securityServices.ts"
 import type { ClientUserT } from "../appTypes.ts"
+import * as userService from "./userService.ts"
 
 interface SigninResp {
   msg: string
@@ -9,7 +9,7 @@ interface SigninResp {
 }
 
 export async function Signin(emailOrUsername: string, inputPassword: string) {
-  const theUser = await user.AuthFind(emailOrUsername)
+  const theUser = await userService.SigninFindUser(emailOrUsername)
 
   if (!theUser) {
     throw {
