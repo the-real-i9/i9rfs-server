@@ -22,20 +22,25 @@ i9rfs is a full-fledged remote file system API server built in Node.js and Neo4j
 </div>
 
 ### Technologies
-- **JavaScript/TypeScript/Node.js** - Programming Language/Runtimg
-- **Express.js** - REST API Framework
+- **Node.js (JS/TS)** - Programming Language/Runtime
+- **Express.js** - HTTP (REST) API Framework
 - **Neo4j** - Graph DBMS
-- **CypherQL** - Query Language for a Graph database
-- **WebSocket** - Full-duplex, Bi-directional communications protocol
-- **Google Cloud Storage**
+- **CypherQL** - Query Language for Neo4j
+- **WebSocket** - Full-duplex, Bi-directional communications protocol. Realtime communication.
+- **Google Cloud Storage** - Cloud object storage
+---
+- **JWT** - User authentication. Token signing and verification.
+- **MessagePack** - Object serializer and deserializer (major use)
+- **JSON** - Object serializer and deserializer (minor use)
 
 ### Tools
-- Docker
-- Ubuntu Linux
+- **Swagger** - HTTP API Documentation
+- **AsyncAPI** - Websockets API Documention
+- **Docker** - Container running Neo4j instance
+- **Git & GitHub** - Repository & Version Control
+- **GitHub Actions** - Continuous Integration. Unit & Integration Testing
 - VSCode
-- Git & GitHub Version Control
-- GitHub Actions CI
-
+- Ubuntu Linux
 
 ## Table of Contents
 
@@ -43,10 +48,11 @@ i9rfs is a full-fledged remote file system API server built in Node.js and Neo4j
 - [Technologies & Tools](#technologies--tools)
 - [Table of Contents](#table-of-contents)
 - [Features](#features)
-- [✨Technical Highlights✨](#technical-highlights)
-- [API Graph Model Overview](#api-graph-model-overview)
-- [API Documentation](#api-documentation)
-- [API Diagrams](#api-diagrams)
+- [API Documentation](#api-documentation-)
+- [API Diagrams](#api-diagrams-)
+  - [Architecture Diagram](#architecture-diagram)
+  - [Sequence Diagrams](#sequence-diagrams)
+- [Articles](#articles-)
 
 ## Features
 
