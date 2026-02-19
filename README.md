@@ -62,12 +62,6 @@ The following are the features supported by this API. *Visit the API documentati
 - **View** files/directories **in Trash**
 - **Restore** files/directories **from Trash**
 
-## ✨Technical Highlights✨
-
-- A graph data structure perfectly models a file system tree data structure; enough reason to choose a graph database over a relational database that’s not built for graph-like data structures and queries. I tried it, it was hell-y. This project introduced me to the world of graph databases.
-
-- I utilize Neo4j’s variable expression matching extensively to confine object find tree traversal to the user’s root, and to process complex commands such as directory copy and delete which act recursively on sub-directories.
-
 ## API Documentation &#x1f4d6;
 
 HTTP API (REST): [Here](./docs/swagger.json). Open in [Swagger Editor](editor.swagger.io)
@@ -94,3 +88,10 @@ API sequence diagrams: [Here](./diagrams/sequence-diagrams.md)
 
 ## Articles &#x1f4f0;
 *Coming Soon...*
+
+
+<!-- ## ✨Technical Highlights✨
+
+- A graph data structure perfectly models a file system tree data structure; enough reason to choose a graph database over a relational database that’s not built for graph-like data structures and queries. I tried it, it was hell-y. This project introduced me to the world of graph databases.
+
+- I utilize Neo4j’s variable expression matching extensively to confine object find tree traversal to the user’s root, and to process complex commands such as directory copy and delete which act recursively on sub-directories. -->

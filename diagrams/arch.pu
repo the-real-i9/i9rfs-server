@@ -42,7 +42,7 @@ Rel(uploadService, cloudStorageService, "Calls")
 Component(appControllers, "App Controllers", "Node.js, Express", "Consists request handlers for upload authorization and user signout")
 Rel(appControllers, uploadService, "Calls")
 
-Component(rfsController, "Remote File System Controller", "Node.js, WebSocket", "Accepts client connection, authenticates the client, listens for WS messages (file system commands with associated data) on the connection, decodes a message, passes it to target handling services, and writes reply to the client connection")
+Component(rfsController, "Remote File System Controller", "Node.js, WebSocket", "Accepts a client's Web socket connection, authenticates the client, listens for WS messages (file system commands with associated data) on the connection, decodes a message, passes it to target handling services, and writes reply to the client connection")
 Component(rfsService, "Remote File System Service", "Node.js", "Consists service funtions for all remote file system operations providing required services to the RFS controller")
 Component(rfsModel, "Remote File System Model", "Node.js, Cypher, neo4j-driver", "Consists functions that encapsulates database logic for manipulating the file system tree called by Remote File System services")
 Rel(rfsController, rfsService, "Calls")
