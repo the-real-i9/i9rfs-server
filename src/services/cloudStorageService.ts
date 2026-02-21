@@ -1,4 +1,4 @@
-import appGlobals from "../appGlobals"
+import appGlobals from "../appGlobals.ts"
 
 export async function GetUploadUrl(
   cloudObjectName: string,

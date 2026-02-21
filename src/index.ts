@@ -24,13 +24,7 @@ await initializers.InitApp()
 
 const app = express()
 
-app.use(
-  msgpack({
-    mimeType: "application/vnd.msgpack",
-    encoder: pack,
-    decoder: unpack,
-  })
-)
+app.use(express.json())
 
 app.use(
   helmet({

@@ -20,7 +20,7 @@ export async function AuthorizeUpload(
   const objectId = uuid()
   const cloudObjectName = `uploads/${new Date().getFullYear()}${new Date().getMonth()}/${objectId}`
 
-  const url = cloudStorageService.GetUploadUrl(cloudObjectName, mimeType)
+  const url = await cloudStorageService.GetUploadUrl(cloudObjectName, mimeType)
 
   return { uploadUrl: url, objectId, cloudObjectName }
 }

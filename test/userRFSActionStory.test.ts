@@ -1,8 +1,9 @@
 import path from "node:path"
 import fs from "node:fs/promises"
+import { beforeEach, afterEach, test, type TestContext } from "node:test"
 import request from "superwstest"
 import { StatusCodes } from "http-status-codes"
-import { beforeEach, afterEach, test, type TestContext } from "node:test"
+import { pack, unpack } from "msgpackr"
 
 import server from "../src/index.ts"
 import {
@@ -29,11 +30,6 @@ afterEach((_, done) => {
 })
 
 test("TestUserRFSActionStory", async (t: TestContext) => {
-  t.skip()
-  if (1 === 1) {
-    return
-  }
-
   const user = {
     email: "mikeross@gmail.com",
     username: "mikeross",
@@ -114,13 +110,17 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "ls",
-        data: {
-          directoryId: "/",
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "ls",
+          data: {
+            directoryId: "/",
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "ls",
@@ -149,22 +149,26 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "mkdir",
-        data: {
-          parentDirectoryId: nativeRootDirs.Videos,
-          directoryNames: [
-            "Horror",
-            "Comedy",
-            "Legal",
-            "Musical",
-            "Action",
-            "NotAVideo",
-            "DeleteMe",
-          ],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "mkdir",
+          data: {
+            parentDirectoryId: nativeRootDirs.Videos,
+            directoryNames: [
+              "Horror",
+              "Comedy",
+              "Legal",
+              "Musical",
+              "Action",
+              "NotAVideo",
+              "DeleteMe",
+            ],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "mkdir",
@@ -201,14 +205,18 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "mkdir",
-        data: {
-          parentDirectoryId: videoDirs.DeleteMe,
-          directoryNames: ["DeleteMyChild"],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "mkdir",
+          data: {
+            parentDirectoryId: videoDirs.DeleteMe,
+            directoryNames: ["DeleteMyChild"],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "mkdir",
@@ -229,14 +237,18 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "del",
-        data: {
-          parentDirectoryId: nativeRootDirs.Videos,
-          objectIds: [videoDirs.NotAVideo, videoDirs.DeleteMe],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "del",
+          data: {
+            parentDirectoryId: nativeRootDirs.Videos,
+            objectIds: [videoDirs.NotAVideo, videoDirs.DeleteMe],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.deepStrictEqual(msg, {
           event: "server reply",
           toCommand: "del",
@@ -257,13 +269,17 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "ls",
-        data: {
-          directoryId: nativeRootDirs.Videos,
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "ls",
+          data: {
+            directoryId: nativeRootDirs.Videos,
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "ls",
@@ -293,14 +309,18 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "del",
-        data: {
-          parentDirectoryId: "/",
-          objectIds: [nativeRootDirs.Downloads],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "del",
+          data: {
+            parentDirectoryId: "/",
+            objectIds: [nativeRootDirs.Downloads],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.deepStrictEqual(msg, {
           event: "server reply",
           toCommand: "del",
@@ -321,14 +341,18 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "mkdir",
-        data: {
-          parentDirectoryId: videoDirs.Horror,
-          directoryNames: ["The Conjuring/Season 1/Episodes"],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "mkdir",
+          data: {
+            parentDirectoryId: videoDirs.Horror,
+            directoryNames: ["The Conjuring/Season 1/Episodes"],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "mkdir",
@@ -349,15 +373,19 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "copy",
-        data: {
-          fromParentDirectoryId: nativeRootDirs.Videos,
-          toParentDirectoryId: nativeRootDirs.Downloads,
-          objectIds: [videoDirs.Horror, videoDirs.Comedy],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "copy",
+          data: {
+            fromParentDirectoryId: nativeRootDirs.Videos,
+            toParentDirectoryId: nativeRootDirs.Downloads,
+            objectIds: [videoDirs.Horror, videoDirs.Comedy],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "copy",
@@ -378,13 +406,17 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "ls",
-        data: {
-          directoryId: nativeRootDirs.Downloads,
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "ls",
+          data: {
+            directoryId: nativeRootDirs.Downloads,
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "ls",
@@ -405,14 +437,18 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "mkdir",
-        data: {
-          parentDirectoryId: nativeRootDirs.Music,
-          directoryNames: ["Gospel", "Rock", "Pop", "Folk", "Old Songs"],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "mkdir",
+          data: {
+            parentDirectoryId: nativeRootDirs.Music,
+            directoryNames: ["Gospel", "Rock", "Pop", "Folk", "Old Songs"],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "mkdir",
@@ -439,14 +475,18 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "trash",
-        data: {
-          parentDirectoryId: nativeRootDirs.Music,
-          objectIds: [musicDirs.Folk, musicDirs["Old Songs"]],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "trash",
+          data: {
+            parentDirectoryId: nativeRootDirs.Music,
+            objectIds: [musicDirs.Folk, musicDirs["Old Songs"]],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "trash",
@@ -467,13 +507,17 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "ls",
-        data: {
-          directoryId: nativeRootDirs.Music,
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "ls",
+          data: {
+            directoryId: nativeRootDirs.Music,
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "ls",
@@ -501,10 +545,14 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "viewtrash",
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "viewtrash",
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "viewtrash",
@@ -527,13 +575,17 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "restore",
-        data: {
-          objectIds: [trashDirs.Folk],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "restore",
+          data: {
+            objectIds: [trashDirs.Folk],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "restore",
@@ -552,10 +604,14 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "viewtrash",
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "viewtrash",
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "viewtrash",
@@ -583,13 +639,17 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "ls",
-        data: {
-          directoryId: nativeRootDirs.Music,
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "ls",
+          data: {
+            directoryId: nativeRootDirs.Music,
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "ls",
@@ -615,14 +675,18 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "trash",
-        data: {
-          parentDirectoryId: "/",
-          objectIds: [nativeRootDirs.Documents],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "trash",
+          data: {
+            parentDirectoryId: "/",
+            objectIds: [nativeRootDirs.Documents],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "trash",
@@ -643,15 +707,19 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "rename",
-        data: {
-          parentDirectoryId: nativeRootDirs.Music,
-          objectId: musicDirs.Gospel,
-          newName: "Christian Music",
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "rename",
+          data: {
+            parentDirectoryId: nativeRootDirs.Music,
+            objectId: musicDirs.Gospel,
+            newName: "Christian Music",
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "rename",
@@ -672,13 +740,17 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "ls",
-        data: {
-          directoryId: nativeRootDirs.Music,
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "ls",
+          data: {
+            directoryId: nativeRootDirs.Music,
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "ls",
@@ -708,15 +780,19 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "rename",
-        data: {
-          parentDirectoryId: "/",
-          objectId: nativeRootDirs.Pictures,
-          newName: "Images",
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "rename",
+          data: {
+            parentDirectoryId: "/",
+            objectId: nativeRootDirs.Pictures,
+            newName: "Images",
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "rename",
@@ -737,14 +813,18 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "mkdir",
-        data: {
-          parentDirectoryId: musicDirs.Rock,
-          directoryNames: ["Pop Rock/Afro Pop Rock"],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "mkdir",
+          data: {
+            parentDirectoryId: musicDirs.Rock,
+            directoryNames: ["Pop Rock/Afro Pop Rock"],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "mkdir",
@@ -765,15 +845,19 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "move",
-        data: {
-          fromParentDirectoryId: nativeRootDirs.Music,
-          toParentDirectoryId: nativeRootDirs.Downloads,
-          objectIds: [musicDirs.Rock, musicDirs.Pop],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "move",
+          data: {
+            fromParentDirectoryId: nativeRootDirs.Music,
+            toParentDirectoryId: nativeRootDirs.Downloads,
+            objectIds: [musicDirs.Rock, musicDirs.Pop],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "move",
@@ -794,13 +878,17 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "ls",
-        data: {
-          directoryId: nativeRootDirs.Downloads,
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "ls",
+          data: {
+            directoryId: nativeRootDirs.Downloads,
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "ls",
@@ -809,13 +897,17 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
 
         return true
       })
-      .sendJson({
-        command: "ls",
-        data: {
-          directoryId: nativeRootDirs.Music,
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "ls",
+          data: {
+            directoryId: nativeRootDirs.Music,
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "ls",
@@ -874,16 +966,20 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "mkfil",
-        data: {
-          parentDirectoryId: "/",
-          objectId: fileObjectId,
-          cloudObjectName,
-          filename: "Aye-Ole.mp3",
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "mkfil",
+          data: {
+            parentDirectoryId: "/",
+            objectId: fileObjectId,
+            cloudObjectName,
+            filename: "Aye-Ole.mp3",
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "mkfil",
@@ -910,13 +1006,17 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "ls",
-        data: {
-          directoryId: "/",
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "ls",
+          data: {
+            directoryId: "/",
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "ls",
@@ -935,13 +1035,17 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "download",
-        data: {
-          fileObjectId,
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "download",
+          data: {
+            fileObjectId,
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "download",
@@ -965,14 +1069,18 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "mkdir",
-        data: {
-          parentDirectoryId: nativeRootDirs.Music,
-          directoryNames: ["Old Music"],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "mkdir",
+          data: {
+            parentDirectoryId: nativeRootDirs.Music,
+            directoryNames: ["Old Music"],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "mkdir",
@@ -994,15 +1102,19 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "copy",
-        data: {
-          fromParentDirectoryId: "/",
-          toParentDirectoryId: oldMusicDirId,
-          objectIds: [fileObjectId],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "copy",
+          data: {
+            fromParentDirectoryId: "/",
+            toParentDirectoryId: oldMusicDirId,
+            objectIds: [fileObjectId],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.partialDeepStrictEqual(msg, {
           event: "server reply",
           toCommand: "copy",
@@ -1021,14 +1133,18 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
     await request(server)
       .ws(wsPath)
       .set("Cookie", user.sessionCookie)
-      .sendJson({
-        command: "del",
-        data: {
-          parentDirectoryId: "/",
-          objectIds: [fileObjectId],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "del",
+          data: {
+            parentDirectoryId: "/",
+            objectIds: [fileObjectId],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.deepStrictEqual(msg, {
           event: "server reply",
           toCommand: "del",
@@ -1037,14 +1153,18 @@ test("TestUserRFSActionStory", async (t: TestContext) => {
 
         return true
       })
-      .sendJson({
-        command: "del",
-        data: {
-          parentDirectoryId: nativeRootDirs.Music,
-          objectIds: [oldMusicDirId],
-        },
-      })
-      .expectJson((msg) => {
+      .sendBinary(
+        pack({
+          command: "del",
+          data: {
+            parentDirectoryId: nativeRootDirs.Music,
+            objectIds: [oldMusicDirId],
+          },
+        })
+      )
+      .expectBinary((msgBin) => {
+        const msg = unpack(msgBin)
+
         t.assert.deepStrictEqual(msg, {
           event: "server reply",
           toCommand: "del",
